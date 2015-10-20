@@ -17,16 +17,26 @@ public class CommunicationAnalyzer implements Runnable {
     public void run() {
 
         try {
-	        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-	        BufferedReader in = new BufferedReader( new InputStreamReader( socket.getInputStream()));
+	        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+	        ObjectInputStream in = new ObjectInputStream( socket.getInputStream());
+	       
+	        Object object = null;
+	        RequestMessage requestMessage = null;
 	        
-	        String inputLine, outputLine;
-	        while ((inputLine = in.readLine()) != null) {
-	        	RequestMessage requestMessage = this.deserializeRequestMessage(in);
+	        boolean trueBoolean = true;
+	        while (trueBoolean) {
+	        	try {
+	        		object = in.readObject();
+	        		requestMessage = (RequestMessage) object;
+	        	} catch (ClassNotFoundException e) {
+	        		e.printStackTrace();
+	        	}
+
 	        	ReplyMessage replyMessage = dispatcher.dispatchCall(requestMessage, rrm.retrieve(requestMessage.to));
-	            outputLine = out.println(outputLine);
-	            if (outputLine.equals("Bye"))
-	                break;
+	        	if (replyMessage == null) continue;
+
+	        	out.writeObject(replyMessage);
+
 	        }
 	        socket.close();
         } catch (IOException e) {
@@ -34,7 +44,7 @@ public class CommunicationAnalyzer implements Runnable {
         }
     }
     
-    private RequestMessage deserializeRequestMessage(BufferedReader in) {
+    /*private RequestMessage deserializeRequestMessage(BufferedReader in) {
     	RequestMessage message = null;
 
     	try {
@@ -51,5 +61,5 @@ public class CommunicationAnalyzer implements Runnable {
     		c.printStackTrace();
     		return null;
     	}
-    }
+    }*/
 }
