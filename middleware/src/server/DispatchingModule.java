@@ -10,8 +10,8 @@ import java.lang.reflect.Method;
  */
 public class DispatchingModule {
 	
-	public Object dispatchCall(RequestMessage request, Object object) {
-		Class<?> objectClass = request.getClass();
+	public ReplyMessage dispatchCall(RequestMessage request, Object object) {
+		Class<?> objectClass = object.getClass();
 		Method requestedMethod;
 		Object result = new Object();
 		try {
@@ -26,16 +26,8 @@ public class DispatchingModule {
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		}
-		System.out.println(result);
 		
 		//return result;
 		return new ReplyMessage(request.to, request.from, result);
 	}	
 }
-
-// communication module
-/*
- * DispatchingModule dispatch = new DispatchingModule();
- * Object blabla = dispatch(requestMessage, object);
- * return message.ReplyMessage("from", "to", result.getClass(), result);
- */
