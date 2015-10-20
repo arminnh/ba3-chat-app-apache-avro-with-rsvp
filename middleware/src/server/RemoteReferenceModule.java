@@ -16,8 +16,10 @@ public class RemoteReferenceModule {
 	//table of local proxies
 	//MOET NOG NIET
 
-	public void register(Object remoteObject) {
-		remoteObjects.put(remoteObject.getClass().getSimpleName(), remoteObject);
+	public String register(Object remoteObject) {
+		String name = remoteObject.getClass().getSimpleName();
+		remoteObjects.put(name, remoteObject);
+		return name;
 	}
 	
 	public Object retrieve(String remoteObjectName) {
