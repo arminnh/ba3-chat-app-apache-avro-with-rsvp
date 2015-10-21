@@ -7,7 +7,7 @@ import server.RemoteReferenceModule;
 
 public class Hello {
 	public static void main(String[] args) {
-		Server server = new server.Server();
+		SayHelloObject server = new server.SayHelloObject();
 		System.out.println(server.sayHello("blablabla"));
 
 		RemoteReferenceModule remoote = new server.RemoteReferenceModule();
@@ -37,7 +37,7 @@ public class Hello {
 		System.out.println(result);
 		*/
 		
-		Server testserver = new server.Server();
+		SayHelloObject testserver = new server.SayHelloObject();
 		DispatchingModule test = new server.DispatchingModule();
 		Class<?>[] paramType = {"Josse".getClass()};
 		Object[] paramValue = {"Josse"};

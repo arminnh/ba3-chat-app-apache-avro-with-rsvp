@@ -17,7 +17,7 @@ public class RemoteReferenceModule {
 	//MOET NOG NIET
 
 	public String register(Object remoteObject) {
-		String name = remoteObject.getClass().getSimpleName();
+		String name = remoteObject.getClass().getName();
 		remoteObjects.put(name, remoteObject);
 		return name;
 	}

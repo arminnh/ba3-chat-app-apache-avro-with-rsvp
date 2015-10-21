@@ -22,19 +22,25 @@ public class CommunicationAnalyzer implements Runnable {
 	       
 	        Object object = null;
 	        RequestMessage requestMessage = null;
+	        ReplyMessage replyMessage = null;
 	        
 	        boolean trueBoolean = true;
-	        while (trueBoolean) {
+	        while (trueBoolean) { //misschien timer bij doen in geval dat client opeen niets meer stuurt
+	        	replyMessage = null;
 	        	try {
 	        		object = in.readObject();
 	        		requestMessage = (RequestMessage) object;
+	        		//requestMessage = (RequestMessage) in.readObject();
+	        		
+	        		// if request message == "end connection" -> break of trueBool = false ofzo iets
+	        		
+	        		replyMessage = dispatcher.dispatchCall(requestMessage, rrm.retrieve(requestMessage.to));
+	        		
 	        	} catch (ClassNotFoundException e) {
 	        		e.printStackTrace();
 	        	}
-
-	        	ReplyMessage replyMessage = dispatcher.dispatchCall(requestMessage, rrm.retrieve(requestMessage.to));
+	        	
 	        	if (replyMessage == null) continue;
-
 	        	out.writeObject(replyMessage);
 
 	        }
