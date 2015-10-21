@@ -2,7 +2,7 @@ package client;
 import message.*;
 import java.net.*;
 import java.io.*;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 
 public class CommunicationModule {
 	public Socket socket = null;
@@ -56,4 +56,5 @@ public class CommunicationModule {
 		
 		return this.run(requestMessage);
 	}
+	
 }

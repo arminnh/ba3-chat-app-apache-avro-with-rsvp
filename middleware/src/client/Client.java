@@ -1,6 +1,8 @@
 package client;
 import message.*;
 import java.net.*;
+import java.lang.reflect.*;
+import server.*; // for SayHelloObject
 
 public class Client {
 
@@ -12,9 +14,17 @@ public class Client {
 			
 			//Hier Hello World proxy object
 			
-			ReplyMessage result = comm.remoteInvocation(new Proxy() /* proxy */, method /* SayHello */, args /* Josse */);
+			Class<?> sayHelloObjectClass = Class.forName("server.SayHelloObject");
+			Method sayHelloMethod = sayHelloObjectClass.getMethod("sayHello", new Class<?>[] { "".getClass() });
+			MiddlewareInvocationHandler handler = new MiddlewareInvocationHandler(comm);
+			Object sayHelloProxy = ProxyLookup.lookup(sayHelloObjectClass, handler);
+			Object[] invocationArgs = new Object[] {"Armin"};
+			
+			ReplyMessage result = (ReplyMessage) comm.remoteInvocation(sayHelloProxy, sayHelloMethod, invocationArgs);
 			//Haal data replymessage
 
+			System.out.println(result.object);
+			
 		} catch (UnknownHostException e) {
             System.err.println("Don't know about host " + args[0]);
             e.printStackTrace();
