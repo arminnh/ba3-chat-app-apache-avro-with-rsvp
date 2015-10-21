@@ -16,8 +16,7 @@ public class Client {
 			
 			Class<?> sayHelloObjectClass = Class.forName("server.SayHelloObject");
 			Method sayHelloMethod = sayHelloObjectClass.getMethod("sayHello", new Class<?>[] { "".getClass() });
-			MiddlewareInvocationHandler handler = new MiddlewareInvocationHandler(comm);
-			Object sayHelloProxy = ProxyLookup.lookup(sayHelloObjectClass, handler);
+			Object sayHelloProxy = ProxyLookup.lookup(sayHelloObjectClass, comm);
 			Object[] invocationArgs = new Object[] {"Armin"};
 			
 			ReplyMessage result = (ReplyMessage) comm.remoteInvocation(sayHelloProxy, sayHelloMethod, invocationArgs);

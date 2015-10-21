@@ -6,9 +6,15 @@ import java.lang.reflect.*;
 
 public class CommunicationModule {
 	public Socket socket = null;
-
-	CommunicationModule() { }
-	CommunicationModule(String ipadres, int port) { }
+	private MiddlewareInvocationHandler invocationHandler;
+	
+	CommunicationModule() {
+		this.invocationHandler = new MiddlewareInvocationHandler(this);
+	}
+	
+	CommunicationModule(String ipadres, int port) {
+		this(); // call the default constructor above
+	}
 	
 	public static CommunicationModule createCommunicationModule(Socket socket) {
 		CommunicationModule comm = new CommunicationModule();
@@ -18,17 +24,13 @@ public class CommunicationModule {
 		return comm;
 	}
 	
-	public ReplyMessage run(RequestMessage requestMessage/* welke functie, welk object, ... in een request message */) {
+	public ReplyMessage run(RequestMessage requestMessage) {
 		ReplyMessage replyMessage = null;
 		
         try {
         	ObjectOutputStream out = new ObjectOutputStream( socket.getOutputStream() );
         	ObjectInputStream in = new ObjectInputStream( socket.getInputStream() );
         	
-        	Object object = null;
-        	//RequestMessage requestMessage = null;
-        	//RequesMessage invullen
-
         	out.writeObject(requestMessage);
         	replyMessage = (ReplyMessage) in.readObject();
         	
@@ -50,11 +52,14 @@ public class CommunicationModule {
 			paramTypes[i] = args.getClass();
 		}
 		
-		RequestMessage requestMessage = new RequestMessage("from", "to", method.getName(), paramTypes, args);
+		RequestMessage requestMessage = new RequestMessage("from: me", proxy.getClass().getName(), method.getName(), paramTypes, args);
 		//to = "SayHelloObject"
 		//public RequestMessage(String from, String to, String methodName, Class<?>[] paramTypes, Object[] paramValues)
 		
 		return this.run(requestMessage);
 	}
 	
+	public MiddlewareInvocationHandler invocationHandler() {
+		return this.invocationHandler;
+	}
 }
