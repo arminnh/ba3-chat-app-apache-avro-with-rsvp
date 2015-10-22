@@ -9,10 +9,11 @@ public class CommunicationModule {
 	void start(int port) {		
 		//accept a connection;
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-        	System.out.println("Listening on port " + port);
+        	System.out.println("Listening on port " + port + "\n\n");
             while (true) {
             	//create a thread to deal with the client;
             	CommunicationAnalyzer coma = new CommunicationAnalyzer(serverSocket.accept(), this.rrm, this.dispatcher);
+            	System.out.println("New connection accepted");
 	            new Thread(coma).start();
 	        }
 	    } catch (IOException e) {

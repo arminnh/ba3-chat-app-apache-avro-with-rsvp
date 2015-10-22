@@ -6,29 +6,28 @@ import java.lang.reflect.*;
 
 public class CommunicationModule {
 	private Socket socket = null;
+	private ObjectOutputStream out;
+	private ObjectInputStream in;
 	private MiddlewareInvocationHandler invocationHandler;
 	private Class<?> theClass = null;
 	
-	CommunicationModule() {
-		this.invocationHandler = new MiddlewareInvocationHandler(this);
-	}
-	
 	CommunicationModule(Socket socket) {
-		this();
+		this.invocationHandler = new MiddlewareInvocationHandler(this);
 		this.socket = socket;
+		try {
+			this.out = new ObjectOutputStream( socket.getOutputStream() );
+			this.in = new ObjectInputStream( socket.getInputStream() );
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public ReplyMessage run(RequestMessage requestMessage) {
 		ReplyMessage replyMessage = null;
 		
         try {
-        	ObjectOutputStream out = new ObjectOutputStream( socket.getOutputStream() );
-        	ObjectInputStream in = new ObjectInputStream( socket.getInputStream() );
-        	
         	out.writeObject(requestMessage);
         	replyMessage = (ReplyMessage) in.readObject();
-        	
-        	socket.close();
         } catch (IOException e) {
             System.err.println("Couldn't get I/O for the connection to " + this.socket.getInetAddress());
             e.printStackTrace();
@@ -47,8 +46,6 @@ public class CommunicationModule {
 		}
 		
 		RequestMessage requestMessage = new RequestMessage("from: me", this.theClass.getName(), method.getName(), paramTypes, args);
-		//to = "SayHelloObject"
-		//public RequestMessage(String from, String to, String methodName, Class<?>[] paramTypes, Object[] paramValues)
 		
 		ReplyMessage replyMessage = this.run(requestMessage);
 		

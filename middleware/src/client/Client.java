@@ -14,8 +14,11 @@ public class Client {
 			
 			Class<?> sayHelloObjectClass = Class.forName("server.SayHelloObject");
 			SayHelloObjectInterface sayHelloProxy = (SayHelloObjectInterface) ProxyLookup.lookup(sayHelloObjectClass, comm);
-			
+
+			System.out.println(sayHelloProxy.sayHello("Josse"));
 			System.out.println(sayHelloProxy.add(2, 3));
+			
+			socket.close();
 			
 		} catch (UnknownHostException e) {
             System.err.println("Don't know about host " + args[0]);

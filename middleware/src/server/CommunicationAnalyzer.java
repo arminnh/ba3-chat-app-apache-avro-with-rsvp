@@ -18,23 +18,30 @@ public class CommunicationAnalyzer implements Runnable {
 
 		try {
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-			ObjectInputStream in = new ObjectInputStream( socket.getInputStream());
+			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 
-			RequestMessage requestMessage = (RequestMessage) in.readObject();
-
-			System.out.println(requestMessage.from + "\n" + 
-					requestMessage.to + "\n" +  
-					requestMessage.methodName + "\n" +  
-					requestMessage.paramTypes[0] + "\n" +  
-					requestMessage.paramValues[0].toString() + "\n\n");
-
-			ReplyMessage replyMessage = dispatcher.dispatchCall(requestMessage, rrm.retrieve(requestMessage.to));
-
-			out.writeObject(replyMessage);
-			socket.close();
-
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			while(!socket.isInputShutdown()) {
+				try {
+					RequestMessage requestMessage = (RequestMessage) in.readObject();
+					
+					System.out.println(requestMessage.from + "\n" + 
+							requestMessage.to + "\n" +  
+							requestMessage.methodName + "\n" +  
+							requestMessage.paramTypes[0] + "\n" +  
+							requestMessage.paramValues[0].toString() + "\n\n");
+		
+					ReplyMessage replyMessage = dispatcher.dispatchCall(requestMessage, rrm.retrieve(requestMessage.to));
+		
+					out.writeObject(replyMessage);
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					//System.out.println("negeer dit");
+					//e.printStackTrace();
+				}
+			}
+			System.out.println("Socket has disconnected.");
+			//socket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -19,7 +19,7 @@ public class RemoteReferenceModule {
 	}
 	
 	public Object retrieve(String remoteObjectName) {
-		System.out.println("RemoteReferenceModule.retrieve: " + remoteObjectName);
+		//System.out.println("RemoteReferenceModule.retrieve: " + remoteObjectName);
 		return remoteObjects.get(remoteObjectName);
 	}
 }
