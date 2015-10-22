@@ -28,7 +28,6 @@ public class DispatchingModule {
 			e.printStackTrace();
 		}
 		
-		//return result;
 		return new ReplyMessage(request.to, request.from, result);
 	}	
 }
