@@ -15,14 +15,11 @@ public class Client {
 			//Hier Hello World proxy object
 			
 			Class<?> sayHelloObjectClass = Class.forName("server.SayHelloObject");
-			Method sayHelloMethod = sayHelloObjectClass.getMethod("sayHello", new Class<?>[] { "".getClass() });
-			Object sayHelloProxy = ProxyLookup.lookup(sayHelloObjectClass, comm);
-			Object[] invocationArgs = new Object[] {"Armin"};
+			SayHelloObjectInterface sayHelloProxy = (SayHelloObjectInterface) ProxyLookup.lookup(sayHelloObjectClass, comm);
 			
-			ReplyMessage result = (ReplyMessage) comm.remoteInvocation(sayHelloProxy, sayHelloMethod, invocationArgs);
-			//Haal data replymessage
-
-			System.out.println(result.object);
+			System.out.println(sayHelloProxy.add(2, 3));
+			
+			//System.out.println(result.object);
 			
 		} catch (UnknownHostException e) {
             System.err.println("Don't know about host " + args[0]);

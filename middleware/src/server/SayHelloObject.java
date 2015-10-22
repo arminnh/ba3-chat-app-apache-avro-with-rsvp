@@ -5,5 +5,9 @@ public class SayHelloObject implements SayHelloObjectInterface {
 		return "Hello, " + name;
 	}
 	
+	public Integer add(Integer a, Integer b) {
+		return a + 2 * b;
+	}
+	
 	//complicated calculations
 }
