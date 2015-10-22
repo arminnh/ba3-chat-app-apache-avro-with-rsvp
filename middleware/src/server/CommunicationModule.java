@@ -12,8 +12,9 @@ public class CommunicationModule {
         	System.out.println("Listening on port " + port + "\n\n");
             while (true) {
             	//create a thread to deal with the client;
-            	CommunicationAnalyzer coma = new CommunicationAnalyzer(serverSocket.accept(), this.rrm, this.dispatcher);
-            	System.out.println("New connection accepted");
+            	Socket clientSocket = serverSocket.accept();
+            	CommunicationAnalyzer coma = new CommunicationAnalyzer(clientSocket, this.rrm, this.dispatcher);
+            	System.out.println("New connection accepted from IP " + clientSocket.getRemoteSocketAddress().toString());
 	            new Thread(coma).start();
 	        }
 	    } catch (IOException e) {

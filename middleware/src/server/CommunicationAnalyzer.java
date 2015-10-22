@@ -39,6 +39,7 @@ public class CommunicationAnalyzer implements Runnable {
 					break;
 				} catch (Exception e) {
 					e.printStackTrace();
+					break;
 				}
 			}
 			System.out.println("Socket has disconnected.");
