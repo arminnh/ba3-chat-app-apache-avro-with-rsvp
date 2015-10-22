@@ -5,8 +5,9 @@ import java.io.*;
 import java.lang.reflect.*;
 
 public class CommunicationModule {
-	public Socket socket = null;
+	private Socket socket = null;
 	private MiddlewareInvocationHandler invocationHandler;
+	private Class<?> theClass = null;
 	
 	CommunicationModule() {
 		this.invocationHandler = new MiddlewareInvocationHandler(this);
@@ -42,17 +43,23 @@ public class CommunicationModule {
 	public Object remoteInvocation(Object proxy, Method method, Object[] args) {
 		Class<?>[] paramTypes = new Class<?>[args.length];
 		for (int i = 0; i < args.length; i++) {
-			paramTypes[i] = args.getClass();
+			paramTypes[i] = args[i].getClass();
 		}
 		
-		RequestMessage requestMessage = new RequestMessage("from: me", proxy.getClass().getName(), method.getName(), paramTypes, args);
+		RequestMessage requestMessage = new RequestMessage("from: me", this.theClass.getName(), method.getName(), paramTypes, args);
 		//to = "SayHelloObject"
 		//public RequestMessage(String from, String to, String methodName, Class<?>[] paramTypes, Object[] paramValues)
 		
-		return this.run(requestMessage);
+		ReplyMessage replyMessage = this.run(requestMessage);
+		
+		return replyMessage.object;
 	}
 	
 	public MiddlewareInvocationHandler invocationHandler() {
 		return this.invocationHandler;
+	}
+	
+	public void setClass(Class<?> theClass) {
+		this.theClass = theClass;
 	}
 }
