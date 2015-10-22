@@ -19,10 +19,12 @@ public class RemoteReferenceModule {
 	public String register(Object remoteObject) {
 		String name = remoteObject.getClass().getName();
 		remoteObjects.put(name, remoteObject);
+		System.out.println("RemoteReferenceModule registered: " + name); 
 		return name;
 	}
 	
 	public Object retrieve(String remoteObjectName) {
+		System.out.println("RemoteReferenceModule.retrieve: " + remoteObjectName);
 		return remoteObjects.get(remoteObjectName);
 	}
 }

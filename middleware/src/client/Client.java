@@ -10,9 +10,8 @@ public class Client {
 		try {			
 			InetAddress addr = InetAddress.getByName(args[0]);
 			Socket socket = new Socket(addr, Integer.parseInt(args[1]));
-			CommunicationModule comm = CommunicationModule.createCommunicationModule(socket);
+			CommunicationModule comm = new CommunicationModule(socket);
 			
-			//Hier Hello World proxy object
 			
 			Class<?> sayHelloObjectClass = Class.forName("server.SayHelloObject");
 			Method sayHelloMethod = sayHelloObjectClass.getMethod("sayHello", new Class<?>[] { "".getClass() });
@@ -20,8 +19,6 @@ public class Client {
 			Object[] invocationArgs = new Object[] {"Armin"};
 			
 			ReplyMessage result = (ReplyMessage) comm.remoteInvocation(sayHelloProxy, sayHelloMethod, invocationArgs);
-			//Haal data replymessage
-
 			System.out.println(result.object);
 			
 		} catch (UnknownHostException e) {

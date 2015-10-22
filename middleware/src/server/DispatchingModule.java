@@ -14,6 +14,7 @@ public class DispatchingModule {
 		Class<?> objectClass = object.getClass();
 		Method requestedMethod;
 		Object result = new Object();
+		
 		try {
 			requestedMethod = objectClass.getMethod(request.methodName, request.paramTypes);
 			result = requestedMethod.invoke(object, request.paramValues);

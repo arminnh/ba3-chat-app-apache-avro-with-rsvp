@@ -25,7 +25,7 @@ public class CommunicationAnalyzer implements Runnable {
 	        ReplyMessage replyMessage = null;
 	        
 	        boolean trueBoolean = true;
-	        while (trueBoolean) { //misschien timer bij doen in geval dat client opeen niets meer stuurt
+	        //while (trueBoolean) { //misschien timer bij doen in geval dat client opeen niets meer stuurt
 	        	replyMessage = null;
 	        	try {
 	        		object = in.readObject();
@@ -33,6 +33,11 @@ public class CommunicationAnalyzer implements Runnable {
 	        		//requestMessage = (RequestMessage) in.readObject();
 	        		
 	        		// if request message == "end connection" -> break of trueBool = false ofzo iets
+	        		System.out.println(requestMessage.from + "\n" + 
+				        				requestMessage.to + "\n" +  
+				        				requestMessage.methodName + "\n" +  
+				        				requestMessage.paramTypes[0] + "\n" +  
+				        				requestMessage.paramValues[0].toString() + "\n\n");
 	        		
 	        		replyMessage = dispatcher.dispatchCall(requestMessage, rrm.retrieve(requestMessage.to));
 	        		
@@ -40,10 +45,10 @@ public class CommunicationAnalyzer implements Runnable {
 	        		e.printStackTrace();
 	        	}
 	        	
-	        	if (replyMessage == null) continue;
+	        	//if (replyMessage == null) continue;
 	        	out.writeObject(replyMessage);
 
-	        }
+	        //}
 	        socket.close();
         } catch (IOException e) {
             e.printStackTrace();

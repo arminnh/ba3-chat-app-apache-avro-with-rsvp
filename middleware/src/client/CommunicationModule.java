@@ -12,16 +12,9 @@ public class CommunicationModule {
 		this.invocationHandler = new MiddlewareInvocationHandler(this);
 	}
 	
-	CommunicationModule(String ipadres, int port) {
-		this(); // call the default constructor above
-	}
-	
-	public static CommunicationModule createCommunicationModule(Socket socket) {
-		CommunicationModule comm = new CommunicationModule();
-		
-		comm.socket = socket;
-		
-		return comm;
+	CommunicationModule(Socket socket) {
+		this();
+		this.socket = socket;
 	}
 	
 	public ReplyMessage run(RequestMessage requestMessage) {
