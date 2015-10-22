@@ -7,6 +7,12 @@ import server.*; // for SayHelloObject
 public class Client {
 
 	public static void main(String[] args) {
+
+		if (args.length != 2) {
+			System.out.println("Usage: server <address> <port>");
+			System.exit(0);
+		}
+		
 		try {			
 			InetAddress addr = InetAddress.getByName(args[0]);
 			Socket socket = new Socket(addr, Integer.parseInt(args[1]));

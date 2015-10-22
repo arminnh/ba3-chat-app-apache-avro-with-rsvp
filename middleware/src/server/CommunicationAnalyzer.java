@@ -20,11 +20,11 @@ public class CommunicationAnalyzer implements Runnable {
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 
-			while(!socket.isInputShutdown()) {
+			while(true) {
 				try {
 					RequestMessage requestMessage = (RequestMessage) in.readObject();
 					
-					System.out.println(requestMessage.from + "\n" + 
+					System.out.println(/*requestMessage.from + "\n" + */
 							requestMessage.to + "\n" +  
 							requestMessage.methodName + "\n" +  
 							requestMessage.paramTypes[0] + "\n" +  
@@ -35,13 +35,14 @@ public class CommunicationAnalyzer implements Runnable {
 					out.writeObject(replyMessage);
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
+				} catch (EOFException e) {
+					break;
 				} catch (Exception e) {
-					//System.out.println("negeer dit");
-					//e.printStackTrace();
+					e.printStackTrace();
 				}
 			}
 			System.out.println("Socket has disconnected.");
-			//socket.close();
+			socket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
