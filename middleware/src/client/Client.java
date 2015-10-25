@@ -1,7 +1,5 @@
 package client;
-import message.*;
 import java.net.*;
-import java.lang.reflect.*;
 import server.*; // for SayHelloObject
 
 public class Client {
@@ -13,11 +11,12 @@ public class Client {
 			System.exit(0);
 		}
 		
-		try {			
+		try {
 			InetAddress addr = InetAddress.getByName(args[0]);
 			Socket socket = new Socket(addr, Integer.parseInt(args[1]));
 			CommunicationModule comm = new CommunicationModule(socket);
 			
+			// create proxy
 			Class<?> sayHelloObjectClass = Class.forName("server.SayHelloObject");
 			SayHelloObjectInterface sayHelloProxy = (SayHelloObjectInterface) ProxyLookup.lookup(sayHelloObjectClass, comm);
 
