@@ -6,6 +6,11 @@ public class CommunicationModule {
 	private RemoteReferenceModule rrm = new RemoteReferenceModule();
 	private DispatchingModule dispatcher = new DispatchingModule();
 
+	CommunicationModule(RemoteReferenceModule rrm, DispatchingModule dispatcher) {
+		if (rrm != null) this.rrm = rrm;
+		if (dispatcher != null) this.dispatcher = dispatcher;
+	}
+	
 	void start(int port) {		
 		//accept a connection;
         try (ServerSocket serverSocket = new ServerSocket(port)) {
@@ -13,19 +18,14 @@ public class CommunicationModule {
             while (true) {
             	//create a thread to deal with the client;
             	Socket clientSocket = serverSocket.accept();
-            	CommunicationAnalyzer coma = new CommunicationAnalyzer(clientSocket, this.rrm, this.dispatcher);
+            	CommunicationAnalyzer commAnalyzer = new CommunicationAnalyzer(clientSocket, this.rrm, this.dispatcher);
             	System.out.println("New connection accepted from IP " + clientSocket.getRemoteSocketAddress().toString());
-	            new Thread(coma).start();
+	            new Thread(commAnalyzer).start();
 	        }
 	    } catch (IOException e) {
             System.err.println("Could not listen on port " + port);
+            e.printStackTrace();
             System.exit(-1);
         }
     }
-
-	CommunicationModule() { }
-	CommunicationModule(RemoteReferenceModule rrm, DispatchingModule dispatcher) {
-		if (rrm != null) this.rrm = rrm;
-		if (dispatcher != null) this.dispatcher = dispatcher;
-	}
 }

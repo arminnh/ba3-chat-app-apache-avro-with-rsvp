@@ -1,0 +1,34 @@
+3.1
+	This structure supports both the Singleton pattern and multiple objects, the only difference lies in the implementation of the register method.
+
+3.3.1
+	The start method will open a server socket that always listens to the given port. When a connection request arrives on that port, the method will create a CommunicationAnalyzer object that will handle the request in a different thread.  
+
+3.3.2
+	The run method will use an ObjectSteam to send and receive messages to and from the client. It will receive RequestMessage objects, use the dispatcher to call the correct method based on the contents of the message, and send a ReplyMessage back to the client.
+
+3.4
+	Initialize the server object (SayHelloObject), RemoteReferenceModule and DispatchingModule.
+	Register the server object into the RemoteReferenceModule.
+	Initialize the CommunicationModule with the RemoteReferenceModule and the DispatchingModule.
+	Start the CommunicationModule.
+	
+	When a connectionrequest arrives on the port given in the program arguments (weet niet zeker hoe je dit juist zegt):
+		Create a new socket to start a connection with the Client.
+		Initialize the CommunicationAnalyzer.
+		Start the CommunicationAnalyzer in a new thread.
+		While the client is sending RequestMessages:
+			Read incoming RequestMessages.
+			Use the RemoteReferenceModule to find the object that Client needs.
+			Use the DispatchingModule to execute the requested command.
+			Send the result to the Client.
+			
+4.1.a
+	
+	
+4.2.b
+	
+	
+4.3
+	
+	
