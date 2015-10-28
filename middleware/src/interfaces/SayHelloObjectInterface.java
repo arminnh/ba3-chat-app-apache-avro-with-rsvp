@@ -1,4 +1,4 @@
-package server;
+package interfaces;
 
 public interface SayHelloObjectInterface {
 	public String sayHello(String name);

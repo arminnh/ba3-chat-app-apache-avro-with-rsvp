@@ -1,5 +1,7 @@
 package client;
 import java.net.*;
+
+import interfaces.SayHelloObjectInterface;
 import server.*; // for SayHelloObject
 
 public class Client {
