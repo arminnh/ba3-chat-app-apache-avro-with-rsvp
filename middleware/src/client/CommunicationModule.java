@@ -3,7 +3,6 @@ import message.*;
 import java.net.*;
 import java.io.*;
 import java.lang.reflect.*;
-import java.util.HashMap;
 
 public class CommunicationModule implements InvocationHandler {
 	private Socket socket = null;

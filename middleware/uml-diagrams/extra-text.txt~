@@ -38,5 +38,4 @@ Create socket to connect to the given IP address.
 Create the communication module and pass the socket to it.
 Create proxy using ProxyLookup's lookup method by passing the interface of the remote object and the communication module.
 Call methods on the proxy object, causing remote invocations.
-Close the socket.
 
