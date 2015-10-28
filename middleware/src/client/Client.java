@@ -1,8 +1,9 @@
 package client;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
-import interfaces.SayHelloObjectInterface;
-import server.*; // for SayHelloObject
+import interfaces.*;
 
 public class Client {
 
@@ -20,9 +21,12 @@ public class Client {
 			
 			// create proxy
 			SayHelloObjectInterface sayHelloProxy = (SayHelloObjectInterface) ProxyLookup.lookup(SayHelloObjectInterface.class, comm);
-
+			SayByeObjectInterface sayByeProxy = (SayByeObjectInterface) ProxyLookup.lookup(SayByeObjectInterface.class, comm);
+			
 			System.out.println(sayHelloProxy.sayHello("Josse"));
 			System.out.println(sayHelloProxy.add(2, 3));
+			
+			System.out.println(sayByeProxy.sayBye("Josse"));
 			
 			socket.close();
 			

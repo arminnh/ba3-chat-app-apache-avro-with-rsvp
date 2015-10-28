@@ -43,7 +43,7 @@ public class CommunicationModule implements InvocationHandler {
 			paramTypes[i] = args[i].getClass();
 		}
 		
-		String className = method.getDeclaringClass().getName();
+		String className = method.getDeclaringClass().getSimpleName();
 		className = className.substring(0, className.length() - 9);
 		
 		RequestMessage requestMessage = new RequestMessage("from: me", className, method.getName(), paramTypes, args);
