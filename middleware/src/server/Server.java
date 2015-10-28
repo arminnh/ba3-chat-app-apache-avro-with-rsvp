@@ -11,9 +11,11 @@ public class Server {
 		}
 		
 		SayHelloObject sayHello = new SayHelloObject();
+		SayByeObject sayBye= new SayByeObject();
 		
 		RemoteReferenceModule rrm = new RemoteReferenceModule();
 		rrm.register(sayHello);
+		rrm.register(sayBye);
 		
 		CommunicationModule comm = new CommunicationModule(rrm, new DispatchingModule());
 		System.out.println("CommunicationModule start()");

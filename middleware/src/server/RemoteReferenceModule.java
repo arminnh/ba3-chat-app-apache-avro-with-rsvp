@@ -12,14 +12,14 @@ public class RemoteReferenceModule {
 	Map<String, Object> remoteObjects = new HashMap<String, Object>();
 	
 	public String register(Object remoteObject) {
-		String name = remoteObject.getClass().getName();
+		String name = remoteObject.getClass().getSimpleName();
 		remoteObjects.put(name, remoteObject);
 		System.out.println("RemoteReferenceModule registered: " + name); 
 		return name;
 	}
 	
 	public Object retrieve(String remoteObjectName) {
-		//System.out.println("RemoteReferenceModule.retrieve: " + remoteObjectName);
+		System.out.println("RemoteReferenceModule.retrieve: " + remoteObjectName);
 		return remoteObjects.get(remoteObjectName);
 	}
 }
