@@ -17,8 +17,7 @@ public class Client {
 			CommunicationModule comm = new CommunicationModule(socket);
 			
 			// create proxy
-			Class<?> sayHelloObjectClass = Class.forName("server.SayHelloObject");
-			SayHelloObjectInterface sayHelloProxy = (SayHelloObjectInterface) ProxyLookup.lookup(sayHelloObjectClass, comm);
+			SayHelloObjectInterface sayHelloProxy = (SayHelloObjectInterface) ProxyLookup.lookup(SayHelloObjectInterface.class, comm);
 
 			System.out.println(sayHelloProxy.sayHello("Josse"));
 			System.out.println(sayHelloProxy.add(2, 3));

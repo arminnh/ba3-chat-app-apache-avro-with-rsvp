@@ -5,11 +5,7 @@ import java.lang.reflect.*;
 public class ProxyLookup {
 	public static Object lookup(Class<?> cl, CommunicationModule communicationModule) {
 		
-		MiddlewareInvocationHandler handler = communicationModule.invocationHandler();
-		
-		Object proxy = Proxy.newProxyInstance(cl.getClassLoader(), new Class<?>[] { cl.getInterfaces()[0] }, handler);
-		
-		communicationModule.setClass(proxy, cl);
+		Object proxy = Proxy.newProxyInstance(cl.getClassLoader(), new Class<?>[] { cl }, communicationModule);
 		
 		return proxy;
 	}

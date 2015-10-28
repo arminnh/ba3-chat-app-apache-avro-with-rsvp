@@ -5,9 +5,11 @@ import java.lang.reflect.Method;
 public class MiddlewareInvocationHandler implements InvocationHandler {
 
 	private CommunicationModule communicationModule;
+	private Class<?> cl;
 	
-	MiddlewareInvocationHandler(CommunicationModule communicationModule) {
+	MiddlewareInvocationHandler(Class<?> cl, CommunicationModule communicationModule) {
 		this.communicationModule = communicationModule;
+		this.cl = cl;
 	}
 	
 	@Override
@@ -16,4 +18,8 @@ public class MiddlewareInvocationHandler implements InvocationHandler {
 		return this.communicationModule.remoteInvocation(proxy, method, args);
 	}
 
+	public Class<?> cl() {
+		return this.cl;
+	}
+	
 }
