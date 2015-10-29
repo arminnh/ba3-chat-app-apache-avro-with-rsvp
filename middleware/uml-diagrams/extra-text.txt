@@ -1,6 +1,10 @@
 3.1
 	This structure supports both the Singleton pattern and multiple objects, the only difference lies in the implementation of the register method.
 
+3.2
+	dispatchCall gets the object's class by calling getClass on it. Then, using Class's getMethod method and the requested method's signature (the method's name and parameter types, which the client needs to specify in a RequestMessage, as can seen above), the requested method is captured in a Method object.
+	By calling the Method object's invoke method, we can invoke the requested method on the server-side object and get its return value. dispatchCall returns the result in a ReplyMessage
+
 3.3.1
 	The start method will open a server socket that always listens to the given port. When a connection request arrives on that port, the method will create a CommunicationAnalyzer object that will handle the request in a different thread.  
 
@@ -13,7 +17,7 @@
 	Initialize the CommunicationModule with the RemoteReferenceModule and the DispatchingModule.
 	Start the CommunicationModule.
 	
-	When a connectionrequest arrives on the port given in the program arguments (weet niet zeker hoe je dit juist zegt):
+	When a connection request arrives on the port given in the program arguments:
 		Create a new socket to start a connection with the Client.
 		Initialize the CommunicationAnalyzer.
 		Start the CommunicationAnalyzer in a new thread.
@@ -24,19 +28,20 @@
 			Send the result to the Client.
 			
 4.1
-The communication module is given an open socket through the constructor and gets the input and output streams from it; ObjectInputStream and ObjectOutputStream in this case.
+	The communication module is given an open socket through the constructor and gets the input and output streams from it: specifically, we use ObjectInputStream and ObjectOutputStream in this case.
+	The run method will send the request message to the server through the output stream, and receive and return the response.
 
 4.2.a
-We use the communication module as the invocation handler. Thus: CommunicationModule implements the InvocationHandler interface. In the concrete implementation of invoke (inherited from InvocationHandler) remoteInvocation is called, where the request message is constructed and is sent to the server.
+	We use the communication module as the invocation handler. Thus: CommunicationModule implements the InvocationHandler interface. In the concrete implementation of invoke (inherited from InvocationHandler) remoteInvocation is called, where the request message is constructed and is sent to the server.
 	
 4.2.b
-The lookup method creates a new proxy using Proxy's static method newProxyInstance, given the class loader, the class itself, and the invocation handler (which is the communication module).
+	The lookup method creates and returns a new proxy using Proxy's static method newProxyInstance, given the class loader, the class itself, and the invocation handler (which is the communication module).
 	
 4.3
-Get host IP address from arguments.
-Create socket to connect to the given IP address.
-Create the communication module and pass the socket to it.
-Create proxy using ProxyLookup's lookup method by passing the interface of the remote object and the communication module.
-Call methods on the proxy object, causing remote invocations.
-Close the socket.
+	Get host IP address from the program arguments.
+	Create socket to connect to the given IP address.
+	Create the communication module and pass the socket to it.
+	Create proxy using ProxyLookup's lookup method by passing the interface of the remote object and the communication module.
+	Call methods on the proxy object, causing remote invocations.
+	Close the socket.
 
