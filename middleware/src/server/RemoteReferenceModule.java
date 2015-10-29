@@ -13,6 +13,12 @@ public class RemoteReferenceModule {
 	
 	public String register(Object remoteObject) {
 		String name = remoteObject.getClass().getSimpleName();
+		
+		if (remoteObjects.containsKey(name)) {
+			// refuse to store more than one object of the same type, since we're using the singleton pattern
+			return name;
+		}
+		
 		remoteObjects.put(name, remoteObject);
 		System.out.println("RemoteReferenceModule registered: " + name); 
 		return name;

@@ -1,5 +1,6 @@
 3.1
-	This structure supports both the Singleton pattern and multiple objects, the only difference lies in the implementation of the register method.
+	RemoteReferenceModule will need a register and a retrieve method. register stores an object in a HashMap and returns the key that a client will need to use in order to access the object. retrieve will return a reference to the object given the key.
+	This structure supports both the Singleton pattern and multiple objects, the only difference lies in the implementation of the register method: it will need to generate a different key for every object stored of the same class.
 
 3.2
 	dispatchCall gets the object's class by calling getClass on it. Then, using Class's getMethod method and the requested method's signature (the method's name and parameter types, which the client needs to specify in a RequestMessage, as can seen above), the requested method is captured in a Method object.
