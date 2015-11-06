@@ -1,0 +1,2 @@
+informatie sturen en ophalen via click voor integratie met server
+    -> gebruik handlers, read en write handlers
