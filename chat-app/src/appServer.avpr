@@ -13,7 +13,7 @@
         },
         "getListOfClients": {
         "request": [],
-        "response": {"type": "array", "items": "string"}
+        "response": {"name": "list", "type": "string"}
         },
         "joinPublicChat": {
         "request": [{"name": "id", "type": "int"}],

@@ -1,4 +1,5 @@
 package server;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
@@ -78,11 +79,13 @@ public class AppServer implements AppServerInterface {
 	}
 
 	@Override
-	public List<CharSequence> getListOfClients() throws AvroRemoteException {
-		List<CharSequence> clients = new ArrayList<CharSequence>();
+	public CharSequence getListOfClients() throws AvroRemoteException {
+		//List<CharSequence> clients = new ArrayList<CharSequence>();
+		String clients = "List of users: \n";
 		
 		for (ClientInfo client : this.connectedClients) {
-			clients.add(client.username);
+			//clients.add(client.username);
+			clients += "\t ID: " + client.id + "\t\tUsername: " + client.username + "\t\tStatus: " + client.status;
 		}
 		
 		return clients;
