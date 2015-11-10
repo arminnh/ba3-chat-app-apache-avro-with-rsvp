@@ -1,0 +1,11 @@
+{
+    "namespace": "chat_app",
+    "protocol": "ClientInterface",
+    
+    "messages" : {
+        "recieveMessage": {
+        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}],
+        "response": "int"
+        }
+    }
+}
