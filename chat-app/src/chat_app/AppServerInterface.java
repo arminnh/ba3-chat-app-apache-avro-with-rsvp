@@ -7,8 +7,8 @@ package chat_app;
 
 @SuppressWarnings("all")
 @org.apache.avro.specific.AvroGenerated
-public interface ServerInterface {
-  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"ServerInterface\",\"namespace\":\"chat_app\",\"types\":[],\"messages\":{\"registerClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"exitClient\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"getListOfClients\":{\"request\":[],\"response\":{\"type\":\"array\",\"items\":\"string\"}},\"joinPublicChat\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"sendMessage\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"exitPublicChat\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"}}}");
+public interface AppServerInterface {
+  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"AppServerInterface\",\"namespace\":\"chat_app\",\"types\":[],\"messages\":{\"registerClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"exitClient\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"getListOfClients\":{\"request\":[],\"response\":{\"type\":\"array\",\"items\":\"string\"}},\"joinPublicChat\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"sendMessage\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"exitPublicChat\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"}}}");
   int registerClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port) throws org.apache.avro.AvroRemoteException;
   int exitClient(int id) throws org.apache.avro.AvroRemoteException;
   java.util.List<java.lang.CharSequence> getListOfClients() throws org.apache.avro.AvroRemoteException;
@@ -17,8 +17,8 @@ public interface ServerInterface {
   int exitPublicChat(int id) throws org.apache.avro.AvroRemoteException;
 
   @SuppressWarnings("all")
-  public interface Callback extends ServerInterface {
-    public static final org.apache.avro.Protocol PROTOCOL = chat_app.ServerInterface.PROTOCOL;
+  public interface Callback extends AppServerInterface {
+    public static final org.apache.avro.Protocol PROTOCOL = chat_app.AppServerInterface.PROTOCOL;
     void registerClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void exitClient(int id, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void getListOfClients(org.apache.avro.ipc.Callback<java.util.List<java.lang.CharSequence>> callback) throws java.io.IOException;

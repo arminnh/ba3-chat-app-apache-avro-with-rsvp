@@ -1,6 +1,6 @@
 {
     "namespace": "chat_app",
-    "protocol": "ServerInterface",
+    "protocol": "AppServerInterface",
     
     "messages" : {
         "registerClient": {

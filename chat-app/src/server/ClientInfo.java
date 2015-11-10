@@ -1,7 +1,7 @@
 package server;
 
 import java.net.InetSocketAddress;
-import chat_app.ClientInterface;
+import chat_app.AppClientInterface;
 
 import org.apache.avro.ipc.*;
 
@@ -17,5 +17,5 @@ public class ClientInfo {
 	public SaslSocketServer socket;
 	
 	//proxy client
-	ClientInterface proxy = null;
+	AppClientInterface proxy = null;
 }
