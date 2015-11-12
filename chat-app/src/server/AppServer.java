@@ -32,22 +32,21 @@ import chat_app.AppClientInterface;
 public class AppServer implements AppServerInterface {
 	//ClientInfo = {username, id, status(enum), proxy object}
 	private List<ClientInfo> connectedClients = new ArrayList<ClientInfo>();
+	private int idCounter = 0;
 
 	@Override
 	public int registerClient(CharSequence username, CharSequence ipaddress, int port) throws AvroRemoteException {
 		ClientInfo client = new ClientInfo();
 		client.username = username;
-		client.id = this.connectedClients.size();
+		client.id = this.idCounter++;
 		client.status = ClientStatus.LOBBY;
-		//client.connection = new InetSocketAddress();
 
 		//proxy client
 		InetAddress addr;
 		Transceiver clientTransceiver;
 		try {
-			//addr = InetAddress.getByName((String) ipaddress);
-			//clientTransceiver = new SaslSocketTransceiver( new InetSocketAddress(addr, port) );
-			clientTransceiver = new SaslSocketTransceiver(new InetSocketAddress(6789));
+			addr = InetAddress.getByName(ipaddress.toString());
+			clientTransceiver = new SaslSocketTransceiver( new InetSocketAddress(addr, port) );
 			client.proxy = (AppClientInterface) SpecificRequestor.getClient(AppClientInterface.class, clientTransceiver);
 		} catch (UnknownHostException e) {	//InetAddress.getByName
 			e.printStackTrace();
@@ -69,10 +68,18 @@ public class AppServer implements AppServerInterface {
 	@Override
 	public int exitClient(int id) throws AvroRemoteException {
 		System.out.println("Removing user with id: " + id);
-		this.connectedClients.remove(id);
+		
+		for (int i = 0; i < this.connectedClients.size(); i++) {
+			ClientInfo clientt = this.connectedClients.get(i);
+			if (clientt.id == id) {
+				this.connectedClients.remove(i);
+				break;
+			}
+		}
+		
 		System.out.println("List of registered clients:");
 		for (ClientInfo clientt : this.connectedClients) {
-			System.out.println("\t ID: " + clientt.id + "\tUsername: " + clientt.username + "\tStatus: " + clientt.status);
+			System.out.println("\tID: " + clientt.id + "\tUsername: " + clientt.username + "\tStatus: " + clientt.status);
 		}
 		System.out.println();
 		return 1;
@@ -80,12 +87,10 @@ public class AppServer implements AppServerInterface {
 
 	@Override
 	public CharSequence getListOfClients() throws AvroRemoteException {
-		//List<CharSequence> clients = new ArrayList<CharSequence>();
 		String clients = "List of users: \n";
 		
 		for (ClientInfo client : this.connectedClients) {
-			//clients.add(client.username);
-			clients += "\t ID: " + client.id + "\t\tUsername: " + client.username + "\t\tStatus: " + client.status;
+			clients += "\tID: " + client.id + "\t\tUsername: " + client.username + "\t\tStatus: " + client.status + "\n";
 		}
 		
 		return clients;
@@ -101,9 +106,19 @@ public class AppServer implements AppServerInterface {
 
 	@Override
 	public int sendMessage(int id, CharSequence message) throws AvroRemoteException {
+		String username = "";
 		for (ClientInfo client : this.connectedClients){
-			//client.proxy.sendMessage()	
-			client.proxy.recieveMessage(message);
+			if (client.id == id) {
+				username = client.username.toString();
+			}
+		}
+		
+		for (ClientInfo client : this.connectedClients){
+			if (client.status == ClientStatus.PUBLICCHAT && client.id != id) {
+				System.out.println("Sending message to id" + client.id);
+				client.proxy.receiveMessage(username + ": " + message);
+				
+			}
 		}
 		return 0;
 	}
@@ -119,9 +134,9 @@ public class AppServer implements AppServerInterface {
 	
 	public static void main(String[] argv) { 
 		org.apache.avro.ipc.Server server = null;
-		
+		AppServer appServer = new AppServer();
 		try {
-			server = new SaslSocketServer( new SpecificResponder(AppServerInterface.class, new AppServer()), new InetSocketAddress(6789) );
+			server = new SaslSocketServer( new SpecificResponder(AppServerInterface.class, appServer), new InetSocketAddress(6789) );
 			System.out.println("Initialized SaslSocketServer");
 		} catch (IOException  e) {
 			System.err.println("[error] Failed to start server");
@@ -130,9 +145,8 @@ public class AppServer implements AppServerInterface {
 		}
 		
 		server.start();
-		System.out.println("Started Server");
 		try {
-			System.out.println("Listening...");
+			//appServer.checkConnectedUsers();
 			server.join();
 		} catch (InterruptedException e) {
 			

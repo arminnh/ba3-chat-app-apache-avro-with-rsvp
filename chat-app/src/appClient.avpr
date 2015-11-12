@@ -3,7 +3,7 @@
     "protocol": "AppClientInterface",
     
     "messages" : {
-        "recieveMessage": {
+        "receiveMessage": {
         "request": [{"name": "message", "type": "string"}],
         "response": "int"
         }
