@@ -11,5 +11,6 @@ public class ClientInfo {
 	public int id;
 	public CharSequence username;
 	public ClientStatus status;
+	public SaslSocketTransceiver transceiver;
 	public AppClientInterface proxy = null;
 }

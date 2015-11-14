@@ -1,7 +1,10 @@
 package server;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -29,7 +32,7 @@ import chat_app.AppClientInterface;
  * 	Een client moet een lijst kunnen opvragen van de verbonden clients.
  * 	Een client moet de publieke chat room kunnen joinen en daarin boodschappen versturen.
 */
-public class AppServer implements AppServerInterface {
+public class AppServer extends TimerTask implements AppServerInterface {
 	//ClientInfo = {username, id, status(enum), proxy object}
 	private List<ClientInfo> connectedClients = new ArrayList<ClientInfo>();
 	private int idCounter = 0;
@@ -43,11 +46,12 @@ public class AppServer implements AppServerInterface {
 
 		//proxy client
 		InetAddress addr;
-		Transceiver clientTransceiver;
 		try {
 			addr = InetAddress.getByName(ipaddress.toString());
-			clientTransceiver = new SaslSocketTransceiver( new InetSocketAddress(addr, port) );
-			client.proxy = (AppClientInterface) SpecificRequestor.getClient(AppClientInterface.class, clientTransceiver);
+			client.transceiver = new SaslSocketTransceiver( new InetSocketAddress(addr, port) );
+			System.out.println("transceiver connected: " + client.transceiver.isConnected());
+			client.proxy = (AppClientInterface) SpecificRequestor.getClient(AppClientInterface.class, client.transceiver);
+			System.out.println("transceiver connected: " + client.transceiver.isConnected());
 		} catch (UnknownHostException e) {	//InetAddress.getByName
 			e.printStackTrace();
 		}catch (IOException e) {			//SaslSocketTransceiver and SpecificRequestor
@@ -131,10 +135,38 @@ public class AppServer implements AppServerInterface {
 		return 0;
 	}
 
+	public void checkConnectedList() {
+		System.out.println("checkConnectedList, connected users: " + this.connectedClients.size());
+		
+		for (Iterator<ClientInfo> iterator = this.connectedClients.iterator(); iterator.hasNext();) {
+			ClientInfo client = iterator.next();
+			//.isConnected() geeft altijd false fuck al die retarded fucking isConnected functies da ni werke LKJHUfgdsokljgsd<ykFÖQHGBEV,ANJKGVFGHJKPÖAFESIÖZ HGUJKLHZDFS ÖUKLJHÖZFDVGJKHBASDFHVAFRHGLDVÖHIKSCRAHGIWRFQLGIYHEWQFÖHGIFQWREYHGI 
+			if (!client.transceiver.isConnected()) {
+				/*
+				System.out.println("User: " + client.username + " disconnected. Removed from list.");
+				System.out.println("client.transceiver.getRemoteName(): " + client.transceiver.getRemoteName());
+				try {
+					client.proxy.receiveMessage("yo");
+				} catch (AvroRemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				*/
+				
+				//iterator.remove();
+			}
+		}
+	}
+	
+	public void run() {
+		this.checkConnectedList();
+	}
 	
 	public static void main(String[] argv) { 
-		org.apache.avro.ipc.Server server = null;
+		Server server = null;
 		AppServer appServer = new AppServer();
+		Timer timer = new Timer();
+		
 		try {
 			server = new SaslSocketServer( new SpecificResponder(AppServerInterface.class, appServer), new InetSocketAddress(6789) );
 			System.out.println("Initialized SaslSocketServer");
@@ -145,6 +177,8 @@ public class AppServer implements AppServerInterface {
 		}
 		
 		server.start();
+		timer.schedule(appServer, 0, 5000);
+		
 		try {
 			//appServer.checkConnectedUsers();
 			server.join();
