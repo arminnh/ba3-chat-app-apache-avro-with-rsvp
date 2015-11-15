@@ -5,6 +5,10 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+
 import asg.cliche.Command;
 import asg.cliche.ShellFactory;
 import org.apache.avro.AvroRemoteException;
@@ -15,6 +19,7 @@ import org.apache.avro.ipc.Transceiver;
 import org.apache.avro.ipc.specific.SpecificRequestor;
 import org.apache.avro.ipc.specific.SpecificResponder;
 
+import java.util.Enumeration;
 import java.util.Scanner;
 
 import chat_app.AppServerInterface;
@@ -110,8 +115,37 @@ public class AppClient implements AppClientInterface {
 		//Get hosts ipadress by:
 		//	InetAddress addr = new InetAddress.getLocalHost();
 		String hostIpAddress = "0.0.0.0";
-		int port = 6789, clientPort = 1234;
-		 
+		int port = 6789, clientPort = 2345;
+
+		// http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
+		try {
+			InetAddress IP = InetAddress.getLocalHost();
+			System.out.println(IP.getHostAddress());
+			System.out.println(IP.toString());
+	        System.out.println("i.isAnyLocalAddress(): " + IP.isAnyLocalAddress());
+	        System.out.println("i.isLinkLocalAddress(): " + IP.isLinkLocalAddress());
+	        System.out.println("i.isLoopbackAddress(): " + IP.isLoopbackAddress() + "\n");
+			
+			Enumeration e = NetworkInterface.getNetworkInterfaces();
+			while(e.hasMoreElements()) {
+			    NetworkInterface n = (NetworkInterface) e.nextElement();
+			    Enumeration ee = n.getInetAddresses();
+			    while (ee.hasMoreElements()) {
+			        InetAddress i = (InetAddress) ee.nextElement();
+			        System.out.println(i.getHostAddress());
+			        System.out.println("i.isAnyLocalAddress(): " + i.isAnyLocalAddress());
+			        System.out.println("i.isLinkLocalAddress(): " + i.isLinkLocalAddress());
+			        System.out.println("i.isLoopbackAddress(): " + i.isLoopbackAddress());
+					System.out.println();
+			    }
+			}
+			
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		} catch (SocketException e1) {
+			e1.printStackTrace();
+		}
+		
 		String username;
 		Scanner in = new Scanner(System.in);
 		System.out.println("Enter your username.");
@@ -147,7 +181,8 @@ public class AppClient implements AppClientInterface {
 				}
 			}
 
-			appServer.registerClient(username,  hostIpAddress,  clientPort);
+			//appServer.registerClient(username,  hostIpAddress,  clientPort);
+			clientRequester.register(username);
 			System.out.println("Welcome to Chat App, type ?list to get a list of available commands.");
 	        ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
 			System.out.println("Client exit program.");
