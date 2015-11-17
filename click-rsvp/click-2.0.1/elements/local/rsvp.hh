@@ -1,6 +1,10 @@
 #ifndef CLICK_RSVP_HH
 #define CLICK_RSVP_HH
 
+#include <click/element.hh>
+
+CLICK_DECLS
+
 #define RSVP_MSG_PATH		    1
 #define RSVP_MSG_RESV		    2
 #define RSVP_MSG_PATHERR		3
@@ -103,7 +107,11 @@ struct RSVPResvConfirmClass { // class num = 15, C-type = 1
 	in_addr receiver_address;
 };
 
+size_t sizeofRSVPClass(uint16_t class_num, uint16_t c_type);
+
 void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL);
-void initRSVPObjectHeader()
+void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
+
+CLICK_ENDDECLS
 
 #endif
