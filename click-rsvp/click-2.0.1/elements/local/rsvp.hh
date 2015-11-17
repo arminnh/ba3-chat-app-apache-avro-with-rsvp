@@ -1,8 +1,31 @@
-#ifndef CLICK_RSVPElement_HH
-#define CLICK_RSVPElement_HH
-#include <click/element.hh>
-#include <clicknet/ip.h>
-CLICK_DECLS
+#ifndef CLICK_RSVP_HH
+#define CLICK_RSVP_HH
+
+#define RSVP_MSG_PATH		    1
+#define RSVP_MSG_RESV		    2
+#define RSVP_MSG_PATHERR		3
+#define RSVP_MSG_RESVERR		4
+#define RSVP_MSG_PATHTEAR		5
+#define RSVP_MSG_RESVTEAR		6
+#define RSVP_MSG_RESVCONF		7
+
+
+#define RSVP_CLASS_NULL                 0
+#define RSVP_CLASS_SESSION              1
+#define RSVP_CLASS_RSVP_HOP             3
+#define RSVP_CLASS_INTEGRITY            4
+#define RSVP_CLASS_TIME_VALUES          5
+#define RSVP_CLASS_ERROR_SPEC           6
+#define RSVP_CLASS_STYLE                8
+#define RSVP_CLASS_SCOPE                7
+#define RSVP_CLASS_FLOWSPEC             9
+#define RSVP_CLASS_FILTER_SPEC          10
+#define RSVP_CLASS_SENDER_TEMPLATE      11
+#define RSVP_CLASS_SENDER_TSPEC         12
+//ADSPEC NIET
+#define RSVP_CLASS_ADSPEC               13
+#define RSVP_CLASS_POLICY_DATA          14
+#define RSVP_CLASS_RESV_CONFIRM         15
 
 struct RSVPCommonHeader {
 	// RSVPCommonHeader() : vers(1), flags(0), RSVP_checksum(0), reserved(0) {}
@@ -76,29 +99,11 @@ typedef RSVPFilterSpecClass RSVPSenderTemplateClass; // class num = 11, C-type =
 // RSVPSenderTSpecClass class num = 12, C-type = 2
 // RSVPPolicyData class num = 14, C-type = 1
 
-struct RSVPResvConfirm { // class num = 15, C-type = 1
+struct RSVPResvConfirmClass { // class num = 15, C-type = 1
 	in_addr receiver_address;
 };
 
-class RSVPElement : public Element {
-	public:
-		RSVPElement();
-		~RSVPElement();
+void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL);
+void initRSVPObjectHeader()
 
-		const char *class_name() const	{ return "RSVPElement"; }
-		const char *port_count() const	{ return "1/1"; }
-		const char *processing() const	{ return "h/h"; }
-		int configure(Vector<String>&, ErrorHandler*);
-
-		void push(int, Packet *);
-		Packet* pull(int);
-
-    static int handle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-    static String handle2(Element *e, void * thunk);
-    void add_handlers();
-	private:
-
-};
-
-CLICK_ENDDECLS
 #endif
