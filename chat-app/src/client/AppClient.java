@@ -151,6 +151,12 @@ public class AppClient implements AppClientInterface {
 		System.out.println("Enter your username.");
 		username = in.nextLine();
 
+		System.out.println("Enter the IP address of the server.");
+		InetSocketAddress serverIP = new InetSocketAddress(in.nextLine(), port);
+		
+		System.out.println("Enter the public IP address the server will need to connect to.");
+		hostIpAddress = in.nextLine();
+		
 		Server clientResponder = null;
 		AppClient clientRequester = null;
 		try {
@@ -158,7 +164,7 @@ public class AppClient implements AppClientInterface {
 			//addr = InetAddress.getByName(ipaddress);
 			//client = new SaslSocketTransceiver( new InetSocketAddress(addr, port) );
 			
-			SaslSocketTransceiver transceiver = new SaslSocketTransceiver(new InetSocketAddress(port));
+			SaslSocketTransceiver transceiver = new SaslSocketTransceiver(serverIP);
 			System.out.println("transceiver connected: " + transceiver.isConnected());
 			System.out.println("transceiver.getRemoteName(): " + transceiver.getRemoteName());
 			AppServerInterface appServer = (AppServerInterface) SpecificRequestor.getClient(AppServerInterface.class, transceiver);
