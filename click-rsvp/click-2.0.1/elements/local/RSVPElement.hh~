@@ -5,7 +5,7 @@
 CLICK_DECLS
 
 struct RSVPCommonHeader {
-	// RSVPCommonHeader() : vers(1), flags(0), RSVP_checksum(0), reserved(0) {}
+	RSVPCommonHeader() : vers(1), flags(0), RSVP_checksum(0), reserved(0) {}
 	unsigned    vers : 4;
 	unsigned    flags : 4;
 	uint8_t     msg_type;
