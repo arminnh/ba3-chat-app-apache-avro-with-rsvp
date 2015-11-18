@@ -56,7 +56,7 @@ struct  __attribute__((packed)) RSVPObjectHeader {
 };
 
 struct __attribute__((packed)) RSVPSession { // class num = 1, C-type = 1
-	//RSVPObjectHeader header;
+	RSVPObjectHeader header;
 	in_addr IPv4_dest_address;
 	uint8_t protocol_id;
 	uint8_t flags; // 0x01 = E_Police flag

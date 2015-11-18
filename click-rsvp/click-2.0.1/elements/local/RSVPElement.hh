@@ -49,13 +49,13 @@ struct RSVPCommonHeader {
 	uint16_t    RSVP_length;
 };
 
-struct  __attribute__((packed)) RSVPObjectHeader {
+struct RSVPObjectHeader {
 	uint16_t length;
 	uint8_t class_num;
 	uint8_t c_type;
 };
 
-struct __attribute__((packed)) RSVPSession { // class num = 1, C-type = 1
+struct RSVPSession { // class num = 1, C-type = 1
 	RSVPObjectHeader header;
 	in_addr IPv4_dest_address;
 	uint8_t protocol_id;

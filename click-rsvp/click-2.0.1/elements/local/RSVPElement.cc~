@@ -60,10 +60,7 @@ void initRSVPCommonHeader(RSVPCommonHeader* header, uint8_t msg_type, uint8_t se
 
 void initRSVPObjectHeader(RSVPObjectHeader* header, uint8_t class_num, uint8_t c_type)
 {
-	if (class_num == RSVP_CLASS_SESSION) {
-		click_chatter("session object size: %d", sizeofRSVPObject(class_num, c_type));
-		click_chatter("header size: %d", sizeof(RSVPObjectHeader));
-	}
+	
 	header->length = htons(sizeofRSVPObject(class_num, c_type));
 	header->class_num = class_num;
 	header->c_type = c_type;
@@ -100,7 +97,7 @@ void initRSVPTimeValues(RSVPTimeValues* timeValues, uint32_t refresh_period_r)
 {
 	initRSVPObjectHeader(&timeValues->header, RSVP_CLASS_TIME_VALUES, 1);
 
-	timeValues->refresh_period_r = refresh_period_r;
+	timeValues->refresh_period_r = htonl(refresh_period_r);
 
 	return;
 }
@@ -110,7 +107,7 @@ void initRSVPStyle(RSVPStyle* style)
 	initRSVPObjectHeader(&style->header, RSVP_CLASS_STYLE, 1);
 
 	style->flags = 0;
-	style->option_vector = 0x10; // three rightmost bits: 010 for explicit sender selection, next two bits: 01 for distinct reservations
+	style->option_vector = htons(10) >> 8; // three rightmost bits: 010 for explicit sender selection, next two bits: 01 for distinct reservations
 
 	return;
 }
@@ -122,9 +119,6 @@ RSVPElement::~ RSVPElement()
 {}
 
 int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
-	if (conf.size() > 0)
-		return errh->error("Only empty configuraion string");
-	
 	return 0;
 }
 
@@ -205,9 +199,9 @@ Packet* RSVPElement::createResvMessage() {
 	RSVPStyle* style               = (RSVPStyle *)        (timeValues   + 1);
 	
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_RESV, 250);
-	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, htons(1));
 	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
-	initRSVPTimeValues(timeValues, 5000);
+	initRSVPTimeValues(timeValues, UINT32_MAX);
 	initRSVPStyle(style);
 	
 	commonHeader->RSVP_length = htons(packetSize);
