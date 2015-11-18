@@ -30,7 +30,7 @@ CLICK_DECLS
 //ADSPEC NIET
 #define RSVP_CLASS_ADSPEC               13 //
 #define RSVP_CLASS_POLICY_DATA          14 // [path], [resv], [perr], [rerr]
-#define RSVP_CLASS_RESV_CONF         15 // [resv], rconf
+#define RSVP_CLASS_RESV_CONF            15 // [resv], rconf
 
 struct RSVPCommonHeader {
 	// RSVPCommonHeader() : vers(1), flags(0), RSVP_checksum(0), reserved(0) {}
@@ -130,6 +130,8 @@ void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_
 void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);
 void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
+void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+void initRSVPResvConf(RSVPResvConf*, in_addr
 
 class RSVPElement : public Element {
 public:
@@ -152,6 +154,12 @@ public:
 	
 	Packet* createResvMessage();
 	Packet* createPathMessage();
+	Packet* createPathErrMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	Packet* createResvErrMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	Packet* createPathTearMessage();
+	Packet* createResvTearMessage();
+	Packet* createResvConfMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	
 private:
 	Timer _timer;
 };

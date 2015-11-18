@@ -130,6 +130,8 @@ void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_
 void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);
 void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
+void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+void initRSVPResvConf(RSVPResvConf*, in_addr receiverAddress);
 
 class RSVPElement : public Element {
 public:
@@ -152,6 +154,12 @@ public:
 	
 	Packet* createResvMessage();
 	Packet* createPathMessage();
+	Packet* createPathErrMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	Packet* createResvErrMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	Packet* createPathTearMessage();
+	Packet* createResvTearMessage();
+	Packet* createResvConfMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	
 private:
 	Timer _timer;
 };

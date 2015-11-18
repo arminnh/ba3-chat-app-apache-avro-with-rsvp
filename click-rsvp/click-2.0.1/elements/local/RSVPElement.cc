@@ -128,14 +128,13 @@ int RSVPElement::initialize(ErrorHandler* errh) {
 }
 
 void RSVPElement::run_timer(Timer *) {
-	static bool resv = true;
-	if (resv) {
-		output(0).push(createResvMessage());
-	} else {
-		output(0).push(createPathMessage());
-	}
-	
-	resv = !resv;
+	output(0).push(createResvMessage());
+	output(0).push(createPathMessage());
+	output(0).push(createPathErrMessage(true, true, 5, 6));
+	output(0).push(createResvErrMessage(true, true, 7, 8));
+	output(0).push(createPathTearMessage());
+	output(0).push(createResvTearMessage());
+	output(0).push(createResvConfMessage(true, true, 9, 10));
 	
 	_timer.reschedule_after_msec(1000);
 	
@@ -262,11 +261,11 @@ Packet* RSVPElement::createPathErrMessage(bool inPlace, bool notGuilty, uint8_t 
 	
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
-	RSVPErrorSpec* errorSpec       = (RSVPTimeValues *)   (session      + 1);
+	RSVPErrorSpec* errorSpec       = (RSVPErrorSpec *)    (session      + 1);
 	
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATHERR, 250, packetSize);
 	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
-	initRSVPErrorSpec(errorSpec, IPAddress("1.3.2.4").in_addr(), inPlace, notGuilty, errorCode);
+	initRSVPErrorSpec(errorSpec, IPAddress("1.3.2.4").in_addr(), inPlace, notGuilty, errorCode, errorValue);
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
 	
@@ -299,7 +298,7 @@ Packet* RSVPElement::createResvErrMessage(bool inPlace, bool notGuilty, uint8_t 
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_RESVERR, 250, packetSize);
 	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
 	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
-	initRSVPErrorSpec(errorSpec, IPAddress("1.3.2.4").in_addr(), inPlace, notGuilty, errorCode);
+	initRSVPErrorSpec(errorSpec, IPAddress("1.3.2.4").in_addr(), inPlace, notGuilty, errorCode, errorValue);
 	initRSVPStyle(style);
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
@@ -354,7 +353,7 @@ Packet* RSVPElement::createResvTearMessage()
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
 	RSVPHop* hop                   = (RSVPHop *)          (session      + 1);
-	RSVPStyle* style               = (RSVPStyle *)        (errorSpec    + 1);
+	RSVPStyle* style               = (RSVPStyle *)        (hop          + 1);
 	
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_RESVTEAR, 250, packetSize);
 	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
@@ -366,7 +365,7 @@ Packet* RSVPElement::createResvTearMessage()
 	return message;
 }
 
-Packet* RSVPElement::createResvConfMessage()
+Packet* RSVPElement::createResvConfMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue)
 {
 	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
@@ -391,7 +390,7 @@ Packet* RSVPElement::createResvConfMessage()
 	
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_RESVCONF, 250, packetSize);
 	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
-	initRSVPErrorSpec(errorSpec, IPAddress("1.3.2.4").in_addr(), inPlace, notGuilty, errorCode);
+	initRSVPErrorSpec(errorSpec, IPAddress("1.3.2.4").in_addr(), inPlace, notGuilty, errorCode, errorValue);
 	initRSVPResvConf(resvConf, IPAddress("1.3.2.4").in_addr());
 	initRSVPStyle(style);
 	
