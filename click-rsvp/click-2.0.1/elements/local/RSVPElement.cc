@@ -180,7 +180,7 @@ void RSVPElement::add_handlers() {
 	add_read_handler("b", &handle2, (void *)0);
 }
 
-Packet* RSVPElement::createMessage(uint8_t msg_type) {
+Packet* RSVPElement::createResvMessage() {
 	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +

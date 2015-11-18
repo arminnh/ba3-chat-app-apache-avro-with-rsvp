@@ -182,10 +182,10 @@ void RSVPElement::add_handlers() {
 
 Packet* RSVPElement::createMessage(uint8_t msg_type) {
 	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
-	uint16_t packetSize =
-		sizeof(RSVPCommonHeader) +
-		sizeof(RSVPSession) +
-		sizeof(RSVPHop) +
+	uint16_t packetSize = sizeof(RSVPCommonHeader) + sizeof(RSVPSession);
+	packetSize += 
+		msg_type != RSVP_MSG_PATHERR && msg_type != RSVP_MSG_RESVCONF ? sizeof(RSVPHop) : 0;
+		 +
 		sizeof(RSVPTimeValues) +
 		sizeof(RSVPStyle);
 	unsigned tailroom = 0;

@@ -21,10 +21,10 @@ CLICK_DECLS
 #define RSVP_CLASS_INTEGRITY            4 // [all]
 #define RSVP_CLASS_TIME_VALUES          5 // path, resv
 #define RSVP_CLASS_ERROR_SPEC           6 // perr, rerr, rconf
-#define RSVP_CLASS_STYLE                8 // resv, rtear, rerr
+#define RSVP_CLASS_STYLE                8 // resv, rtear, rerr, rconf
 #define RSVP_CLASS_SCOPE                7 // [resv], [rtear], [rerr]
-#define RSVP_CLASS_FLOWSPEC             9 // [resv], [rtear], [[rerr]]
-#define RSVP_CLASS_FILTER_SPEC          10 // [resv], [rtear], [rerr]
+#define RSVP_CLASS_FLOWSPEC             9 // [resv], [rtear], [[rerr]], [[rconf]]
+#define RSVP_CLASS_FILTER_SPEC          10 // [resv], [rtear], [rerr], [rconf]
 #define RSVP_CLASS_SENDER_TEMPLATE      11 // [path], [ptear], [perr]
 #define RSVP_CLASS_SENDER_TSPEC         12 // [path], [ptear], [perr]
 //ADSPEC NIET
