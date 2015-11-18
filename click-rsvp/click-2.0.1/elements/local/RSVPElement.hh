@@ -30,7 +30,7 @@ CLICK_DECLS
 //ADSPEC NIET
 #define RSVP_CLASS_ADSPEC               13 //
 #define RSVP_CLASS_POLICY_DATA          14 // [path], [resv], [perr], [rerr]
-#define RSVP_CLASS_RESV_CONFIRM         15 // [resv], rconf
+#define RSVP_CLASS_RESV_CONF            15 // [resv], rconf
 
 struct RSVPCommonHeader {
 	// RSVPCommonHeader() : vers(1), flags(0), RSVP_checksum(0), reserved(0) {}
@@ -118,7 +118,7 @@ typedef RSVPFilterSpec RSVPSenderTemplate; // class num = 11, C-type = 1
 // RSVPSenderTSpec class num = 12, C-type = 2
 // RSVPPolicyData class num = 14, C-type = 1
 
-struct RSVPResvConfirm { // class num = 15, C-type = 1
+struct RSVPResvConf { // class num = 15, C-type = 1
 	in_addr receiver_address;
 };
 
