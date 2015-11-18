@@ -180,6 +180,37 @@ void RSVPElement::add_handlers() {
 	add_read_handler("b", &handle2, (void *)0);
 }
 
+Packet* RSVPElement::createPathMessage()
+{
+	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+	uint16_t packetSize =
+		sizeof(RSVPCommonHeader) +
+		sizeof(RSVPSession) +
+		sizeof(RSVPHop) +
+		sizeof(RSVPTimeValues);
+	unsigned tailroom = 0;
+	
+	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
+	
+	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
+	
+	memset(message->data(), 0, message->length());
+	
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
+	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
+	RSVPHop* hop                   = (RSVPHop *)          (session      + 1);
+	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
+	
+	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, 250, packetSize);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
+	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
+	initRSVPTimeValues(timeValues, UINT32_MAX);
+	
+	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
+	
+	return message;
+}
+
 Packet* RSVPElement::createResvMessage() {
 	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
@@ -213,7 +244,129 @@ Packet* RSVPElement::createResvMessage() {
 	return message;
 }
 
-Packet* RSVPElement::createPathMessage()
+Packet* RSVPElement::createPathErrMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue)
+{
+
+	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+	uint16_t packetSize =
+		sizeof(RSVPCommonHeader) +
+		sizeof(RSVPSession) +
+		sizeof(RSVPErrorSpec);
+	unsigned tailroom = 0;
+	
+	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
+	
+	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
+	
+	memset(message->data(), 0, message->length());
+	
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
+	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
+	RSVPErrorSpec* errorSpec       = (RSVPTimeValues *)   (session      + 1);
+	
+	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, 250, packetSize);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
+	initRSVPErrorSpec(errorSpec, IPAddress("1.3.2.4").in_addr(), inPlace, notGuilty, errorCode);
+	
+	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
+	
+	return message;
+}
+
+Packet* RSVPElement::createResvErrMessage()
+{
+	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+	uint16_t packetSize =
+		sizeof(RSVPCommonHeader) +
+		sizeof(RSVPSession) +
+		sizeof(RSVPHop) +
+		sizeof(RSVPTimeValues);
+	unsigned tailroom = 0;
+	
+	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
+	
+	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
+	
+	memset(message->data(), 0, message->length());
+	
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
+	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
+	RSVPHop* hop                   = (RSVPHop *)          (session      + 1);
+	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
+	
+	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, 250, packetSize);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
+	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
+	initRSVPTimeValues(timeValues, UINT32_MAX);
+	
+	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
+	
+	return message;
+}
+
+Packet* RSVPElement::createPathTearMessage()
+{
+	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+	uint16_t packetSize =
+		sizeof(RSVPCommonHeader) +
+		sizeof(RSVPSession) +
+		sizeof(RSVPHop) +
+		sizeof(RSVPTimeValues);
+	unsigned tailroom = 0;
+	
+	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
+	
+	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
+	
+	memset(message->data(), 0, message->length());
+	
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
+	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
+	RSVPHop* hop                   = (RSVPHop *)          (session      + 1);
+	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
+	
+	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, 250, packetSize);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
+	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
+	initRSVPTimeValues(timeValues, UINT32_MAX);
+	
+	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
+	
+	return message;
+}
+
+Packet* RSVPElement::createResvTearMessage()
+{
+	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+	uint16_t packetSize =
+		sizeof(RSVPCommonHeader) +
+		sizeof(RSVPSession) +
+		sizeof(RSVPHop) +
+		sizeof(RSVPTimeValues);
+	unsigned tailroom = 0;
+	
+	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
+	
+	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
+	
+	memset(message->data(), 0, message->length());
+	
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
+	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
+	RSVPHop* hop                   = (RSVPHop *)          (session      + 1);
+	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
+	
+	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, 250, packetSize);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
+	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
+	initRSVPTimeValues(timeValues, UINT32_MAX);
+	
+	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
+	
+	return message;
+}
+
+Packet* RSVPElement::createResvConfMessage()
 {
 	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
