@@ -119,6 +119,7 @@ typedef RSVPFilterSpec RSVPSenderTemplate; // class num = 11, C-type = 1
 // RSVPPolicyData class num = 14, C-type = 1
 
 struct RSVPResvConf { // class num = 15, C-type = 1
+	RSVPObjectHeader header;
 	in_addr receiver_address;
 };
 

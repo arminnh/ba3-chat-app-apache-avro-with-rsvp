@@ -38,7 +38,11 @@ size_t sizeofRSVPObject(uint16_t class_num, uint16_t c_type)
 	case 11:
 		size = sizeof(RSVPSenderTemplate);
 		break;
+	case 15:
+		size = sizeof(RSVPResvConf);
+		break;
 	default:
+		printf("sizeofRSVPClass: requesting size of undefined class num %d", class_num);
 		throw std::runtime_error("sizeofRSVPClass: requesting size of undefined class num");
 	}
 
@@ -109,6 +113,25 @@ void initRSVPStyle(RSVPStyle* style)
 	style->flags = 0;
 	style->option_vector = htons(10) << 8; // three rightmost bits: 010 for explicit sender selection, next two bits: 01 for distinct reservations
 
+	return;
+}
+
+void initRSVPErrorSpec(RSVPErrorSpec* errorSpec, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue) {
+	initRSVPObjectHeader(&errorSpec->header, RSVP_CLASS_ERROR_SPEC, 1);
+	
+	errorSpec->IPv4_error_node_address = error_node_address;
+	errorSpec->flags = 0;
+	
+	errorSpec->flags |= (inPlace ? 0x1 : 0x0) | (notGuilty ? 0x2 : 0x0);
+	errorSpec->error_code = errorCode;
+	errorSpec->error_value = errorValue;
+}
+
+void initRSVPResvConf(RSVPResvConf* resvConf, in_addr receiverAddress) {
+	initRSVPObjectHeader(&resvConf->header, RSVP_CLASS_RESV_CONF, 1);
+	
+	resvConf->receiver_address = receiverAddress;
+	
 	return;
 }
 

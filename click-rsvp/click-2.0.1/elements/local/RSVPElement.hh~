@@ -131,7 +131,7 @@ void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_i
 void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
 void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
-void initRSVPResvConf(RSVPResvConf*, in_addr
+void initRSVPResvConf(RSVPResvConf*, in_addr receiverAddress);
 
 class RSVPElement : public Element {
 public:
