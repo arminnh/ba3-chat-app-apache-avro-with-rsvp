@@ -2,6 +2,8 @@
 #define CLICK_RSVPElement_HH
 #include <click/element.hh>
 #include <clicknet/ip.h>
+#include <clicknet/ether.h>
+#include <click/timer.hh>
 CLICK_DECLS
 
 #define RSVP_MSG_PATH		    1
@@ -32,8 +34,14 @@ CLICK_DECLS
 
 struct RSVPCommonHeader {
 	// RSVPCommonHeader() : vers(1), flags(0), RSVP_checksum(0), reserved(0) {}
+
+#if CLICK_BYTE_ORDER == CLICK_BIG_ENDIAN
 	unsigned    vers : 4;
 	unsigned    flags : 4;
+#elif CLICK_BYTE_ORDER == CLICK_LITTLE_ENDIAN
+	unsigned    flags : 4;
+	unsigned    vers : 4;
+#endif
 	uint8_t     msg_type;
 	uint16_t    RSVP_checksum;
 	uint8_t     send_TTL;
@@ -41,13 +49,13 @@ struct RSVPCommonHeader {
 	uint16_t    RSVP_length;
 };
 
-struct RSVPObjectHeader {
+struct  __attribute__((packed)) RSVPObjectHeader {
 	uint16_t length;
 	uint8_t class_num;
 	uint8_t c_type;
 };
 
-struct RSVPSession { // class num = 1, C-type = 1
+struct __attribute__((packed)) RSVPSession { // class num = 1, C-type = 1
 	RSVPObjectHeader header;
 	in_addr IPv4_dest_address;
 	uint8_t protocol_id;
@@ -124,23 +132,28 @@ void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
 
 class RSVPElement : public Element {
-	public:
-		RSVPElement();
-		~RSVPElement();
+public:
+	RSVPElement();
+	~RSVPElement();
 
-		const char *class_name() const	{ return "RSVPElement"; }
-		const char *port_count() const	{ return "1/1"; }
-		const char *processing() const	{ return "h/h"; }
-		int configure(Vector<String>&, ErrorHandler*);
+	const char *class_name() const	{ return "RSVPElement"; }
+	const char *port_count() const	{ return "0/1"; }
+	const char *processing() const	{ return "h/h"; }
+	int configure(Vector<String>&, ErrorHandler*);
+	int initialize(ErrorHandler *);
+	void run_timer(Timer *);
 
-		void push(int, Packet *);
-		Packet* pull(int);
+	void push(int, Packet *);
+	Packet* pull(int);
 
-    static int handle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-    static String handle2(Element *e, void * thunk);
-    void add_handlers();
-	private:
-
+	static int sendHandler(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static String handle2(Element *e, void * thunk);
+	void add_handlers();
+	
+	Packet* createResvMessage();
+	Packet* createPathMessage();
+private:
+	Timer _timer;
 };
 
 CLICK_ENDDECLS
