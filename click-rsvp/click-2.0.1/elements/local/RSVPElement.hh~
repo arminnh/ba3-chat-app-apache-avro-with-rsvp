@@ -15,22 +15,22 @@ CLICK_DECLS
 #define RSVP_MSG_RESVCONF		7
 
 
-#define RSVP_CLASS_NULL                 0
-#define RSVP_CLASS_SESSION              1
-#define RSVP_CLASS_RSVP_HOP             3
-#define RSVP_CLASS_INTEGRITY            4
-#define RSVP_CLASS_TIME_VALUES          5
-#define RSVP_CLASS_ERROR_SPEC           6
-#define RSVP_CLASS_STYLE                8
-#define RSVP_CLASS_SCOPE                7
-#define RSVP_CLASS_FLOWSPEC             9
-#define RSVP_CLASS_FILTER_SPEC          10
-#define RSVP_CLASS_SENDER_TEMPLATE      11
-#define RSVP_CLASS_SENDER_TSPEC         12
+#define RSVP_CLASS_NULL                 0 //
+#define RSVP_CLASS_SESSION              1 // all
+#define RSVP_CLASS_RSVP_HOP             3 // path, resv, ptear, rtear, rerr
+#define RSVP_CLASS_INTEGRITY            4 // [all]
+#define RSVP_CLASS_TIME_VALUES          5 // path, resv
+#define RSVP_CLASS_ERROR_SPEC           6 // perr, rerr
+#define RSVP_CLASS_STYLE                8 // resv, rtear, rerr
+#define RSVP_CLASS_SCOPE                7 // [resv], [rtear], [rerr]
+#define RSVP_CLASS_FLOWSPEC             9 // [resv], [rtear], [[rerr]]
+#define RSVP_CLASS_FILTER_SPEC          10 // [resv], [rtear], [rerr]
+#define RSVP_CLASS_SENDER_TEMPLATE      11 // [path], [ptear], [perr]
+#define RSVP_CLASS_SENDER_TSPEC         12 // [path], [ptear], [perr]
 //ADSPEC NIET
-#define RSVP_CLASS_ADSPEC               13
-#define RSVP_CLASS_POLICY_DATA          14
-#define RSVP_CLASS_RESV_CONFIRM         15
+#define RSVP_CLASS_ADSPEC               13 //
+#define RSVP_CLASS_POLICY_DATA          14 // [path], [resv], [perr], [rerr]
+#define RSVP_CLASS_RESV_CONFIRM         15 // [resv]
 
 struct RSVPCommonHeader {
 	// RSVPCommonHeader() : vers(1), flags(0), RSVP_checksum(0), reserved(0) {}
@@ -124,7 +124,7 @@ struct RSVPResvConfirm { // class num = 15, C-type = 1
 
 size_t sizeofRSVPObject(uint16_t class_num, uint16_t c_type);
 
-void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL);
+void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
 void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
 void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_id, bool police);
 void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);
