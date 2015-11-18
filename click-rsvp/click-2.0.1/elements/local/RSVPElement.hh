@@ -124,7 +124,7 @@ struct RSVPResvConfirm { // class num = 15, C-type = 1
 
 size_t sizeofRSVPObject(uint16_t class_num, uint16_t c_type);
 
-void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL);
+void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
 void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
 void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_id, bool police);
 void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);

@@ -45,7 +45,7 @@ size_t sizeofRSVPObject(uint16_t class_num, uint16_t c_type)
 	return size;
 }
 
-void initRSVPCommonHeader(RSVPCommonHeader* header, uint8_t msg_type, uint8_t send_TTL)
+void initRSVPCommonHeader(RSVPCommonHeader* header, uint8_t msg_type, uint8_t send_TTL, uint16_t length)
 {
 	header->vers = 1;
 	header->flags = 0;
@@ -53,7 +53,7 @@ void initRSVPCommonHeader(RSVPCommonHeader* header, uint8_t msg_type, uint8_t se
 	header->send_TTL = send_TTL;
 	header->RSVP_checksum = 0;
 	header->reserved = 0;
-	header->RSVP_length = 0;
+	header->RSVP_length = htons(length);
 
 	return;
 }
@@ -78,7 +78,7 @@ void initRSVPSession(RSVPSession* session, in_addr destinationAddress, uint8_t p
 	if (police) {
 		session->flags |= 0x01;
 	}
-	session->dst_port = dst_port;
+	session->dst_port = htons(dst_port);
 
 	return;
 }
@@ -131,7 +131,11 @@ void RSVPElement::run_timer(Timer *) {
 	static bool resv = true;
 	if (resv) {
 		output(0).push(createResvMessage());
+	} else {
+		output(0).push(createPathMessage());
 	}
+	
+	resv = !resv;
 	
 	_timer.reschedule_after_msec(1000);
 	
@@ -198,20 +202,47 @@ Packet* RSVPElement::createResvMessage() {
 	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
 	RSVPStyle* style               = (RSVPStyle *)        (timeValues   + 1);
 	
-	initRSVPCommonHeader(commonHeader, RSVP_MSG_RESV, 250);
-	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, htons(1));
+	initRSVPCommonHeader(commonHeader, RSVP_MSG_RESV, 250, packetSize);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
 	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
 	initRSVPTimeValues(timeValues, UINT32_MAX);
 	initRSVPStyle(style);
 	
-	commonHeader->RSVP_length = htons(packetSize);
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
 	
 	return message;
 }
 
 Packet* RSVPElement::createPathMessage()
-{}
+{
+	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+	uint16_t packetSize =
+		sizeof(RSVPCommonHeader) +
+		sizeof(RSVPSession) +
+		sizeof(RSVPHop) +
+		sizeof(RSVPTimeValues);
+	unsigned tailroom = 0;
+	
+	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
+	
+	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
+	
+	memset(message->data(), 0, message->length());
+	
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
+	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
+	RSVPHop* hop                   = (RSVPHop *)          (session      + 1);
+	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
+	
+	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, 250, packetSize);
+	initRSVPSession(session, IPAddress("1.2.3.4").in_addr(), 1, false, 1);
+	initRSVPHop(hop, IPAddress("2.3.4.254").in_addr(), 0);
+	initRSVPTimeValues(timeValues, UINT32_MAX);
+	
+	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
+	
+	return message;
+}
 	
 
 CLICK_ENDDECLS
