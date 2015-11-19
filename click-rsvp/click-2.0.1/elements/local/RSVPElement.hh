@@ -149,20 +149,52 @@ public:
 	void push(int, Packet *);
 	Packet* pull(int);
 
-	static int sendHandler(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int pathErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int resvErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int pathTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int resvTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int resvConfHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static String handle2(Element *e, void * thunk);
 	void add_handlers();
 	
-	Packet* createResvMessage();
 	Packet* createPathMessage();
-	Packet* createPathErrMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
-	Packet* createResvErrMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	Packet* createResvMessage();
+	Packet* createPathErrMessage();
+	Packet* createResvErrMessage();
 	Packet* createPathTearMessage();
 	Packet* createResvTearMessage();
-	Packet* createResvConfMessage(bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+	Packet* createResvConfMessage();
 	
 private:
+	void clean();
+
 	Timer _timer;
+	uint8_t _TTL;
+	
+	in_addr _session_destination_address;
+	uint8_t _session_protocol_ID;
+	bool _session_police;
+	uint16_t _session_destination_port;
+	
+	in_addr _errorspec_error_node_address;
+	bool _errorspec_inPlace;
+	bool _errorspec_notGuilty;
+	uint8_t _errorspec_errorCode;
+	uint16_t _errorspec_errorValue;
+	
+	in_addr _hop_neighbor_address;
+	uint32_t _hop_logical_interface_handle;
+	
+	uint32_t _timeValues_refresh_period_r;
+	
+	bool _flowspec;
+	bool _filterspec;
+	bool _senderTemplate;
+	bool _senderTspec;
+	bool _resvConf;
+	in_addr _resvConf_receiver_address;
 };
 
 CLICK_ENDDECLS
