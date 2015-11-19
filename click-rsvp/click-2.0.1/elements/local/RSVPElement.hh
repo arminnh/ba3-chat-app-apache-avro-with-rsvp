@@ -162,7 +162,7 @@ public:
 	static int pathTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvConfHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-	static String handle2(Element *e, void * thunk);
+	static String getTTLHandle(Element *e, void * thunk);
 	void add_handlers();
 	
 	Packet* createPathMessage();

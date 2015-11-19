@@ -149,11 +149,11 @@ public:
 	void push(int, Packet *);
 	Packet* pull(int);
 
-	static void sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-	static void hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-	static void errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-	static void timeValuesHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-	static void resvConfObjectHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int timeValuesHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int resvConfObjectHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	
 	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -162,7 +162,7 @@ public:
 	static int pathTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvConfHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-	static String handle2(Element *e, void * thunk);
+	static String getTTLHandle(Element *e, void * thunk, ErrorHandler *errh);
 	void add_handlers();
 	
 	Packet* createPathMessage();
