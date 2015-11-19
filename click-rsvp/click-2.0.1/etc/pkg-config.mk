@@ -14,17 +14,17 @@
 # notice is a summary of the Click LICENSE file; the license in that file is
 # legally binding.
 
-CLICKCC = gcc
-CLICKCPP = gcc -E
-CLICKCXX = g++
-CLICKCXXCPP = g++ -E
+CLICKCC = /usr/bin/gcc
+CLICKCPP = /usr/bin/gcc -E
+CLICKCXX = /usr/bin/g++
+CLICKCXXCPP = /usr/bin/g++ -E
 
 CLICKAR_CREATE = ar cru
 CLICKRANLIB = ranlib
 CLICKSTRIP = strip
 
-CLICKKERNEL_CC = gcc -w  -W -Wall
-CLICKKERNEL_CXX = g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
+CLICKKERNEL_CC = /usr/bin/gcc -w  -W -Wall
+CLICKKERNEL_CXX = /usr/bin/g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
 CLICKLINUX_BUILDDIR = NONE
 CLICKLINUX_SRCDIR = NONE
 CLICKLINUX_MAKEARGS = 
@@ -44,5 +44,5 @@ CLICKLDMODULEFLAGS = -shared
 
 CLICKAUTOCONF = autoconf
 CLICKGMAKE = make
-CLICKINSTALL = /bin/install -c
+CLICKINSTALL = /usr/bin/install -c
 

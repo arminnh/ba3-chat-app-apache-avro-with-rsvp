@@ -15,7 +15,7 @@ datadir = /usr/local/share
 clickdatadir = $(datadir)/click
 
 PERL = perl
-INSTALL = /bin/install -c
+INSTALL = /usr/bin/install -c
 INSTALL_DATA = $(INSTALL) -m 644
 POD2MAN = pod2man
 CP_PRESERVE = /bin/cp -p

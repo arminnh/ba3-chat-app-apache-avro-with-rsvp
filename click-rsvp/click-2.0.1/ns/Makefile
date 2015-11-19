@@ -16,14 +16,14 @@ libdir = /usr/local/lib
 
 VPATH = .:$(top_srcdir)/lib:$(top_srcdir)/$(subdir):$(top_srcdir)/elements/standard
 
-CC = gcc
-CPP = gcc -E
-CXX = g++
-CXXCPP = g++ -E
+CC = /usr/bin/gcc
+CPP = /usr/bin/gcc -E
+CXX = /usr/bin/g++
+CXXCPP = /usr/bin/g++ -E
 DEPCFLAGS = -MD -MP
 AR_CREATE = ar cru
 RANLIB = ranlib
-INSTALL = /bin/install -c
+INSTALL = /usr/bin/install -c
 mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 
 ifeq ($(V),1)

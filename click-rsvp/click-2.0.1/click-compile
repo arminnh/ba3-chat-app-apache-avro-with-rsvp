@@ -192,8 +192,8 @@ case $driver in
     icppflags=""
     icxxflags="-fPIC -g -O2 -MD -MP"
     icflags="-fPIC -g -O2 -W -Wall -MD -MP"
-    command="${CXX-g++} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
-    c_command="${CC-gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
+    command="${CXX-/usr/bin/g++} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
+    c_command="${CC-/usr/bin/gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
     driver=userlevel;;
   k|ke|ker|kern|kerne|kernel|l|li|lin|linu|linux|linuxm|linuxmo|linuxmod|linuxmodu|linuxmodul|linuxmodule)
     idefs="-DHAVE_CONFIG_H -DCLICK_LINUXMODULE"
@@ -201,8 +201,8 @@ case $driver in
     icppflags=""
     icxxflags=" -O2 -MD -MP"
     icflags=" -O2 -MD -MP"
-    command="${CXX-g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
-    c_command="${CC-gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
+    command="${CXX-/usr/bin/g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
+    c_command="${CC-/usr/bin/gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
     driver=linuxmodule;;
   b|bs|bsd|bsdm|bsdmo|bsdmod|bsdmodu|bsdmodul|bsdmodule)
     idefs="-DHAVE_CONFIG_H -DCLICK_BSDMODULE"
@@ -210,8 +210,8 @@ case $driver in
     icppflags=""
     icxxflags="-fPIC  -O2 -MD -MP"
     icflags="-fPIC  -O2 -MD -MP"
-    command="${CXX-g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
-    c_command="${CC-gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
+    command="${CXX-/usr/bin/g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
+    c_command="${CC-/usr/bin/gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
     driver=bsdmodule;;
   ns|nsm|nsmo|nsmod|nsmodu|nsmodul|nsmodule)
     idefs="-DHAVE_CONFIG_H -DCLICK_NS"
@@ -219,8 +219,8 @@ case $driver in
     icppflags=""
     icxxflags="-fPIC -fno-builtin -g -O2 -MD -MP"
     icflags="-fPIC -fno-builtin -g -O2 -W -Wall -MD -MP"
-    command="${CXX-g++} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
-    c_command="${CC-gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
+    command="${CXX-/usr/bin/g++} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
+    c_command="${CC-/usr/bin/gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
     driver=ns;;
   t|to|too|tool)
     idefs="-DHAVE_CONFIG_H -DCLICK_TOOL"
@@ -228,8 +228,8 @@ case $driver in
     icppflags=""
     icxxflags="-fPIC -g -O2 -MD -MP"
     icflags="-fPIC -g -O2 -W -Wall -MD -MP"
-    command="${CXX-g++} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
-    c_command="${CC-gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
+    command="${CXX-/usr/bin/g++} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CXXFLAGS-$icxxflags} $cflags $compileflag"
+    c_command="${CC-/usr/bin/gcc} ${DEFS-$idefs} ${INCLUDES-$iincludes} ${CPPFLAGS-$icppflags} ${CFLAGS-$icflags} $cflags $compileflag"
     driver=tool;;
   "")
     echo "click-compile: you must specify a driver" 1>&2; exit 1;;
@@ -293,7 +293,7 @@ EOF
 	exec_command "ld -r -o $package $cflags $files"
 	exit 0
     elif test $driver = userlevel -o $driver = tool -o $driver = ns; then
-	exec_command "${CXX-g++} ${CXXFLAGS-$icxxflags} -shared -o $package $cflags $files"
+	exec_command "${CXX-/usr/bin/g++} ${CXXFLAGS-$icxxflags} -shared -o $package $cflags $files"
 	exit 0
     elif test $driver = bsdmodule; then
 	exec_command "ld -Bshareable -o $package $cflags $files"

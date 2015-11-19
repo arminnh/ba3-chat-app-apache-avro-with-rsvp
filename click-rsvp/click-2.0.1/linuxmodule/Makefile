@@ -79,7 +79,7 @@ endif
 top_builddir := $(obj)/..
 endif
 
-CLICK_BUILD_INSTALL = /bin/install -c
+CLICK_BUILD_INSTALL = /usr/bin/install -c
 CLICK_BUILD_INSTALL_IF_CHANGED = $(CLICK_BUILD_INSTALL) -C
 CLICK_BUILD_INSTALL_DATA = $(CLICK_BUILD_INSTALL) -m 644
 CLICK_BUILD_INSTALL_DATA_IF_CHANGED = $(CLICK_BUILD_INSTALL_IF_CHANGED) -m 644
@@ -88,8 +88,8 @@ CLICK_BUILDTOOL = $(top_builddir)/click-buildtool
 
 CLICK_ELEM2MAKE = $(CLICK_BUILDTOOL) elem2make --linux26
 
-CLICKCC = gcc -w  -W -Wall
-CLICKCXX = g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
+CLICKCC = /usr/bin/gcc -w  -W -Wall
+CLICKCXX = /usr/bin/g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
 
 LINUXCFLAGS = $(shell echo "$(CPPFLAGS) $(CFLAGS) $(LINUXINCLUDE)" \
 	"$(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(CFLAGS_MODULE)" | sed \
@@ -230,13 +230,13 @@ top_builddir := ..
 
 VPATH = .:$(top_srcdir)/lib:$(top_srcdir)/$(subdir):$(top_srcdir)/elements/standard
 
-CC = gcc -w  -W -Wall
-CPP = gcc -E
-CXX = g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
-CXXCPP = g++ -E
+CC = /usr/bin/gcc -w  -W -Wall
+CPP = /usr/bin/gcc -E
+CXX = /usr/bin/g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
+CXXCPP = /usr/bin/g++ -E
 LD = ld
 STRIP = strip
-INSTALL = /bin/install -c
+INSTALL = /usr/bin/install -c
 INSTALL_DATA = $(INSTALL) -m 644
 mkinstalldirs = $(conf_auxdir)/mkinstalldirs
 CLICK_ELEM2MAKE = $(top_builddir)/click-buildtool elem2make

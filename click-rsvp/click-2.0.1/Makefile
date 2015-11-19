@@ -17,7 +17,7 @@ AUTOCONF = autoconf
 # ACLOCAL = aclocal -I m4
 ACLOCAL = :
 PERL = perl
-INSTALL = /bin/install -c
+INSTALL = /usr/bin/install -c
 INSTALL_IF_CHANGED = $(INSTALL) -C
 INSTALL_DATA = $(INSTALL) -m 644
 INSTALL_DATA_IF_CHANGED = $(INSTALL_IF_CHANGED) -m 644
@@ -166,7 +166,7 @@ etc/pkg-config.mk: $(srcdir)/etc/pkg-config.mk.in config.status
 $(srcdir)/configure: $(srcdir)/configure.in $(srcdir)/m4/click.m4
 	cd $(srcdir) && $(ACLOCAL) && $(AUTOCONF)
 config.status: $(srcdir)/configure
-	$(SHELL) $(srcdir)/configure  '--disable-linuxmodule' '--enable-local' '--enable-etherswitch'
+	$(SHELL) $(srcdir)/configure  '--disable-linuxmodule' '--enable-etherswitch' '--enable-local' 'CC=/usr/bin/gcc' 'CXX=/usr/bin/g++'
 Makefile: config.status $(srcdir)/Makefile.in
 	cd $(top_builddir) && \
 	  CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status

@@ -16,15 +16,15 @@ freebsd_srcdir = NONE
 
 VPATH = .:$(top_srcdir)/lib:$(top_srcdir)/$(subdir)
 
-CC = gcc
-CPP = gcc -E
-CXX = g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
-CXXCPP = g++ -E
+CC = /usr/bin/gcc
+CPP = /usr/bin/gcc -E
+CXX = /usr/bin/g++ -w  -W -Wall -fno-exceptions -fno-rtti -fpermissive
+CXXCPP = /usr/bin/g++ -E
 DEPCFLAGS = -MD -MP
 LD = ld
 STRIP = strip
 PERL = perl
-INSTALL = /bin/install -c
+INSTALL = /usr/bin/install -c
 INSTALL_DATA = $(INSTALL) -m 644
 mkinstalldirs = ../mkinstalldirs
 
