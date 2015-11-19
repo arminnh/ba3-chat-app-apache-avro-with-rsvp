@@ -162,7 +162,7 @@ void RSVPElement::run_timer(Timer *) {
 	output(0).push(createResvTearMessage());
 	output(0).push(createResvConfMessage());
 	
-	_timer.reschedule_after_msec(1000);
+	//_timer.reschedule_after_msec(1000);
 	
 	return;
 }
@@ -175,30 +175,77 @@ Packet* RSVPElement::pull(int){
 
 }
 
+int RSVPElement::sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
+	RSVPElement * me = (RSVPElement *) e;
+
+	if(cp_va_kparse(conf, me, errh, 
+		"DEST", cpkM, cpIPAddress, &me->_session_destination_address, 
+		"PROTOCOL", cpkM, cpUnsigned, &me->_session_protocol_ID,
+		"POLICE", cpkM, cpBool, &me->_session_police,
+		"PORT", cpkM, cpUnsigned, &me->_session_destination_port, 
+		cpEnd) < 0) return -1;
+		
+	return 0;
+}
+
+int RSVPElement::hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
+	RSVPElement * me = (RSVPElement *) e;
+
+	if(cp_va_kparse(conf, me, errh, 
+		"NEIGHBOR", cpkM, cpIPAddress, &me->_hop_neighbor_address, 
+		"LIH", cpkM, cpUnsigned, &me->_hop_logical_interface_handle,  
+		cpEnd) < 0) return -1;
+	
+	return 0;
+}
+
+int RSVPElement::errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
+	RSVPElement * me = (RSVPElement *) e;
+	
+	if(cp_va_kparse(conf, me, errh, 
+		"ERROR_NODE_ADDRESS", cpkM, cpIPAddress, &me->_errorspec_error_node_address,
+		"INPLACE", cpkM, cpBool, &me->_errorspec_inPlace,
+		"NOTGUILTY", cpkM, cpBool, &me->_errorspec_notGuilty,
+		"ERROR_CODE", cpkM, cpUnsigned, &me->_errorspec_errorCode,
+		"ERROR_VALUE", cpkM, cpUnsigned, &me->_errorspec_errorValue,
+		cpEnd) < 0) return -1;
+
+	if(cp_va_kparse(conf, me, errh, 
+	cpEnd) < 0) return -1;
+	
+	return 0;
+}
+
+int RSVPElement::timeValuesHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
+	RSVPElement * me = (RSVPElement *) e;
+
+	if(cp_va_kparse(conf, me, errh, 
+		"REFRESH", cpkM, cpUnsigned, &me->_timeValues_refresh_period_r, 
+		cpEnd) < 0) return -1;
+	
+	return 0;
+}
+
+int RSVPElement::resvConfObjectHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
+	RSVPElement * me = (RSVPElement *) e;
+
+
+	if(cp_va_kparse(conf, me, errh,
+		"RECEIVER_ADDRESS", cpkM, cpIPAddress, &me->_resvConf_receiver_address,
+		cpEnd) < 0) return -1;
+	
+}
+
 int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
 
-	String type;
-
-	if(cp_va_kparse(conf, me, errh, "TYPE", cpkM + cpkP, cpString, &type, cpEnd) < 0) return -1;
-	
-	me->_TTL = 250;
-	
-	me->_session_destination_address = IPAddress("0.0.0.0").in_addr();
-	me->_session_protocol_ID = 0;
-	me->_session_police = false;
-	me->_session_destination_port = 0;
-	
-	me->_hop_neighbor_address = IPAddress("0.0.0.0").in_addr();
-	me->_hop_logical_interface_handle = 0;
-	
-	me->_timeValues_refresh_period_r = 0;
+	if(cp_va_kparse(conf, me, errh, 
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	Packet* message = me->createPathMessage();
 	me->output(0).push(message);
 	
 	me->clean();
-
 	return 0;
 }
 
@@ -375,7 +422,12 @@ String RSVPElement::handle2(Element *e, void * thunk) {
 }
 
 void RSVPElement::add_handlers() {
-	add_write_handler("send", &pathHandle, (void *)0);
+	add_write_handler("sendpath", &pathHandle, (void *)0);
+	add_write_handler("session", &sessionHandle, (void *)0);
+	add_write_handler("hop", &hopHandle, (void *)0);
+	add_write_handler("errorspec", &errorSpecHandle, (void *)0);
+	add_write_handler("timevalues", &timeValuesHandle, (void *)0);
+	add_write_handler("resvconfobj", &resvConfObjectHandle, (void *)0);
 	add_read_handler("b", &handle2, (void *)0);
 }
 
@@ -609,9 +661,9 @@ void RSVPElement::clean() {
 	
 	_errorspec_error_node_address = IPAddress("0.0.0.0").in_addr();
 	_errorspec_inPlace = false;
-	_errorspec_inPlace = 0;
 	_errorspec_notGuilty = false;
-	_errorspec_errorValue;
+	_errorspec_errorCode = 0;
+	_errorspec_errorValue = 0;
 	
 	_hop_neighbor_address = IPAddress("0.0.0.0").in_addr();
 	_hop_logical_interface_handle = 0;

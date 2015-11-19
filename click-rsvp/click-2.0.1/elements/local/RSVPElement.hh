@@ -149,6 +149,12 @@ public:
 	void push(int, Packet *);
 	Packet* pull(int);
 
+	static int sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int timeValuesHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int resvConfObjectHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	
 	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int pathErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);

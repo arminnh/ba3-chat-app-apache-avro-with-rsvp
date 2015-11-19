@@ -4,8 +4,6 @@
 #include <clicknet/ip.h>
 #include <clicknet/ether.h>
 #include <click/timer.hh>
-#include <click/task.hh>
-#include <click/standard/scheduleinfo.hh>
 CLICK_DECLS
 
 #define RSVP_MSG_PATH		    1
@@ -146,11 +144,17 @@ public:
 	const char *processing() const	{ return "h/h"; }
 	int configure(Vector<String>&, ErrorHandler*);
 	int initialize(ErrorHandler *);
-	bool run_task(Task *);
+	void run_timer(Timer *);
 
 	void push(int, Packet *);
 	Packet* pull(int);
 
+	static void sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static void hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static void errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static void timeValuesHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static void resvConfObjectHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	
 	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int pathErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -172,7 +176,7 @@ public:
 private:
 	void clean();
 
-	Task _timer;
+	Timer _timer;
 	uint8_t _TTL;
 	
 	in_addr _session_destination_address;
