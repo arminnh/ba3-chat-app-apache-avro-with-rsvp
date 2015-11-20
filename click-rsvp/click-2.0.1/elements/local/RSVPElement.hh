@@ -123,7 +123,8 @@ struct RSVPResvConf { // class num = 15, C-type = 1
 	in_addr receiver_address;
 };
 
-size_t sizeofRSVPObject(uint16_t class_num, uint16_t c_type);
+uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type);
+uint16_t sizeofRSVPScopeObject(size_t num_addresses);
 
 void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
 void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
@@ -133,6 +134,7 @@ void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
 void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
 void initRSVPResvConf(RSVPResvConf*, in_addr receiverAddress);
+void* initRSVPScope(RSVPObjectHeader, const Vector<in_addr>& src_addresses);
 
 class RSVPElement : public Element {
 public:
@@ -149,12 +151,15 @@ public:
 	void push(int, Packet *);
 	Packet* pull(int);
 
+	// specify object fields handlers
 	static int sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int timeValuesHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvConfObjectHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
-	
+	static int scopeHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+
+	// send message handlers
 	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int pathErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -201,6 +206,8 @@ private:
 	bool _senderTspec;
 	bool _resvConf;
 	in_addr _resvConf_receiver_address;
+
+	Vector<in_addr> _scope_src_addresses;
 };
 
 CLICK_ENDDECLS

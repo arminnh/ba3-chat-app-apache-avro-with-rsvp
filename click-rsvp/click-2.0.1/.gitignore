@@ -1,2 +1,14 @@
 tools/
 userlevel/
+Makefile
+click-buildtool
+click-compile
+config.log
+config.status
+doc/Makefile
+etc/pkg-config.mk
+include/click/config-userlevel.h
+include/click/config.h
+ns/Makefile
+autom4te.cache/
+switch.dump
