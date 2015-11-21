@@ -103,7 +103,19 @@ struct RSVPStyle { // class num = 8, C-type = 1
 
 struct RSVPFlowspec { // class num = 9
 	RSVPObjectHeader header;
-	// RFC2210
+	uint16_t nothing_1;
+	uint16_t overall_length; // 7 words not including header
+	uint8_t service_header; // service number 5
+	uint8_t nothing_2;
+	uint16_t controlled_load_data_length; // 6 words not including per-service header
+	uint8_t parameter_id; // 127
+	uint8_t flags; // 0
+	uint16_t parameter_127_length; // 5 words not including header;
+	uint32_t token_bucket_rate_float;
+	uint32_t token_bucket_size_float;
+	uint32_t peak_data_rate_float;
+	uint32_t minimum_policed_unit;
+	uint32_t maximum_packet_size;
 };
 
 struct RSVPFilterSpec { // class num = 10, C-type = 1
@@ -122,7 +134,7 @@ struct RSVPSenderTSpec { // class num = 12, C-type = 2
 	uint8_t service_header; // 1
 	uint8_t nothing_2;
 	uint16_t service_data_length; // 6 words not counting header
-	uint8_t parameter_id;
+	uint8_t parameter_id; // 127
 	uint8_t flags; // 0
 	uint16_t parameter_127_length; // 5 words not including header
 	uint32_t token_bucket_rate_float;
@@ -151,7 +163,19 @@ void initRSVPStyle(RSVPStyle*);
 void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
 void initRSVPResvConf(RSVPResvConf*, in_addr receiverAddress);
 void* initRSVPScope(RSVPObjectHeader, const Vector<in_addr>& src_addresses);
-void initRSVPSenderTSpec(RSVPSenderTSpec*);
+void initRSVPFlowspec(RSVPFlowspec*,
+	float token_bucket_rate,
+	float token_bucket_size,
+	float peak_data_rate,
+	uint32_t minimum_policed_unit,
+	uint32_t maximum_packet_size);
+void initRSVPFilterSpec(RSVPFilterSpec*, in_addr src_address, uint16_t src_port);
+void initRSVPSenderTSpec(RSVPSenderTSpec*,
+	float token_bucket_rate,
+	float token_bucket_size,
+	float peak_data_rate,
+	uint32_t minimum_policed_unit,
+	uint32_t maximum_packet_size);
 
 class RSVPElement : public Element {
 public:

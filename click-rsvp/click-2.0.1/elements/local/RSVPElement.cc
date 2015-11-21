@@ -164,28 +164,63 @@ void* initRSVPScope(RSVPObjectHeader* header, const Vector<in_addr>& src_address
 	return (void *) address;
 }
 
-void initRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec)
+void initRSVPFlowspec(RSVPFlowspec* flowspec,
+	float token_bucket_rate,
+	float token_bucket_size,
+	float peak_data_rate,
+	uint32_t minimum_policed_unit,
+	uint32_t maximum_packet_size)
+{
+	initRSVPObjectHeader(&flowspec->header, RSVP_CLASS_FLOWSPEC, 2);
+
+	flowspec->nothing_1 = 0;
+	flowspec->overall_length = htons(7);
+	flowspec->service_header = 1;
+	flowspec->nothing_2 = 0;
+	flowspec->controlled_load_data_length = htons(6);
+	flowspec->parameter_id = 127;
+	flowspec->flags = 0;
+	flowspec->parameter_127_length = 5;
+	flowspec->token_bucket_rate_float = htonl(* (uint32_t *) (&token_bucket_rate));
+	flowspec->token_bucket_size_float = htonl(* (uint32_t *) (&token_bucket_size));
+	flowspec->peak_data_rate_float = htonl(* (uint32_t *) (&peak_data_rate));
+	flowspec->minimum_policed_unit = htonl(minimum_policed_unit);
+	flowspec->maximum_packet_size = htonl(maximum_packet_size);
+}
+
+void initRSVPFilterSpec(RSVPFilterSpec* filterSpec, in_addr src_address, uint16_t src_port)
+{
+	initRSVPObjectHeader(&filterSpec->header, RSVP_CLASS_FILTER_SPEC, 1);
+
+	filterSpec->src_address = src_address;
+	filterSpec->nothing = 0;
+	filterSpec->src_port = src_port;
+
+	return;
+}
+
+void initRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
+	float token_bucket_rate,
+	float token_bucket_size,
+	float peak_data_rate,
+	uint32_t minimum_policed_unit,
+	uint32_t maximum_packet_size)
 {
 	initRSVPObjectHeader(&senderTSpec->header, RSVP_CLASS_SENDER_TSPEC, 2);
-
-	float f1 = 6.593f, f2 = 39010.78f, f3 = 40.0f;
-	uint32_t i1 = *reinterpret_cast<uint32_t *>(&f1),
-		i2 = *reinterpret_cast<uint32_t *>(&f2),
-		i3 = *reinterpret_cast<uint32_t *>(&f3);
 
 	senderTSpec->nothing_1 = 0;
 	senderTSpec->overall_length = htons(7);
 	senderTSpec->service_header = 1;
 	senderTSpec->nothing_2 = 0;
 	senderTSpec->service_data_length = htons(6);
-	senderTSpec->parameter_id = 127; // randomly chosen for now
+	senderTSpec->parameter_id = 127;
 	senderTSpec->flags = 0;
 	senderTSpec->parameter_127_length = 5;
-	senderTSpec->token_bucket_rate_float = htonl(i1);
-	senderTSpec->token_bucket_size_float = htonl(i2);
-	senderTSpec->peak_data_rate_float = htonl(i3);
-	senderTSpec->minimum_policed_unit = htonl(3);
-	senderTSpec->maximum_packet_size = htonl(100);
+	senderTSpec->token_bucket_rate_float = htonl(* (uint32_t *) (&token_bucket_rate));
+	senderTSpec->token_bucket_size_float = htonl(* (uint32_t *) (&token_bucket_size));
+	senderTSpec->peak_data_rate_float = htonl(* (uint32_t *) (&peak_data_rate));
+	senderTSpec->minimum_policed_unit = htonl(minimum_policed_unit);
+	senderTSpec->maximum_packet_size = htonl(maximum_packet_size);
 
 	return;
 }
@@ -447,7 +482,7 @@ Packet* RSVPElement::createPathMessage()
 	initRSVPSession(session, _session_destination_address, _session_protocol_ID, _session_police, _session_destination_port);
 	initRSVPHop(hop, _hop_neighbor_address, _hop_logical_interface_handle);
 	initRSVPTimeValues(timeValues, _timeValues_refresh_period_r);
-	initRSVPSenderTSpec(senderTSpec);
+	initRSVPSenderTSpec(senderTSpec, -49.37f, 872.01f, 2.3f, 4, 200);
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
 	
@@ -463,7 +498,8 @@ Packet* RSVPElement::createResvMessage() {
 		sizeof(RSVPTimeValues) +
 		(_resvConf ? sizeof(RSVPResvConf) : 0) +
 		sizeofRSVPScopeObject(_scope_src_addresses.size()) +
-		sizeof(RSVPStyle);
+		sizeof(RSVPStyle) +
+		sizeof(RSVPFlowspec);
 	unsigned tailroom = 0;
 
 	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
@@ -478,6 +514,7 @@ Packet* RSVPElement::createResvMessage() {
 	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
 	RSVPResvConf* resvConf         = (RSVPResvConf *)     (timeValues   + 1);
 	RSVPStyle* style               = (RSVPStyle *)        initRSVPScope((RSVPObjectHeader *) (resvConf + (_resvConf ? 1 : 0)), _scope_src_addresses);
+	RSVPFlowspec* flowspec         = (RSVPFlowspec *)     (style        + 1);
 	
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_RESV, _TTL, packetSize);
 	initRSVPSession(session, _session_destination_address, _session_protocol_ID, _session_police, _session_destination_port);
@@ -485,6 +522,7 @@ Packet* RSVPElement::createResvMessage() {
 	initRSVPTimeValues(timeValues, _timeValues_refresh_period_r);
 	if (_resvConf) initRSVPResvConf(resvConf, _resvConf_receiver_address);
 	initRSVPStyle(style);
+	initRSVPFlowspec(flowspec, 30.5, 0.4e38f, -5.0, 50, 100);
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
 	
