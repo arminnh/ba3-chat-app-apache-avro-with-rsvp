@@ -194,9 +194,16 @@ void initRSVPFilterSpec(RSVPFilterSpec* filterSpec, in_addr src_address, uint16_
 
 	filterSpec->src_address = src_address;
 	filterSpec->nothing = 0;
-	filterSpec->src_port = src_port;
+	filterSpec->src_port = htons(src_port);
 
 	return;
+}
+
+void initRSVPSenderTemplate(RSVPSenderTemplate* senderTemplate, in_addr src_address, uint16_t src_port)
+{
+	initRSVPFilterSpec(senderTemplate, src_address, src_port);
+
+	senderTemplate->header.class_num = RSVP_CLASS_SENDER_TEMPLATE;
 }
 
 void initRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
@@ -476,12 +483,14 @@ Packet* RSVPElement::createPathMessage()
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
 	RSVPHop* hop                   = (RSVPHop *)          (session      + 1);
 	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
-	RSVPSenderTSpec* senderTSpec   = (RSVPSenderTSpec *)  (timeValues   + 1);
+	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) (timeValues + 1);
+	RSVPSenderTSpec* senderTSpec   = (RSVPSenderTSpec *)  (senderTemplate + 1);
 	
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, _TTL, packetSize);
 	initRSVPSession(session, _session_destination_address, _session_protocol_ID, _session_police, _session_destination_port);
 	initRSVPHop(hop, _hop_neighbor_address, _hop_logical_interface_handle);
 	initRSVPTimeValues(timeValues, _timeValues_refresh_period_r);
+	initRSVPSenderTemplate(senderTemplate, IPAddress("89.90.91.92").in_addr(), 12345);
 	initRSVPSenderTSpec(senderTSpec, -49.37f, 872.01f, 2.3f, 4, 200);
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);

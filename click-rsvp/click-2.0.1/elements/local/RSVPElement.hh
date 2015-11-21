@@ -170,6 +170,7 @@ void initRSVPFlowspec(RSVPFlowspec*,
 	uint32_t minimum_policed_unit,
 	uint32_t maximum_packet_size);
 void initRSVPFilterSpec(RSVPFilterSpec*, in_addr src_address, uint16_t src_port);
+void initRSVPSenderTemplate(RSVPSenderTemplate*, in_addr src_address, uint16_t src_port);
 void initRSVPSenderTSpec(RSVPSenderTSpec*,
 	float token_bucket_rate,
 	float token_bucket_size,
