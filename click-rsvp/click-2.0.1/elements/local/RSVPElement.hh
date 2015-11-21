@@ -115,7 +115,23 @@ struct RSVPFilterSpec { // class num = 10, C-type = 1
 
 typedef RSVPFilterSpec RSVPSenderTemplate; // class num = 11, C-type = 1
 
-// RSVPSenderTSpec class num = 12, C-type = 2
+struct RSVPSenderTSpec { // class num = 12, C-type = 2
+	RSVPObjectHeader header;
+	uint16_t nothing_1;
+	uint16_t overall_length; // 7 words not including header
+	uint8_t service_header; // 1
+	uint8_t nothing_2;
+	uint16_t service_data_length; // 6 words not counting header
+	uint8_t parameter_id;
+	uint8_t flags; // 0
+	uint16_t parameter_127_length; // 5 words not including header
+	uint32_t token_bucket_rate_float;
+	uint32_t token_bucket_size_float;
+	uint32_t peak_data_rate_float;
+	uint32_t minimum_policed_unit;
+	uint32_t maximum_packet_size;
+};
+
 // RSVPPolicyData class num = 14, C-type = 1
 
 struct RSVPResvConf { // class num = 15, C-type = 1
@@ -135,6 +151,7 @@ void initRSVPStyle(RSVPStyle*);
 void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
 void initRSVPResvConf(RSVPResvConf*, in_addr receiverAddress);
 void* initRSVPScope(RSVPObjectHeader, const Vector<in_addr>& src_addresses);
+void initRSVPSenderTSpec(RSVPSenderTSpec*);
 
 class RSVPElement : public Element {
 public:
@@ -203,7 +220,7 @@ private:
 	bool _flowspec;
 	bool _filterspec;
 	bool _senderTemplate;
-	bool _senderTspec;
+	bool _senderTSpec;
 	bool _resvConf;
 	in_addr _resvConf_receiver_address;
 
