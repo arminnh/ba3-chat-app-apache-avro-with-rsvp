@@ -1,0 +1,31 @@
+{
+    "namespace": "chat_app",
+    "protocol": "AppServerInterface",
+    
+    "messages" : {
+        "registerClient": {
+        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
+        "response": "int"
+        },
+        "exitClient": {
+        "request": [{"name": "id", "type": "int"}],
+        "response": "int"
+        },
+        "getListOfClients": {
+        "request": [],
+        "response": {"name": "list", "type": "string"}
+        },
+        "joinPublicChat": {
+        "request": [{"name": "id", "type": "int"}],
+        "response": "int"
+        },
+        "sendMessage": {
+        "request": [{"name": "id", "type": "int"}, {"name": "message", "type": "string"}],
+        "response": "int"
+        },
+        "exitPublicChat": {
+        "request": [{"name": "id", "type": "int"}],
+        "response": "int"
+        } 
+    }
+}
