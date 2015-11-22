@@ -90,7 +90,7 @@ write rsvp.resvconfobj RECEIVER_ADDRESS 31.32.33.34
 write rsvp.resvconf TTL 123
 
 #set TOS byte 0
-write 2.tos 0
+write myipencap.tos 0
 
 #path messages
 write rsvp.session DEST 1.2.3.4, PROTOCOL 1, POLICE true, PORT 50

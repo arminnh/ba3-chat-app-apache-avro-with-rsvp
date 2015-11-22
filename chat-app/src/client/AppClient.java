@@ -52,7 +52,7 @@ public class AppClient implements AppClientInterface {
 	
 	public void register(String username) throws AvroRemoteException {
 		id = appServer.registerClient((CharSequence) username, hostIP, port);
-		System.out.println("Recieved id: " + id);
+		//System.out.println("Recieved id: " + id);
 	}
 
 	@Command
@@ -75,10 +75,10 @@ public class AppClient implements AppClientInterface {
 		
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); 
 		String input = br.readLine();
-		while (!input.equals("?exit")) {
+		while (!input.equals("?leave") && !input.equals("?q")) {
 			if (input.equals("?list")) {
 				System.out.println("To get the list of connected users: ?getListOfUsers or ?glou");
-				System.out.println("To leave the chatroom: josse kies maar welke command je hier wil hebben");
+				System.out.println("To leave the chatroom:              ?leave or ?q");
 			} else if (input.equals("?getListOfUsers") || input.equals("?glou")) {
 				getListOfUsers();
 			} else {
@@ -159,7 +159,7 @@ public class AppClient implements AppClientInterface {
 			//System.out.println("transceiver.getRemoteName(): " + transceiver.getRemoteName());
 			
 			while (true) { // Try other clientPorts for the case where the port is already in use 
-				System.out.println("Trying to use port " + clientPort);
+				//System.out.println("Trying to use port " + clientPort);
 				try {
 					// Create a responder so the server can invoke methods on this client.
 					clientRequester = new AppClient(transceiver, appServer, hostIP, clientPort);
