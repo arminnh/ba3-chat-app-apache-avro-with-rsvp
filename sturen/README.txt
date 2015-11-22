@@ -30,20 +30,9 @@ Behaalde functionaliteit
     Zie priority-scheduling.click
 
 *) voorgestelde waarden voor de TSpec en RSpec parameters, om het gevraagde scenario te ondersteunen
-    J
-    O
-    S
-    S
-    E
-
-    P
-    L
-    Z
-
-    H
-    I
-    E
-    R
+    Om het eenvoudige scenario van een 0.3 Mb/s quality of service stream met één verzender en één ontvanger te ondersteunen, lijkt het ons aannemelijk dat de Sender TSpec-waarden die de verzender genereert exact dezelfde zijn als de Flowspec-waarden die de ontvanger genereert.
+	Voor zover we op dit moment weten zal de QoS-stream een min of meer constante bitrate hebben, dus de waarde peak data rate zal dichtbij 0.3 Mb/s kunnen liggen, eventueel met een kleine marge, bijvoorbeeld 0.35 Mb/s. Om dezelfde reden zullen de token bucket size (het grootst aantal tokens dat kan opgespaard worden) en de token bucket rate (de snelheid waartegen de tokens bijgevuld worden) relatief klein kunnen zijn. Mocht blijken dat de “burstiness” van de stream groter is, dan zouden deze waarden groter gekozen moeten worden.
+	De waarden voor minimum policed unit en maximum packet size zijn afhankelijk van de applicatie die de pakketten verstuurt. De waarde voor minimum policed unit wordt best niet te klein genomen om de mate van linklaag-overhead te beperken.
       
 
 
