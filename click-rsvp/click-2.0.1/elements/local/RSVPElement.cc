@@ -439,17 +439,23 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 {
 	RSVPElement *me = (RSVPElement *) e;
 
+	double tbr, tbs, pdr;
+
 	if (!cp_va_kparse(conf, me, errh,
 		// sender template
 		"SRC_ADDRESS", cpkM, cpIPAddress, &me->_senderTemplate_src_address,
 		"SRC_PORT", cpkM, cpUnsigned, &me->_senderTemplate_src_port,
 		// sender tspec
-		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &me->_senderTSpec_token_bucket_rate,
-		"TOKEN_BUCKET_SIZE", cpkM, cpDouble, &me->_senderTSpec_token_bucket_size,
-		"PEAK_DATA_RATE", cpkM, cpDouble, &me->_senderTSpec_peak_data_rate,
+		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &tbr,
+		"TOKEN_BUCKET_SIZE", cpkM, cpDouble, &tbs,
+		"PEAK_DATA_RATE", cpkM, cpDouble, &pdr,
 		"MINIMUM_POLICED_UNIT", cpkM, cpInteger, &me->_senderTSpec_minimum_policed_unit,
 		"MAXIMUM_PACKET_SIZE", cpkM, cpInteger, &me->_senderTSpec_maximum_packet_size,
 		cpEnd)) return -1;
+
+	me->_senderTSpec_token_bucket_rate = tbr;
+	me->_senderTSpec_token_bucket_size = tbs;
+	me->_senderTSpec_peak_data_rate = pdr;
 
 	me->_senderDescriptor = true;
 
@@ -518,7 +524,7 @@ Packet* RSVPElement::createPathMessage() const
 	RSVPTimeValues* timeValues     = (RSVPTimeValues *)   (hop          + 1);
 	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) (timeValues + 1);
 	RSVPSenderTSpec* senderTSpec   = (RSVPSenderTSpec *)  (senderTemplate + 1);
-	
+
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, _TTL, packetSize);
 	initRSVPSession(session, _session_destination_address, _session_protocol_ID, _session_police, _session_destination_port);
 	initRSVPHop(hop, _hop_neighbor_address, _hop_logical_interface_handle);
