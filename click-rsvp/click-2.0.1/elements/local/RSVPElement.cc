@@ -435,6 +435,27 @@ int RSVPElement::scopeHandle(const String &conf, Element *e, void * thunk, Error
 	return 0;
 }
 
+int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
+{
+	RSVPElement *me = (RSVPElement *) e;
+
+	if (!cp_va_kparse(conf, me, errh,
+		// sender template
+		"SRC_ADDRESS", cpkM, cpIPAddress, &me->_senderTemplate_src_address,
+		"SRC_PORT", cpkM, cpUnsigned, &me->_senderTemplate_src_port,
+		// sender tspec
+		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &me->_senderTSpec_token_bucket_rate,
+		"TOKEN_BUCKET_SIZE", cpkM, cpDouble, &me->_senderTSpec_token_bucket_size,
+		"PEAK_DATA_RATE", cpkM, cpDouble, &me->_senderTSpec_peak_data_rate,
+		"MINIMUM_POLICED_UNIT", cpkM, cpInteger, &me->_senderTSpec_minimum_policed_unit,
+		"MAXIMUM_PACKET_SIZE", cpkM, cpInteger, &me->_senderTSpec_maximum_packet_size,
+		cpEnd)) return -1;
+
+	me->_senderDescriptor = true;
+
+	return 0;
+}
+
 String RSVPElement::getTTLHandle(Element *e, void * thunk) {
 	RSVPElement *me = (RSVPElement *) e;
 	return String((int) me->_TTL);
@@ -457,27 +478,39 @@ void RSVPElement::add_handlers() {
 	add_write_handler("timevalues", &timeValuesHandle, (void *) 0);
 	add_write_handler("resvconfobj", &resvConfObjectHandle, (void *) 0);
 	add_write_handler("scope", &scopeHandle, (void *) 0);
+	add_write_handler("senderdescriptor", &senderDescriptorHandle, (void *) 0);
 
 	// random read handler
 	add_read_handler("TTL", &getTTLHandle, (void *) 0);
 }
 
-Packet* RSVPElement::createPathMessage()
+WritablePacket* RSVPElement::createPacket(uint16_t packetSize) const
 {
 	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+	unsigned tailroom = 0;
+
+	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
+
+	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
+
+	memset(message->data(), 0, message->length());
+
+	return message;
+}
+
+Packet* RSVPElement::createPathMessage() const
+{
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
 		sizeof(RSVPHop) +
 		sizeof(RSVPTimeValues) +
-		sizeof(RSVPSenderTSpec);
-	unsigned tailroom = 0;
+		(_senderDescriptor ?
+			sizeof(RSVPSenderTemplate) +
+			sizeof(RSVPSenderTSpec)
+			: 0);
 	
-	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
-	
-	if (!message) click_chatter("RSVPElement::createPathMessage: cannot make element!");
-	
-	memset(message->data(), 0, message->length());
+	WritablePacket* message = createPacket(packetSize);
 	
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
@@ -490,16 +523,20 @@ Packet* RSVPElement::createPathMessage()
 	initRSVPSession(session, _session_destination_address, _session_protocol_ID, _session_police, _session_destination_port);
 	initRSVPHop(hop, _hop_neighbor_address, _hop_logical_interface_handle);
 	initRSVPTimeValues(timeValues, _timeValues_refresh_period_r);
-	initRSVPSenderTemplate(senderTemplate, IPAddress("89.90.91.92").in_addr(), 12345);
-	initRSVPSenderTSpec(senderTSpec, -49.37f, 872.01f, 2.3f, 4, 200);
+	if (_senderDescriptor) {
+		initRSVPSenderTemplate(senderTemplate, _senderTemplate_src_address, _senderTemplate_src_port);
+		initRSVPSenderTSpec(senderTSpec, _senderTSpec_token_bucket_rate,
+			_senderTSpec_token_bucket_size, _senderTSpec_peak_data_rate,
+			_senderTSpec_minimum_policed_unit, _senderTSpec_maximum_packet_size);
+	}
+	
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
 	
 	return message;
 }
 
-Packet* RSVPElement::createResvMessage() {
-	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
+Packet* RSVPElement::createResvMessage() const {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
@@ -509,13 +546,8 @@ Packet* RSVPElement::createResvMessage() {
 		sizeofRSVPScopeObject(_scope_src_addresses.size()) +
 		sizeof(RSVPStyle) +
 		sizeof(RSVPFlowspec);
-	unsigned tailroom = 0;
 
-	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
-	
-	if (!message) click_chatter("RSVPElement::createResvMessage: cannot make element!");
-	
-	memset(message->data(), 0, message->length());
+	WritablePacket* message = createPacket(packetSize);
 	
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
@@ -538,18 +570,15 @@ Packet* RSVPElement::createResvMessage() {
 	return message;
 }
 
-Packet* RSVPElement::createPathErrMessage()
+Packet* RSVPElement::createPathErrMessage() const
 {
-	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
 		sizeof(RSVPErrorSpec);
 	unsigned tailroom = 0;
 	
-	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
-	
-	if (!message) click_chatter("RSVPElement::createPathErrMessage: cannot make element!");
+	WritablePacket* message = createPacket(packetSize);
 	
 	memset(message->data(), 0, message->length());
 	
@@ -566,9 +595,8 @@ Packet* RSVPElement::createPathErrMessage()
 	return message;
 }
 
-Packet* RSVPElement::createResvErrMessage()
+Packet* RSVPElement::createResvErrMessage() const
 {
-	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
@@ -576,11 +604,8 @@ Packet* RSVPElement::createResvErrMessage()
 		sizeof(RSVPErrorSpec) +
 		sizeofRSVPScopeObject(_scope_src_addresses.size()) +
 		sizeof(RSVPStyle);
-	unsigned tailroom = 0;
 	
-	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
-	
-	if (!message) click_chatter("RSVPElement::createResvErrMessage: cannot make element!");
+	WritablePacket* message = createPacket(packetSize);
 	
 	memset(message->data(), 0, message->length());
 	
@@ -601,20 +626,14 @@ Packet* RSVPElement::createResvErrMessage()
 	return message;
 }
 
-Packet* RSVPElement::createPathTearMessage()
+Packet* RSVPElement::createPathTearMessage() const
 {
-	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
 		sizeof(RSVPHop);
-	unsigned tailroom = 0;
 	
-	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
-	
-	if (!message) click_chatter("RSVPElement::createPathTearMessage: cannot make element!");
-	
-	memset(message->data(), 0, message->length());
+	WritablePacket* message = createPacket(packetSize);
 	
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
@@ -629,22 +648,16 @@ Packet* RSVPElement::createPathTearMessage()
 	return message;
 }
 
-Packet* RSVPElement::createResvTearMessage()
+Packet* RSVPElement::createResvTearMessage() const
 {
-	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
 		sizeof(RSVPHop) +
 		sizeofRSVPScopeObject(_scope_src_addresses.size()) +
 		sizeof(RSVPStyle);
-	unsigned tailroom = 0;
 	
-	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
-	
-	if (!message) click_chatter("RSVPElement::createResvTearMessage: cannot make element!");
-	
-	memset(message->data(), 0, message->length());
+	WritablePacket* message = createPacket(packetSize);
 	
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
@@ -661,22 +674,16 @@ Packet* RSVPElement::createResvTearMessage()
 	return message;
 }
 
-Packet* RSVPElement::createResvConfMessage()
+Packet* RSVPElement::createResvConfMessage() const
 {
-	unsigned headroom = sizeof(click_ip) + sizeof(click_ether);
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
 		sizeof(RSVPErrorSpec) +
 		sizeof(RSVPResvConf) +
 		sizeof(RSVPStyle);
-	unsigned tailroom = 0;
 	
-	WritablePacket* message = Packet::make(headroom, 0, packetSize, tailroom);
-	
-	if (!message) click_chatter("RSVPElement::createResvConfMessage: cannot make element!");
-	
-	memset(message->data(), 0, message->length());
+	WritablePacket* message = createPacket(packetSize);
 	
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) (message->data());
 	RSVPSession* session           = (RSVPSession *)      (commonHeader + 1);
@@ -716,7 +723,17 @@ void RSVPElement::clean() {
 	
 	_flowspec = false;
 	_filterspec = false;
-	_senderTemplate = false;
+	_senderDescriptor = false;
+
+	_senderTemplate_src_address = IPAddress("0.0.0.0").in_addr();
+	_senderTemplate_src_port = 0;
+
+	_senderTSpec_token_bucket_rate = 0.0f;
+	_senderTSpec_token_bucket_size = 0.0f;
+	_senderTSpec_peak_data_rate = 0.0f;
+	_senderTSpec_minimum_policed_unit = 0;
+	_senderTSpec_maximum_packet_size = 0;
+
 	_senderTSpec = false;
 	_resvConf = false;
 	_resvConf_receiver_address = IPAddress("0.0.0.0").in_addr();

@@ -200,6 +200,7 @@ public:
 	static int timeValuesHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvConfObjectHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int scopeHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	static int senderDescriptorHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 
 	// send message handlers
 	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -209,16 +210,20 @@ public:
 	static int pathTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvConfHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
+	
 	static String getTTLHandle(Element *e, void * thunk);
+	
 	void add_handlers();
 	
-	Packet* createPathMessage();
-	Packet* createResvMessage();
-	Packet* createPathErrMessage();
-	Packet* createResvErrMessage();
-	Packet* createPathTearMessage();
-	Packet* createResvTearMessage();
-	Packet* createResvConfMessage();
+	WritablePacket* createPacket(uint16_t packetSize) const;
+
+	Packet* createPathMessage() const;
+	Packet* createResvMessage() const;
+	Packet* createPathErrMessage() const;
+	Packet* createResvErrMessage() const;
+	Packet* createPathTearMessage() const;
+	Packet* createResvTearMessage() const;
+	Packet* createResvConfMessage() const;
 	
 private:
 	void clean();
@@ -244,7 +249,17 @@ private:
 	
 	bool _flowspec;
 	bool _filterspec;
-	bool _senderTemplate;
+	bool _senderDescriptor;
+
+	in_addr _senderTemplate_src_address;
+	uint16_t _senderTemplate_src_port;
+
+	float _senderTSpec_token_bucket_rate;
+	float _senderTSpec_token_bucket_size;
+	float _senderTSpec_peak_data_rate;
+	uint32_t _senderTSpec_minimum_policed_unit;
+	uint32_t _senderTSpec_maximum_packet_size;
+
 	bool _senderTSpec;
 	bool _resvConf;
 	in_addr _resvConf_receiver_address;
