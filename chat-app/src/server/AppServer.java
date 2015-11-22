@@ -25,13 +25,6 @@ import chat_app.AppClientInterface;
  * - clients evenwaardig aan elkaar (?), P2P
  * - lijst met openstaande requests bijhouden
  */
-
-/*			TEGEN TUSSENTIJDSE EVALUATIE
- * We verwachten dat je volgende features hebt ge ̈ımplementeerd en kan demonstreren:
- * 	Een client moet kunnen registreren bij de server en de applicatie correct kunnen verlaten.
- * 	Een client moet een lijst kunnen opvragen van de verbonden clients.
- * 	Een client moet de publieke chat room kunnen joinen en daarin boodschappen versturen.
-*/
 public class AppServer extends TimerTask implements AppServerInterface {
 	//ClientInfo = {username, id, status(enum), proxy object}
 	private List<ClientInfo> connectedClients = new ArrayList<ClientInfo>();
@@ -140,7 +133,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		
 		for (Iterator<ClientInfo> iterator = this.connectedClients.iterator(); iterator.hasNext();) {
 			ClientInfo client = iterator.next();
-			//.isConnected() geeft altijd false fuck al die retarded fucking isConnected functies da ni werke LKJHUfgdsokljgsd<ykFÖQHGBEV,ANJKGVFGHJKPÖAFESIÖZ HGUJKLHZDFS ÖUKLJHÖZFDVGJKHBASDFHVAFRHGLDVÖHIKSCRAHGIWRFQLGIYHEWQFÖHGIFQWREYHGI 
+			//.isConnected() geeft natuurlijk nooit true 
 			if (!client.transceiver.isConnected()) {
 				/*
 				System.out.println("User: " + client.username + " disconnected. Removed from list.");
