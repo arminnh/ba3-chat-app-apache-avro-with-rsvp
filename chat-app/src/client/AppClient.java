@@ -29,27 +29,29 @@ import chat_app.AppClientInterface;
  * - automatische registratie bij de server
  * - lijst opvragen van alle online gebruikers
  * - gebruiker kan publieke chatroom joinen
+ * - maximaal 1 conversatie tegelijk
+ * 
+ * 	 TODO
  * - requests voor prive gesprekken sturen, accepteren, weigeren
  *   (in elke situatie: publieke chatroom, prive gesprek)
  * - video streaming
- * - maximaal 1 conversatie tegelijk
  */
 
 public class AppClient implements AppClientInterface {
 	private SaslSocketTransceiver transceiver = null;
 	private AppServerInterface appServer = null;
 	private int id = -1, port;
-	private String hostIpAddress;
+	private String hostIP;
 	
-	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String hostIpAddress, int port) {
+	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String hostIP, int port) {
 		this.transceiver = t;
 		this.appServer = a;
-		this.hostIpAddress = hostIpAddress;
+		this.hostIP = hostIP;
 		this.port = port;
 	}
 	
 	public void register(String username) throws AvroRemoteException {
-		id = appServer.registerClient((CharSequence) username, hostIpAddress, port);
+		id = appServer.registerClient((CharSequence) username, hostIP, port);
 		System.out.println("Recieved id: " + id);
 	}
 
@@ -102,30 +104,23 @@ public class AppClient implements AppClientInterface {
 		return 0;
 	}
 	
-	/*
-	 * doen werken op 2 pc's -> clients ip adress mee geven?
-	 * getlocalhost -> altijd  0.0.0.0 ??
-	 * registratie automatiseren	-> DONE
-	 */
-	
 	public static void main(String[] argv) {
 		//Take server's ipaddress and port from terminal arguments:
 		//	ipaddress = argv[0];
 		//	port = argv[1];
 		//Get hosts ipadress by:
-		//	InetAddress addr = new InetAddress.getLocalHost();
-		String hostIpAddress = "0.0.0.0";
+		//  http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
+		//  -> Just ask the user for now
+		String hostIP = "0.0.0.0";
 		int port = 6789, clientPort = 2345;
 
-		// http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
 		try {
 			InetAddress IP = InetAddress.getLocalHost();
-			System.out.println(IP.getHostAddress());
-			System.out.println(IP.toString());
-	        System.out.println("i.isAnyLocalAddress(): " + IP.isAnyLocalAddress());
-	        System.out.println("i.isLinkLocalAddress(): " + IP.isLinkLocalAddress());
-	        System.out.println("i.isLoopbackAddress(): " + IP.isLoopbackAddress() + "\n");
-			
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		} 
+		
+		/*try {
 			Enumeration e = NetworkInterface.getNetworkInterfaces();
 			while(e.hasMoreElements()) {
 			    NetworkInterface n = (NetworkInterface) e.nextElement();
@@ -139,12 +134,9 @@ public class AppClient implements AppClientInterface {
 					System.out.println();
 			    }
 			}
-			
-		} catch (UnknownHostException e1) {
-			e1.printStackTrace();
 		} catch (SocketException e1) {
 			e1.printStackTrace();
-		}
+		}*/
 		
 		String username;
 		Scanner in = new Scanner(System.in);
@@ -154,26 +146,23 @@ public class AppClient implements AppClientInterface {
 		System.out.println("Enter the IP address of the server.");
 		InetSocketAddress serverIP = new InetSocketAddress(in.nextLine(), port);
 		
-		System.out.println("Enter the public IP address the server will need to connect to.");
-		hostIpAddress = in.nextLine();
+		System.out.println("Enter the IP address the server will need to connect to.");
+		hostIP = in.nextLine();
 		
 		Server clientResponder = null;
 		AppClient clientRequester = null;
 		try {
-			//Setup Transceiver client  and  AppServerInterface proxy
-			//addr = InetAddress.getByName(ipaddress);
-			//client = new SaslSocketTransceiver( new InetSocketAddress(addr, port) );
-			
+			// Connect to the server to create the appServer proxy object.
 			SaslSocketTransceiver transceiver = new SaslSocketTransceiver(serverIP);
-			System.out.println("transceiver connected: " + transceiver.isConnected());
-			System.out.println("transceiver.getRemoteName(): " + transceiver.getRemoteName());
 			AppServerInterface appServer = (AppServerInterface) SpecificRequestor.getClient(AppServerInterface.class, transceiver);
-			System.out.println("transceiver connected: " + transceiver.isConnected());
+			//System.out.println("transceiver connected: " + transceiver.isConnected());
+			//System.out.println("transceiver.getRemoteName(): " + transceiver.getRemoteName());
 			
-			while (true) {
+			while (true) { // Try other clientPorts for the case where the port is already in use 
 				System.out.println("Trying to use port " + clientPort);
 				try {
-					clientRequester = new AppClient(transceiver, appServer, hostIpAddress, clientPort);
+					// Create a responder so the server can invoke methods on this client.
+					clientRequester = new AppClient(transceiver, appServer, hostIP, clientPort);
 					clientResponder = new SaslSocketServer( new SpecificResponder(AppClientInterface.class, clientRequester), new InetSocketAddress(clientPort) );
 					clientResponder.start();
 					break;
@@ -187,11 +176,10 @@ public class AppClient implements AppClientInterface {
 				}
 			}
 
-			//appServer.registerClient(username,  hostIpAddress,  clientPort);
 			clientRequester.register(username);
 			System.out.println("Welcome to Chat App, type ?list to get a list of available commands.");
 	        ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
-			System.out.println("Client exit program.");
+			System.out.println("Quit program.");
 			
 			//clientResponder.join();
 			clientResponder.close();
@@ -205,4 +193,5 @@ public class AppClient implements AppClientInterface {
 		
 	}
 }
+
 // Runtime.getRuntime().addShutdownHook
