@@ -156,7 +156,7 @@ uint16_t sizeofRSVPScopeObject(size_t num_addresses);
 
 void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
 void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
-void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_id, bool police);
+void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_id, bool police, uint16_t dst_port);
 void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);
 void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
@@ -231,38 +231,20 @@ private:
 	Timer _timer;
 	uint8_t _TTL;
 	
-	in_addr _session_destination_address;
-	uint8_t _session_protocol_ID;
-	bool _session_police;
-	uint16_t _session_destination_port;
-	
-	in_addr _errorspec_error_node_address;
-	bool _errorspec_inPlace;
-	bool _errorspec_notGuilty;
-	uint8_t _errorspec_errorCode;
-	uint16_t _errorspec_errorValue;
-	
-	in_addr _hop_neighbor_address;
-	uint32_t _hop_logical_interface_handle;
-	
-	uint32_t _timeValues_refresh_period_r;
+	RSVPSession _session;
+	RSVPErrorSpec _errorSpec;
+	RSVPHop _hop;
+	RSVPTimeValues _timeValues;
 	
 	bool _flowspec;
 	bool _filterspec;
 	bool _senderDescriptor;
 
-	in_addr _senderTemplate_src_address;
-	uint16_t _senderTemplate_src_port;
+	RSVPSenderTemplate _senderTemplate;
+	RSVPSenderTSpec _senderTSpec;
 
-	float _senderTSpec_token_bucket_rate;
-	float _senderTSpec_token_bucket_size;
-	float _senderTSpec_peak_data_rate;
-	uint32_t _senderTSpec_minimum_policed_unit;
-	uint32_t _senderTSpec_maximum_packet_size;
-
-	bool _senderTSpec;
-	bool _resvConf;
-	in_addr _resvConf_receiver_address;
+	bool _resvConf_given;
+	RSVPResvConf _resvConf;
 
 	Vector<in_addr> _scope_src_addresses;
 };
