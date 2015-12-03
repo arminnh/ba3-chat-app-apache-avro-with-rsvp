@@ -2,6 +2,7 @@
     "namespace": "chat_app",
     "protocol": "AppServerInterface",
     
+    
     "messages" : {
         "registerClient": {
         "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
@@ -26,6 +27,22 @@
         "exitPublicChat": {
         "request": [{"name": "id", "type": "int"}],
         "response": "int"
-        } 
+        },
+        "exitPrivateChat": {
+        "request": [{"name": "id", "type": "int"}],
+        "response": "int"
+        },
+        "sendRequest": {
+        "request": [{"name": "id1", "type": "int"}, {"name": "id2", "type": "int"}],
+        "response": "int"
+        },
+        "requestResponse": {
+        "request": [{"name": "id1", "type": "int"}, {"name": "id2", "type": "int"}, {"name": "responseBool", "type": "boolean"}],
+        "response": {"type": "array", "items": "string"}
+        },
+        "getMyRequests": {
+        "request": [{"name":"id", "type": "int"}],
+        "response": {"name": "list", "type": "string"}
+        }
     }
 }

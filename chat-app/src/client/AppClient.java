@@ -43,6 +43,13 @@ public class AppClient implements AppClientInterface {
 	private int id = -1, port;
 	private String hostIP;
 	
+	private String serverIP;
+	private int serverPort;
+	
+	private server.ClientInfo PrivateChatClient = null;
+	
+	private BufferedReader br = null;
+	
 	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String hostIP, int port) {
 		this.transceiver = t;
 		this.appServer = a;
@@ -73,9 +80,12 @@ public class AppClient implements AppClientInterface {
 		
 		System.out.println("You entered the public chatroom.\nThe commands are different here, type ?list to get the list of commands.");
 		
-		BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); 
+		br = new BufferedReader(new InputStreamReader(System.in)); 
 		String input = br.readLine();
-		while (!input.equals("?leave") && !input.equals("?q")) {
+		//br.close();
+		
+		while (!input.equals("?leave") && !input.equals("?q") ) {
+			
 			if (input.equals("?list")) {
 				System.out.println("To get the list of connected users: ?getListOfUsers or ?glou");
 				System.out.println("To leave the chatroom:              ?leave or ?q");
@@ -191,6 +201,30 @@ public class AppClient implements AppClientInterface {
 			System.exit(1);
 		}
 		
+	}
+
+	@Override
+	public int receiveRequest(CharSequence request) throws AvroRemoteException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public CharSequence video(CharSequence iets) throws AvroRemoteException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int requestAccepted(CharSequence username, CharSequence ipaddress, int port) throws AvroRemoteException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int stopPrivateChat() throws AvroRemoteException {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }
 

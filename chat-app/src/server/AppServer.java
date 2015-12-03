@@ -29,6 +29,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	//ClientInfo = {username, id, status(enum), proxy object}
 	private List<ClientInfo> connectedClients = new ArrayList<ClientInfo>();
 	private int idCounter = 0;
+	private List<Request> requestList = new ArrayList<Request>(); // {from, to, status}
 
 	@Override
 	public int registerClient(CharSequence username, CharSequence ipaddress, int port) throws AvroRemoteException {
@@ -36,6 +37,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		client.username = username;
 		client.id = this.idCounter++;
 		client.status = ClientStatus.LOBBY;
+		client.address = address;
 
 		//proxy client
 		InetAddress addr;
@@ -153,6 +155,80 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	
 	public void run() {
 		this.checkConnectedList();
+	}
+
+	@Override
+	public int exitPrivateChat(int id) throws AvroRemoteException {
+		ClientInfo client = this.connectedClients.get(id);
+		client.status = ClientStatus.PUBLICCHAT;
+		this.connectedClients.set(id, client);
+		return 1;
+	}
+	
+	public ClientInfo getClientInfo(int id) {
+		for (ClientInfo c : this.connectedClients) {
+			if (c.id == id) {
+				return c;
+			}
+		}
+		
+		return null;
+	}
+	
+	public Request getRequest(int from, int to) {
+		for (Request r : this.requestList) {
+			if (r.getFrom() == from && r.getTo() == to) {
+				return r;
+			}
+		}
+		return null;
+	}
+	
+	@Override
+	public int sendRequest(int id1, int id2) throws AvroRemoteException {
+		Request request = new Request(id1, id2, RequestStatus.pending);
+		this.requestList.add(request);
+		return 0;
+	}
+
+	@Override
+	public List<CharSequence> requestResponse(int id1, int id2, boolean responseBool) throws AvroRemoteException {
+		Request r = getRequest(id2, id1);
+		if (r != null) {
+			r.setStatus(responseBool ? RequestStatus.accepted : RequestStatus.declined);
+		}
+		
+		List<CharSequence> clientInfo = new ArrayList<CharSequence>();
+		
+		clientInfo.add(getClientInfo(id2).)
+		
+ 		return ;
+	}
+	
+	public String getUsername(int id) {
+		for (ClientInfo client : this.connectedClients) {
+			if (client.id == id) {
+				return (String) client.username;
+			}
+		}
+		
+		return "fuck";
+	}
+
+	@Override
+	public CharSequence getMyRequests(int id) throws AvroRemoteException {
+		CharSequence requests = "Requests:\n\t";
+		
+		for (Request r : requestList) {
+			if (r.getFrom() == id || r.getTo() == id) {
+				String username = getUsername((r.getFrom() == id) ? r.getFrom() : r.getTo());
+				String from = (r.getFrom() == id) ? "  to" : "from";
+				
+				requests = requests + from + username + ", Status:" + r.getStatus().toString() + "\n\t";
+			}
+		}
+		
+		return requests;
 	}
 	
 	public static void main(String[] argv) { 

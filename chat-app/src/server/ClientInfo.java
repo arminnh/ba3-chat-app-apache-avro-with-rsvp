@@ -13,4 +13,5 @@ public class ClientInfo {
 	public ClientStatus status;
 	public SaslSocketTransceiver transceiver;
 	public AppClientInterface proxy = null;
+	public InetSocketAddress address;
 }

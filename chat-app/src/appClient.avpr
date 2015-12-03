@@ -6,6 +6,22 @@
         "receiveMessage": {
         "request": [{"name": "message", "type": "string"}],
         "response": "int"
+        },
+        "receiveRequest": {
+        "request": [{"name": "request", "type": "string"}],
+        "response": "int"
+        },
+        "video": {
+        "request": [{"name": "iets", "type": "string"}],
+        "response": "string"
+        },
+        "requestAccepted": {
+        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
+        "response": "int"
+        },
+        "stopPrivateChat": {
+        "request": [],
+        "response": "int"
         }
     }
 }
