@@ -4,24 +4,28 @@
     
     "messages" : {
         "receiveMessage": {
-        "request": [{"name": "message", "type": "string"}],
-        "response": "int"
+	        "request": [{"name": "message", "type": "string"}],
+	        "response": "int"
         },
         "receiveRequest": {
-        "request": [{"name": "request", "type": "string"}],
-        "response": "int"
+	        "request": [{"name": "request", "type": "string"}],
+	        "response": "int"
         },
-        "video": {
-        "request": [{"name": "iets", "type": "string"}],
-        "response": "string"
+        "setPrivateChatClient": {
+	        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
+	        "response": "int"
         },
-        "requestAccepted": {
-        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
-        "response": "int"
+        "startPrivateChat": {
+	        "request": [],
+	        "response": "int"
         },
         "stopPrivateChat": {
-        "request": [],
-        "response": "int"
+	        "request": [],
+	        "response": "int"
+        },
+        "video": {
+	        "request": [{"name": "iets", "type": "string"}],
+	        "response": "string"
         }
     }
 }

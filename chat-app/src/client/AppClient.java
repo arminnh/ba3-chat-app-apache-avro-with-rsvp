@@ -20,6 +20,7 @@ import org.apache.avro.ipc.specific.SpecificRequestor;
 import org.apache.avro.ipc.specific.SpecificResponder;
 
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Scanner;
 
 import chat_app.AppServerInterface;
@@ -43,7 +44,7 @@ public class AppClient implements AppClientInterface {
 	private int clientPort, serverPort;
 	private String clientIP, serverIP;
 	private CharSequence username;
-	private server.ClientInfo PrivateChatClient = null;
+	private server.ClientInfo privateChatClient = null;
 	private BufferedReader br = null;
 	
 	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String clientIP, int clientPort) {
@@ -113,10 +114,77 @@ public class AppClient implements AppClientInterface {
 		System.out.println(message);
 		return 0;
 	}
-	
-	public void sendRequest(String username) {
-		
+
+	@Command
+	public void listMyRequests() throws AvroRemoteException {
+		System.out.println(this.appServer.getMyRequests(this.username));
 	}
+
+	@Command
+	public void sendRequest(String username) throws AvroRemoteException {
+		this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
+	}
+
+	@Override
+	public int setPrivateChatClient(CharSequence username, CharSequence ipaddress, int port) throws AvroRemoteException {
+		server.ClientInfo pcc = this.privateChatClient;
+		InetAddress addr;
+		try {
+			addr = InetAddress.getByName(ipaddress.toString());
+			pcc.address = new InetSocketAddress(addr, port);
+			pcc.transceiver = new SaslSocketTransceiver(pcc.address);
+			pcc.proxy = (AppClientInterface) SpecificRequestor.getClient(AppClientInterface.class, pcc.transceiver);
+		} catch (UnknownHostException e) {	//InetAddress.getByName
+			e.printStackTrace();
+		}catch (IOException e) {			//SaslSocketTransceiver and SpecificRequestor
+			e.printStackTrace();
+		}
+		
+		
+		return 0;
+	}
+
+	@Command
+	public void respondRequest(String username, boolean responseBool) throws AvroRemoteException {
+		this.appServer.requestResponse(this.username, (CharSequence) username, responseBool);
+		
+		//start private chat
+	}
+
+	@Override
+	public int receiveRequest(CharSequence request) throws AvroRemoteException {
+		System.out.println(request.toString());
+		return 0;
+	}
+
+	@Command
+	@Override
+	public CharSequence video(CharSequence iets) throws AvroRemoteException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int startPrivateChat() throws AvroRemoteException {
+		sysout("Private chat started with user");
+		this.privateChatClient = true;
+		//this.startChat(true); //true mean private chat
+		return 0;
+	}
+
+	private void startChat(boolean b) {
+		// TODO Auto-generated method stub
+		while (true) {
+			System.out.println("test");
+		}
+	}
+
+	@Override
+	public int stopPrivateChat() throws AvroRemoteException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
 	
 	public static void main(String[] argv) {
 		//Take server's ipaddress and port from terminal arguments:
@@ -211,30 +279,6 @@ public class AppClient implements AppClientInterface {
 			System.exit(1);
 		}
 		
-	}
-
-	@Override
-	public int receiveRequest(CharSequence request) throws AvroRemoteException {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public CharSequence video(CharSequence iets) throws AvroRemoteException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public int requestAccepted(CharSequence username, CharSequence ipaddress, int port) throws AvroRemoteException {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int stopPrivateChat() throws AvroRemoteException {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 }
 

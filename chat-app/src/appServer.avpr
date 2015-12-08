@@ -42,7 +42,7 @@
         },
         "requestResponse": {
 	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}, {"name": "responseBool", "type": "boolean"}],
-	        "response": {"type": "array", "items": "string"}
+	        "response": "int"
         },
         "getMyRequests": {
 	        "request": [{"name":"username", "type": "string"}],

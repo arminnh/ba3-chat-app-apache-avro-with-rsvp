@@ -171,20 +171,30 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	}
 
 	@Override
-	public List<CharSequence> requestResponse(CharSequence username1, CharSequence username2, boolean responseBool) throws AvroRemoteException {
+	public int requestResponse(CharSequence username1, CharSequence username2, boolean responseBool) throws AvroRemoteException {
 		Request r = getRequest(username2, username1);
 		if (r != null) {
 			// RequestStatus {pending, accepted, declined, deleted};
 			r.setStatus(responseBool ? RequestStatus.accepted : RequestStatus.declined);
 		}
 		
-		List<CharSequence> clientInfo = new ArrayList<CharSequence>();
+		if (responseBool) {
+			ClientInfo accepter = this.clients.get(username1.toString());
+			accepter.status = ClientStatus.PRIVATECHAT;
+			
+			ClientInfo requester = this.clients.get(username2.toString());
+			requester.status = ClientStatus.PRIVATECHAT;
+			
+			String[] ipAndPort = requester.address.toString().split(":");
+			accepter.proxy.setPrivateChatClient(username2, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
+			ipAndPort = accepter.address.toString().split(":");
+			requester.proxy.setPrivateChatClient(username1, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
+
+			accepter.proxy.startPrivateChat();
+			requester.proxy.startPrivateChat();
+		}
 		
-		clientInfo.add(username2.toString());
-		ClientInfo client = this.clients.get(username2.toString());
-		clientInfo.add(client.address.toString()); // "ip:port"
-		
- 		return clientInfo;
+ 		return 0;
 	}
 
 	@Override
