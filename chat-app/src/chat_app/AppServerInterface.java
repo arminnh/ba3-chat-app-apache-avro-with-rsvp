@@ -8,30 +8,32 @@ package chat_app;
 @SuppressWarnings("all")
 @org.apache.avro.specific.AvroGenerated
 public interface AppServerInterface {
-  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"AppServerInterface\",\"namespace\":\"chat_app\",\"types\":[],\"messages\":{\"registerClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"exitClient\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"getListOfClients\":{\"request\":[],\"response\":\"string\"},\"joinPublicChat\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"sendMessage\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"},{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"exitPublicChat\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"exitPrivateChat\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"int\"},\"sendRequest\":{\"request\":[{\"name\":\"id1\",\"type\":\"int\"},{\"name\":\"id2\",\"type\":\"int\"}],\"response\":\"int\"},\"requestResponse\":{\"request\":[{\"name\":\"id1\",\"type\":\"int\"},{\"name\":\"id2\",\"type\":\"int\"},{\"name\":\"responseBool\",\"type\":\"boolean\"}],\"response\":{\"type\":\"array\",\"items\":\"string\"}},\"getMyRequests\":{\"request\":[{\"name\":\"id\",\"type\":\"int\"}],\"response\":\"string\"}}}");
+  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"AppServerInterface\",\"namespace\":\"chat_app\",\"types\":[],\"messages\":{\"registerClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"isNameAvailable\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"}],\"response\":\"boolean\"},\"exitClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"}],\"response\":\"int\"},\"getListOfClients\":{\"request\":[],\"response\":\"string\"},\"joinPublicChat\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"}],\"response\":\"int\"},\"sendMessage\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"exitPublicChat\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"}],\"response\":\"int\"},\"exitPrivateChat\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"}],\"response\":\"int\"},\"sendRequest\":{\"request\":[{\"name\":\"username1\",\"type\":\"string\"},{\"name\":\"username2\",\"type\":\"string\"}],\"response\":\"int\"},\"requestResponse\":{\"request\":[{\"name\":\"username1\",\"type\":\"string\"},{\"name\":\"username2\",\"type\":\"string\"},{\"name\":\"responseBool\",\"type\":\"boolean\"}],\"response\":{\"type\":\"array\",\"items\":\"string\"}},\"getMyRequests\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"}],\"response\":\"string\"}}}");
   int registerClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port) throws org.apache.avro.AvroRemoteException;
-  int exitClient(int id) throws org.apache.avro.AvroRemoteException;
+  boolean isNameAvailable(java.lang.CharSequence username) throws org.apache.avro.AvroRemoteException;
+  int exitClient(java.lang.CharSequence username) throws org.apache.avro.AvroRemoteException;
   java.lang.CharSequence getListOfClients() throws org.apache.avro.AvroRemoteException;
-  int joinPublicChat(int id) throws org.apache.avro.AvroRemoteException;
-  int sendMessage(int id, java.lang.CharSequence message) throws org.apache.avro.AvroRemoteException;
-  int exitPublicChat(int id) throws org.apache.avro.AvroRemoteException;
-  int exitPrivateChat(int id) throws org.apache.avro.AvroRemoteException;
-  int sendRequest(int id1, int id2) throws org.apache.avro.AvroRemoteException;
-  java.util.List<java.lang.CharSequence> requestResponse(int id1, int id2, boolean responseBool) throws org.apache.avro.AvroRemoteException;
-  java.lang.CharSequence getMyRequests(int id) throws org.apache.avro.AvroRemoteException;
+  int joinPublicChat(java.lang.CharSequence username) throws org.apache.avro.AvroRemoteException;
+  int sendMessage(java.lang.CharSequence username, java.lang.CharSequence message) throws org.apache.avro.AvroRemoteException;
+  int exitPublicChat(java.lang.CharSequence username) throws org.apache.avro.AvroRemoteException;
+  int exitPrivateChat(java.lang.CharSequence username) throws org.apache.avro.AvroRemoteException;
+  int sendRequest(java.lang.CharSequence username1, java.lang.CharSequence username2) throws org.apache.avro.AvroRemoteException;
+  java.util.List<java.lang.CharSequence> requestResponse(java.lang.CharSequence username1, java.lang.CharSequence username2, boolean responseBool) throws org.apache.avro.AvroRemoteException;
+  java.lang.CharSequence getMyRequests(java.lang.CharSequence username) throws org.apache.avro.AvroRemoteException;
 
   @SuppressWarnings("all")
   public interface Callback extends AppServerInterface {
     public static final org.apache.avro.Protocol PROTOCOL = chat_app.AppServerInterface.PROTOCOL;
     void registerClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void exitClient(int id, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void isNameAvailable(java.lang.CharSequence username, org.apache.avro.ipc.Callback<java.lang.Boolean> callback) throws java.io.IOException;
+    void exitClient(java.lang.CharSequence username, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void getListOfClients(org.apache.avro.ipc.Callback<java.lang.CharSequence> callback) throws java.io.IOException;
-    void joinPublicChat(int id, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void sendMessage(int id, java.lang.CharSequence message, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void exitPublicChat(int id, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void exitPrivateChat(int id, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void sendRequest(int id1, int id2, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void requestResponse(int id1, int id2, boolean responseBool, org.apache.avro.ipc.Callback<java.util.List<java.lang.CharSequence>> callback) throws java.io.IOException;
-    void getMyRequests(int id, org.apache.avro.ipc.Callback<java.lang.CharSequence> callback) throws java.io.IOException;
+    void joinPublicChat(java.lang.CharSequence username, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void sendMessage(java.lang.CharSequence username, java.lang.CharSequence message, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void exitPublicChat(java.lang.CharSequence username, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void exitPrivateChat(java.lang.CharSequence username, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void sendRequest(java.lang.CharSequence username1, java.lang.CharSequence username2, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void requestResponse(java.lang.CharSequence username1, java.lang.CharSequence username2, boolean responseBool, org.apache.avro.ipc.Callback<java.util.List<java.lang.CharSequence>> callback) throws java.io.IOException;
+    void getMyRequests(java.lang.CharSequence username, org.apache.avro.ipc.Callback<java.lang.CharSequence> callback) throws java.io.IOException;
   }
 }

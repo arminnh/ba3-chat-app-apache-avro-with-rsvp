@@ -5,44 +5,48 @@
     
     "messages" : {
         "registerClient": {
-        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
-        "response": "int"
+	        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
+	        "response": "int"
+        },
+        "isNameAvailable": {
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": "boolean"
         },
         "exitClient": {
-        "request": [{"name": "id", "type": "int"}],
-        "response": "int"
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": "int"
         },
         "getListOfClients": {
-        "request": [],
-        "response": {"name": "list", "type": "string"}
+	        "request": [],
+	        "response": {"name": "list", "type": "string"}
         },
         "joinPublicChat": {
-        "request": [{"name": "id", "type": "int"}],
-        "response": "int"
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": "int"
         },
         "sendMessage": {
-        "request": [{"name": "id", "type": "int"}, {"name": "message", "type": "string"}],
-        "response": "int"
+	        "request": [{"name": "username", "type": "string"}, {"name": "message", "type": "string"}],
+	        "response": "int"
         },
         "exitPublicChat": {
-        "request": [{"name": "id", "type": "int"}],
-        "response": "int"
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": "int"
         },
         "exitPrivateChat": {
-        "request": [{"name": "id", "type": "int"}],
-        "response": "int"
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": "int"
         },
         "sendRequest": {
-        "request": [{"name": "id1", "type": "int"}, {"name": "id2", "type": "int"}],
-        "response": "int"
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}],
+	        "response": "int"
         },
         "requestResponse": {
-        "request": [{"name": "id1", "type": "int"}, {"name": "id2", "type": "int"}, {"name": "responseBool", "type": "boolean"}],
-        "response": {"type": "array", "items": "string"}
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}, {"name": "responseBool", "type": "boolean"}],
+	        "response": {"type": "array", "items": "string"}
         },
         "getMyRequests": {
-        "request": [{"name":"id", "type": "int"}],
-        "response": {"name": "list", "type": "string"}
+	        "request": [{"name":"username", "type": "string"}],
+	        "response": {"name": "list", "type": "string"}
         }
     }
 }

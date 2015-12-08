@@ -40,31 +40,31 @@ import chat_app.AppClientInterface;
 public class AppClient implements AppClientInterface {
 	private SaslSocketTransceiver transceiver = null;
 	private AppServerInterface appServer = null;
-	private int id = -1, port;
-	private String hostIP;
-	
-	private String serverIP;
-	private int serverPort;
-	
+	private int clientPort, serverPort;
+	private String clientIP, serverIP;
+	private CharSequence username;
 	private server.ClientInfo PrivateChatClient = null;
-	
 	private BufferedReader br = null;
 	
-	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String hostIP, int port) {
+	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String clientIP, int clientPort) {
 		this.transceiver = t;
 		this.appServer = a;
-		this.hostIP = hostIP;
-		this.port = port;
+		this.clientIP = clientIP;
+		this.clientPort = clientPort;
 	}
 	
-	public void register(String username) throws AvroRemoteException {
-		id = appServer.registerClient((CharSequence) username, hostIP, port);
-		//System.out.println("Recieved id: " + id);
+	public boolean register(String username) throws AvroRemoteException {
+		if (this.appServer.isNameAvailable((CharSequence) username)) {
+			appServer.registerClient((CharSequence) username, (CharSequence) clientIP, clientPort);
+			this.username = username;
+			return true;
+		}
+		return false;
 	}
 
 	@Command
 	public void exit() throws IOException {
-		appServer.exitClient(id);
+		appServer.exitClient(this.username);
 		transceiver.close();
 	}
 
@@ -76,7 +76,7 @@ public class AppClient implements AppClientInterface {
 
 	@Command
 	public void joinPublicChat() throws IOException {
-		appServer.joinPublicChat(id);
+		appServer.joinPublicChat(this.username);
 		
 		System.out.println("You entered the public chatroom.\nThe commands are different here, type ?list to get the list of commands.");
 		
@@ -92,26 +92,30 @@ public class AppClient implements AppClientInterface {
 			} else if (input.equals("?getListOfUsers") || input.equals("?glou")) {
 				getListOfUsers();
 			} else {
-				appServer.sendMessage(id, input);
+				appServer.sendMessage(this.username, input);
 			}
 			input = br.readLine();
 		}
-		appServer.exitPublicChat(id);
+		appServer.exitPublicChat(this.username);
 		System.out.println("Left public chat.");
 	}
 
 	public void sendMessage(CharSequence str) throws IOException {
-		appServer.sendMessage(id, str);
+		appServer.sendMessage(this.username, str);
 	}
 
 	public void exitPublicChat() throws IOException {
-		appServer.exitPublicChat(id);
+		appServer.exitPublicChat(this.username);
 	}
 	
 	@Override
 	public int receiveMessage(CharSequence message) throws AvroRemoteException {
 		System.out.println(message);
 		return 0;
+	}
+	
+	public void sendRequest(String username) {
+		
 	}
 	
 	public static void main(String[] argv) {
@@ -121,7 +125,7 @@ public class AppClient implements AppClientInterface {
 		//Get hosts ipadress by:
 		//  http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
 		//  -> Just ask the user for now
-		String hostIP = "0.0.0.0";
+		String clientIP = "0.0.0.0";
 		int port = 6789, clientPort = 2345;
 
 		try {
@@ -147,17 +151,13 @@ public class AppClient implements AppClientInterface {
 		} catch (SocketException e1) {
 			e1.printStackTrace();
 		}*/
-		
-		String username;
-		Scanner in = new Scanner(System.in);
-		System.out.println("Enter your username.");
-		username = in.nextLine();
 
+		Scanner in = new Scanner(System.in);
 		System.out.println("Enter the IP address of the server.");
 		InetSocketAddress serverIP = new InetSocketAddress(in.nextLine(), port);
 		
 		System.out.println("Enter the IP address the server will need to connect to.");
-		hostIP = in.nextLine();
+		clientIP = in.nextLine();
 		
 		Server clientResponder = null;
 		AppClient clientRequester = null;
@@ -172,7 +172,7 @@ public class AppClient implements AppClientInterface {
 				//System.out.println("Trying to use port " + clientPort);
 				try {
 					// Create a responder so the server can invoke methods on this client.
-					clientRequester = new AppClient(transceiver, appServer, hostIP, clientPort);
+					clientRequester = new AppClient(transceiver, appServer, clientIP, clientPort);
 					clientResponder = new SaslSocketServer( new SpecificResponder(AppClientInterface.class, clientRequester), new InetSocketAddress(clientPort) );
 					clientResponder.start();
 					break;
@@ -185,7 +185,17 @@ public class AppClient implements AppClientInterface {
 					}
 				}
 			}
-
+			
+			String username;
+			System.out.println("Enter your username.");
+			while (true) {
+				username = in.nextLine();
+				if (clientRequester.register(username)) {
+					break;
+				}
+				System.out.println("That name is already taken, choose another one.");
+			}
+			
 			clientRequester.register(username);
 			System.out.println("Welcome to Chat App, type ?list to get a list of available commands.");
 	        ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
