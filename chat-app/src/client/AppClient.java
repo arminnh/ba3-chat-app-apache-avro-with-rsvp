@@ -38,7 +38,7 @@ import chat_app.AppClientInterface;
  * - video streaming
  */
 
-public class AppClient implements AppClientInterface {
+public class AppClient implements AppClientInterface, Runnable {
 	private SaslSocketTransceiver transceiver = null;
 	private AppServerInterface appServer = null;
 	private int clientPort, serverPort;
@@ -127,13 +127,16 @@ public class AppClient implements AppClientInterface {
 
 	@Override
 	public int setPrivateChatClient(CharSequence username, CharSequence ipaddress, int port) throws AvroRemoteException {
-		server.ClientInfo pcc = this.privateChatClient;
+		ipaddress = ipaddress.toString().subSequence(1, ipaddress.length());
+		System.out.println("ip: " + ipaddress.toString() + ":" + port);
+		server.ClientInfo pcc = new server.ClientInfo();
 		InetAddress addr;
 		try {
 			addr = InetAddress.getByName(ipaddress.toString());
 			pcc.address = new InetSocketAddress(addr, port);
 			pcc.transceiver = new SaslSocketTransceiver(pcc.address);
 			pcc.proxy = (AppClientInterface) SpecificRequestor.getClient(AppClientInterface.class, pcc.transceiver);
+			this.privateChatClient = pcc;
 		} catch (UnknownHostException e) {	//InetAddress.getByName
 			e.printStackTrace();
 		}catch (IOException e) {			//SaslSocketTransceiver and SpecificRequestor
@@ -166,17 +169,47 @@ public class AppClient implements AppClientInterface {
 
 	@Override
 	public int startPrivateChat() throws AvroRemoteException {
-		sysout("Private chat started with user");
-		this.privateChatClient = true;
-		//this.startChat(true); //true mean private chat
+		//sysout("Private chat started with user");
+		//this.privateChatClient = true;
+		this.startChat(true); //true mean private chat
 		return 0;
 	}
 
 	private void startChat(boolean b) {
-		// TODO Auto-generated method stub
-		while (true) {
-			System.out.println("test");
+        Thread  t = new Thread (this, "chat");
+        t.start ();
+        try {
+			t.join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		System.out.println("You entered the private chatroom with blabla.\nThe commands are different here, type ?list to get the list of commands.");
+		
+		br = new BufferedReader(new InputStreamReader(System.in)); 
+		String input;
+		try {
+			input = br.readLine();
+			while (!input.equals("?leave") && !input.equals("?q") ) {
+				if (input.equals("?list")) {
+					System.out.println("To get the list of connected users: ?getListOfUsers or ?glou");
+					System.out.println("To leave the chatroom:              ?leave or ?q");
+				} else {
+					this.privateChatClient.proxy.receiveMessage(input);
+				}
+				input = br.readLine();
+			}
+			System.out.println("Left private chat.");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 	@Override
@@ -196,11 +229,11 @@ public class AppClient implements AppClientInterface {
 		String clientIP = "0.0.0.0";
 		int port = 6789, clientPort = 2345;
 
-		try {
+		/*try {
 			InetAddress IP = InetAddress.getLocalHost();
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
-		} 
+		} */
 		
 		/*try {
 			Enumeration e = NetworkInterface.getNetworkInterfaces();
@@ -221,11 +254,12 @@ public class AppClient implements AppClientInterface {
 		}*/
 
 		Scanner in = new Scanner(System.in);
-		System.out.println("Enter the IP address of the server.");
+		/*System.out.println("Enter the IP address of the server.");
 		InetSocketAddress serverIP = new InetSocketAddress(in.nextLine(), port);
 		
 		System.out.println("Enter the IP address the server will need to connect to.");
-		clientIP = in.nextLine();
+		clientIP = in.nextLine();*/
+		InetSocketAddress serverIP = new InetSocketAddress("0.0.0.0", port);
 		
 		Server clientResponder = null;
 		AppClient clientRequester = null;
@@ -243,6 +277,7 @@ public class AppClient implements AppClientInterface {
 					clientRequester = new AppClient(transceiver, appServer, clientIP, clientPort);
 					clientResponder = new SaslSocketServer( new SpecificResponder(AppClientInterface.class, clientRequester), new InetSocketAddress(clientPort) );
 					clientResponder.start();
+					System.out.println("Listening on ip:port" + clientIP + ":" + clientPort);
 					break;
 				} catch (java.net.BindException e) {
 					if (clientPort < 65535) {

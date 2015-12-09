@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -156,7 +157,8 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	
 	public Request getRequest(CharSequence from, CharSequence to) {
 		for (Request r : this.requestList) {
-			if (r.getFrom().equals(from) && r.getTo().equals(to)) {
+			if (r.getFrom().equals(from.toString()) && r.getTo().equals(to.toString())) {
+				System.out.println("Returning request from " + from.toString() + " to " + to.toString());
 				return r;
 			}
 		}
@@ -172,28 +174,33 @@ public class AppServer extends TimerTask implements AppServerInterface {
 
 	@Override
 	public int requestResponse(CharSequence username1, CharSequence username2, boolean responseBool) throws AvroRemoteException {
+		System.out.println("Entered requestResponse");
 		Request r = getRequest(username2, username1);
 		if (r != null) {
+			System.out.println("r != null");
 			// RequestStatus {pending, accepted, declined, deleted};
 			r.setStatus(responseBool ? RequestStatus.accepted : RequestStatus.declined);
-		}
 		
-		if (responseBool) {
-			ClientInfo accepter = this.clients.get(username1.toString());
-			accepter.status = ClientStatus.PRIVATECHAT;
-			
-			ClientInfo requester = this.clients.get(username2.toString());
-			requester.status = ClientStatus.PRIVATECHAT;
-			
-			String[] ipAndPort = requester.address.toString().split(":");
-			accepter.proxy.setPrivateChatClient(username2, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
-			ipAndPort = accepter.address.toString().split(":");
-			requester.proxy.setPrivateChatClient(username1, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
-
-			accepter.proxy.startPrivateChat();
-			requester.proxy.startPrivateChat();
+			if (responseBool) {
+				ClientInfo accepter = this.clients.get(username1.toString());
+				accepter.status = ClientStatus.PRIVATECHAT;
+				
+				ClientInfo requester = this.clients.get(username2.toString());
+				requester.status = ClientStatus.PRIVATECHAT;
+				
+				System.out.println("Accepter: " + username1.toString() + " Requester: " + username2.toString());
+				
+				String[] ipAndPort = requester.address.toString().split(":");
+				accepter.proxy.setPrivateChatClient(username2, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
+				ipAndPort = accepter.address.toString().split(":");
+				requester.proxy.setPrivateChatClient(username1, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
+	
+				accepter.proxy.startPrivateChat();
+				requester.proxy.startPrivateChat();
+			}
+		} else {
+			System.out.println("r == null");
 		}
-		
  		return 0;
 	}
 
@@ -204,10 +211,10 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		
 		for (Request r : requestList) {
 			if (r.getFrom().equals(myUsername) || r.getTo().equals(myUsername)) {
-				String user = (r.getFrom().equals(myUsername)) ? r.getFrom() : r.getTo();
-				String from = (r.getFrom().equals(myUsername)) ? "  to" : "from";
+				String user = r.getFrom().equals(myUsername) ? r.getTo() : r.getFrom();
+				String from = r.getFrom().equals(myUsername) ? "  to: " : "from: ";
 				
-				requests = requests + from + user + ", Status:" + r.getStatus().toString() + "\n\t";
+				requests = requests + from + user + ", Status: " + r.getStatus().toString() + "\n\t";
 			}
 		}
 		
@@ -229,7 +236,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		}
 		
 		server.start();
-		timer.schedule(appServer, 0, 5000);
+		timer.schedule(appServer, 0, 15000);
 		
 		try {
 			//appServer.checkConnectedUsers();
