@@ -154,6 +154,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	public int requestResponse(CharSequence username1, CharSequence username2, boolean responseBool) throws AvroRemoteException {
 		System.out.println("Entered requestResponse");
 		Request r = getRequest(username2, username1);
+		
 		if (r != null) {
 			System.out.println("r != null");
 			// RequestStatus {pending, accepted, declined, deleted};

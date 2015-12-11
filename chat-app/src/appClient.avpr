@@ -15,12 +15,12 @@
 	        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
 	        "response": "int"
         },
-        "startPrivateChat": {
+        "leftPrivateChat": {
 	        "request": [],
 	        "response": "int"
         },
-        "leftPrivateChat": {
-	        "request": [],
+        "setPrivateChatClientArrived": {
+	        "request": [{"name": "arrived", "type": "boolean"}],
 	        "response": "int"
         },
         "video": {

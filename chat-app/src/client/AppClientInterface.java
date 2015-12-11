@@ -8,12 +8,12 @@ package client;
 @SuppressWarnings("all")
 @org.apache.avro.specific.AvroGenerated
 public interface AppClientInterface {
-  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"AppClientInterface\",\"namespace\":\"client\",\"types\":[],\"messages\":{\"receiveMessage\":{\"request\":[{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"receiveRequest\":{\"request\":[{\"name\":\"request\",\"type\":\"string\"}],\"response\":\"int\"},\"setPrivateChatClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"startPrivateChat\":{\"request\":[],\"response\":\"int\"},\"stopPrivateChat\":{\"request\":[],\"response\":\"int\"},\"leftPrivateChat\":{\"request\":[],\"response\":\"int\"},\"video\":{\"request\":[{\"name\":\"iets\",\"type\":\"string\"}],\"response\":\"string\"}}}");
+  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"AppClientInterface\",\"namespace\":\"client\",\"types\":[],\"messages\":{\"receiveMessage\":{\"request\":[{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"receiveRequest\":{\"request\":[{\"name\":\"request\",\"type\":\"string\"}],\"response\":\"int\"},\"setPrivateChatClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"leftPrivateChat\":{\"request\":[],\"response\":\"int\"},\"setPrivateChatClientArrived\":{\"request\":[{\"name\":\"arrived\",\"type\":\"boolean\"}],\"response\":\"int\"},\"video\":{\"request\":[{\"name\":\"iets\",\"type\":\"string\"}],\"response\":\"string\"}}}");
   int receiveMessage(java.lang.CharSequence message) throws org.apache.avro.AvroRemoteException;
   int receiveRequest(java.lang.CharSequence request) throws org.apache.avro.AvroRemoteException;
   int setPrivateChatClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port) throws org.apache.avro.AvroRemoteException;
-  int startPrivateChat() throws org.apache.avro.AvroRemoteException;
   int leftPrivateChat() throws org.apache.avro.AvroRemoteException;
+  int setPrivateChatClientArrived(boolean arrived) throws org.apache.avro.AvroRemoteException;
   java.lang.CharSequence video(java.lang.CharSequence iets) throws org.apache.avro.AvroRemoteException;
 
   @SuppressWarnings("all")
@@ -22,9 +22,8 @@ public interface AppClientInterface {
     void receiveMessage(java.lang.CharSequence message, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void receiveRequest(java.lang.CharSequence request, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void setPrivateChatClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void startPrivateChat(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void stopPrivateChat(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void leftPrivateChat(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void setPrivateChatClientArrived(boolean arrived, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void video(java.lang.CharSequence iets, org.apache.avro.ipc.Callback<java.lang.CharSequence> callback) throws java.io.IOException;
   }
 }

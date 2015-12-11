@@ -44,6 +44,7 @@ public class AppClient implements AppClientInterface {
 	private String clientIP, serverIP;
 	private CharSequence username;
 	private server.ClientInfo privateChatClient = null;
+	private boolean privateChatClientArrived = false;
 	private boolean privateChat = false;
 	
 	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String clientIP, int clientPort) {
@@ -88,6 +89,12 @@ public class AppClient implements AppClientInterface {
 		
 		return 0;
 	}
+
+	@Override
+	public int setPrivateChatClientArrived(boolean privateChatClientArrived) throws AvroRemoteException {
+		this.privateChatClientArrived = privateChatClientArrived;
+		return 0;
+	}
 	
 	public void joinChat(boolean privateChat) throws IOException {
 		if (!privateChat) {
@@ -111,7 +118,7 @@ public class AppClient implements AppClientInterface {
 					System.out.println("Left the public chatroom.\nJoined private chat with " + this.privateChatClient.username + ".");
 					this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
 					privateChat = true;
-				} else if (this.privateChatClient != null) {
+				} else if (this.privateChatClient != null && this.privateChatClientArrived) {
 					this.privateChatClient.proxy.receiveMessage(input);
 				}
 			} else {
@@ -131,8 +138,9 @@ public class AppClient implements AppClientInterface {
 			this.privateChatClient = null;
 		}
 
+		this.privateChatClientArrived = false;
 		this.appServer.setClientState(this.username, server.ClientStatus.LOBBY);
-		System.out.println("Left " + (this.privateChat ? "private" : "public") + " chat.");
+		System.out.println("Left " + (privateChat ? "private" : "public") + " chat.");
 	}
 	
 	@Command
@@ -162,6 +170,7 @@ public class AppClient implements AppClientInterface {
 		ipaddress = ipaddress.toString().subSequence(1, ipaddress.length());
 		System.out.println("ip: " + ipaddress.toString() + ":" + port);
 		server.ClientInfo pcc = new server.ClientInfo();
+		pcc.username = username.toString();
 		InetAddress addr;
 		try {
 			addr = InetAddress.getByName(ipaddress.toString());
@@ -184,6 +193,7 @@ public class AppClient implements AppClientInterface {
 		
 		if (responseBool) {
 			this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
+			this.privateChatClient.proxy.receiveMessage("\n > " + this.username + " has accepted your chat request. Use the command startPrivateChat to start chatting!\n");
 			
 			try {
 				this.joinChat(true);
@@ -207,10 +217,11 @@ public class AppClient implements AppClientInterface {
 	}
 
 	@Command
-	@Override
 	public int startPrivateChat() throws AvroRemoteException {
 		this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
 		try {
+			this.privateChatClientArrived = true;
+			this.privateChatClient.proxy.setPrivateChatClientArrived(true);
 			this.joinChat(true); //true means private chat
 		} catch (IOException e) {
 			e.printStackTrace();
