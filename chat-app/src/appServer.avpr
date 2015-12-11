@@ -38,6 +38,14 @@
 	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}],
 	        "response": "int"
         },
+        "cancelRequest": {
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}],
+	        "response": "int"
+        },
+        "removeRequest": {
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}],
+	        "response": "int"
+        },
         "requestResponse": {
 	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}, {"name": "responseBool", "type": "boolean"}],
 	        "response": "int"

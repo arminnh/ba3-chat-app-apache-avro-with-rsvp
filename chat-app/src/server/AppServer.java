@@ -29,7 +29,7 @@ import client.AppClientInterface;
  */
 public class AppServer extends TimerTask implements AppServerInterface {
 	private Map<String, ClientInfo> clients = new HashMap<String, ClientInfo>();
-	private List<Request> requestList = new ArrayList<Request>(); // {from, to, status}
+	private List<Request> requests = new ArrayList<Request>(); // {from, to, status}
 
 	@Override
 	public int registerClient(CharSequence username, CharSequence ipaddress, int port) throws AvroRemoteException {
@@ -64,11 +64,33 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		return !this.clients.containsKey(username.toString());
 	}
 	
+	public void removeRequestsWithUser(String username) {
+		for (Iterator<Request> it = this.requests.iterator(); it.hasNext();) {
+			Request r = it.next();
+			if (r.getFrom().equals(username) || r.getTo().equals(username)) {
+				it.remove();
+			}
+		}
+	}
+	
+	@Override
+	public int removeRequest(CharSequence from, CharSequence to) {
+		for (Iterator<Request> it = this.requests.iterator(); it.hasNext();) {
+			Request r = it.next();
+			if (r.getFrom().equals(from.toString()) && r.getTo().equals(to.toString())) {
+				it.remove();
+				return 0;
+			}
+		}
+		return 1;
+	}
+	
 	@Override
 	public int exitClient(CharSequence username) throws AvroRemoteException {
 		System.out.println("Removing user: " + username.toString());
 		
 		//remove returns null if element doesnt exist 
+		removeRequestsWithUser(username.toString());
 		this.clients.remove(username.toString());
 		
 		this.printClientList();
@@ -134,7 +156,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	}
 	
 	public Request getRequest(CharSequence from, CharSequence to) {
-		for (Request r : this.requestList) {
+		for (Request r : this.requests) {
 			if (r.getFrom().equals(from.toString()) && r.getTo().equals(to.toString())) {
 				System.out.println("Returning request from " + from.toString() + " to " + to.toString());
 				return r;
@@ -145,35 +167,56 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	
 	@Override
 	public int sendRequest(CharSequence username1, CharSequence username2) throws AvroRemoteException {
-		Request request = new Request(username1.toString(), username2.toString(), RequestStatus.pending);
-		this.requestList.add(request);
+		// TODO: request bestaat al
+		if (this.getRequest(username1, username2) != null) {
+			return 1;
+		}
+		this.requests.add(new Request(username1.toString(), username2.toString(), RequestStatus.pending));
+		this.clients.get(username2.toString()).proxy.receiveMessage("You have received a private chat request from " + username1.toString() + ".");
 		return 0;
 	}
 
 	@Override
 	public int requestResponse(CharSequence username1, CharSequence username2, boolean responseBool) throws AvroRemoteException {
+		//TODO: request bestaat niet
 		System.out.println("Entered requestResponse");
 		Request r = getRequest(username2, username1);
 		
-		if (r != null) {
-			System.out.println("r != null");
-			// RequestStatus {pending, accepted, declined, deleted};
-			//TODO: kijk eerst na of de andere persoon nog niet in private chat zit
-			r.setStatus(responseBool ? RequestStatus.accepted : RequestStatus.declined);
+		if (r == null) {
+			System.out.println("r == null");
+			return 1;
+		}
 		
-			if (responseBool) {
+		System.out.println("r != null");
+	
+		ClientInfo requester = this.clients.get(username2.toString());
+		if (responseBool) {
+			ClientInfo accepter  = this.clients.get(username1.toString());
+			if (requester.status != ClientStatus.PRIVATE) {
 				System.out.println("Accepter: " + username1.toString() + " Requester: " + username2.toString());
-				ClientInfo accepter  = this.clients.get(username1.toString());
-				ClientInfo requester = this.clients.get(username2.toString());
+				r.setStatus(RequestStatus.accepted);
+				//TODO: ook ergens verwijderen
+				
+				requester.proxy.receiveMessage(username1.toString() + " accepted your request.");
 				
 				String[] ipAndPort = requester.address.toString().split(":");
 				accepter.proxy.setPrivateChatClient(username2, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
 				ipAndPort = accepter.address.toString().split(":");
 				requester.proxy.setPrivateChatClient(username1, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
+				return 2;
+			} else {
+				requester.proxy.receiveMessage(username1.toString() + " accepted your request, but you seem to be busy.\nYou received a request which you can accept when you're done.");
+				accepter.proxy.receiveMessage(username2.toString() + " is already in a private chat right now. We sent them a new request.");
+				this.removeRequest(username2.toString(), username1.toString());
+				this.sendRequest(username1, username2);
+				return 1;
 			}
 		} else {
-			System.out.println("r == null");
+			requester.proxy.receiveMessage(username1.toString() + " declined your request.");
+			r.setStatus(RequestStatus.declined);
+			this.removeRequest(username2.toString(), username1.toString());
 		}
+		
  		return 0;
 	}
 
@@ -182,7 +225,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		String myUsername = username.toString();
 		CharSequence requests = "Requests:\n\t";
 		
-		for (Request r : requestList) {
+		for (Request r : this.requests) {
 			if (r.getFrom().equals(myUsername) || r.getTo().equals(myUsername)) {
 				String user = r.getFrom().equals(myUsername) ? r.getTo() : r.getFrom();
 				String from = r.getFrom().equals(myUsername) ? "  to: " : "from: ";
@@ -225,6 +268,19 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		if (client != null) {
 			client.status = state;
 		}
+		return 0;
+	}
+
+	@Override
+	public int cancelRequest(CharSequence username1, CharSequence username2) throws AvroRemoteException {
+		for (Iterator<Request> it = this.requests.iterator(); it.hasNext();) {
+			Request r = it.next();
+			if (r.getFrom().equals(username1.toString()) && r.getTo().equals(username2.toString())) {
+				it.remove();
+				break;
+			}
+		}
+		this.clients.get(username2.toString()).proxy.receiveMessage(username1.toString() + " has cancelled their request.");
 		return 0;
 	}
 }

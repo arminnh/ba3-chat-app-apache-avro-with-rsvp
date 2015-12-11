@@ -46,14 +46,14 @@ public class AppClient implements AppClientInterface {
 	private server.ClientInfo privateChatClient = null;
 	private boolean privateChatClientArrived = false;
 	private boolean privateChat = false;
-	
+
 	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String clientIP, int clientPort) {
 		this.transceiver = t;
 		this.appServer = a;
 		this.clientIP = clientIP;
 		this.clientPort = clientPort;
 	}
-	
+
 	public boolean register(String username) throws AvroRemoteException {
 		if (this.appServer.isNameAvailable((CharSequence) username)) {
 			appServer.registerClient((CharSequence) username, (CharSequence) clientIP, clientPort);
@@ -74,19 +74,19 @@ public class AppClient implements AppClientInterface {
 		CharSequence list = appServer.getListOfClients();
 		System.out.println(list);
 	}
-	
+
 	@Override
 	public int leftPrivateChat() throws AvroRemoteException {
 		System.out.println(this.privateChatClient.username + " has left the private chat. Messages you write will now not be sent.");
 		System.out.println("You can now choose to go to either the lobby or the public chatroom.");
-		
+
 		try {
 			this.privateChatClient.transceiver.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		this.privateChatClient = null;
-		
+
 		return 0;
 	}
 
@@ -95,7 +95,7 @@ public class AppClient implements AppClientInterface {
 		this.privateChatClientArrived = privateChatClientArrived;
 		return 0;
 	}
-	
+
 	public void joinChat(boolean privateChat) throws IOException {
 		if (!privateChat) {
 			System.out.println("You entered the public chatroom.");
@@ -103,10 +103,10 @@ public class AppClient implements AppClientInterface {
 			System.out.println("You entered a private chatroom with " + this.privateChatClient.username + ". Wait for them to arrive.");
 		}
 		System.out.println("The commands are different here, type ?list to get the list of commands.");
-		
+
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); 
 		String input = br.readLine();
-		
+
 		while (!input.equals("?leave") && !input.equals("?q") ) {
 			if (input.equals("?list")) {
 				System.out.println("To get the list of connected users: ?getListOfUsers or ?glou");
@@ -131,7 +131,7 @@ public class AppClient implements AppClientInterface {
 			}
 			input = br.readLine();
 		}
-		
+
 		if (privateChat && this.privateChatClient != null) {
 			this.privateChatClient.proxy.leftPrivateChat();
 			this.privateChatClient.transceiver.close();
@@ -142,7 +142,7 @@ public class AppClient implements AppClientInterface {
 		this.appServer.setClientState(this.username, server.ClientStatus.LOBBY);
 		System.out.println("Left " + (privateChat ? "private" : "public") + " chat.");
 	}
-	
+
 	@Command
 	public void joinPublicChat() throws IOException {
 		this.appServer.setClientState(this.username, server.ClientStatus.PUBLIC);
@@ -183,23 +183,39 @@ public class AppClient implements AppClientInterface {
 		}catch (IOException e) {			//SaslSocketTransceiver and SpecificRequestor
 			e.printStackTrace();
 		}
-		
+
 		return 0;
 	}
 
 	@Command
-	public void respondRequest(String username, boolean responseBool) throws AvroRemoteException {
-		this.appServer.requestResponse(this.username, (CharSequence) username, responseBool);
-		
-		if (responseBool) {
-			this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
-			this.privateChatClient.proxy.receiveMessage("\n > " + this.username + " has accepted your chat request. Use the command startPrivateChat to start chatting!\n");
-			
-			try {
+	public void acceptRequest(String username) {
+		this.respondRequest(username, true);
+	}
+
+	@Command
+	public void declineRequest(String username) {
+		this.respondRequest(username, false);
+	}
+
+	@Command
+	public void cancelRequest(String username) throws AvroRemoteException {
+		this.appServer.cancelRequest(this.username, username);
+	}
+
+	public void respondRequest(String username, boolean responseBool) {
+		try {
+			int response = this.appServer.requestResponse(this.username, (CharSequence) username, responseBool);
+
+			if (responseBool && response == 2) {
+				this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
+				this.privateChatClient.proxy.receiveMessage("\n > " + this.username + " has accepted your chat request. Use the command startPrivateChat to start chatting!\n");
+
 				this.joinChat(true);
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
+		} catch (AvroRemoteException e1) {
+			e1.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -222,13 +238,15 @@ public class AppClient implements AppClientInterface {
 		try {
 			this.privateChatClientArrived = true;
 			this.privateChatClient.proxy.setPrivateChatClientArrived(true);
+			this.privateChatClient.proxy.receiveMessage(this.username.toString() + " has entered the private chat.");
+			this.appServer.removeRequest(this.username, this.privateChatClient.username);
 			this.joinChat(true); //true means private chat
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
 		return 0;
 	}
-	
+
 	public static void main(String[] argv) {
 		//Take server's ipaddress and port from terminal arguments:
 		//	ipaddress = argv[0];
@@ -244,7 +262,7 @@ public class AppClient implements AppClientInterface {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		} */
-		
+
 		/*try {
 			Enumeration e = NetworkInterface.getNetworkInterfaces();
 			while(e.hasMoreElements()) {
@@ -266,11 +284,11 @@ public class AppClient implements AppClientInterface {
 		Scanner in = new Scanner(System.in);
 		/*System.out.println("Enter the IP address of the server.");
 		InetSocketAddress serverIP = new InetSocketAddress(in.nextLine(), port);
-		
+
 		System.out.println("Enter the IP address the server will need to connect to.");
 		clientIP = in.nextLine();*/
 		InetSocketAddress serverIP = new InetSocketAddress("0.0.0.0", port);
-		
+
 		Server clientResponder = null;
 		AppClient clientRequester = null;
 		try {
@@ -279,7 +297,7 @@ public class AppClient implements AppClientInterface {
 			AppServerInterface appServer = (AppServerInterface) SpecificRequestor.getClient(AppServerInterface.class, transceiver);
 			//System.out.println("transceiver connected: " + transceiver.isConnected());
 			//System.out.println("transceiver.getRemoteName(): " + transceiver.getRemoteName());
-			
+
 			while (true) { // Try other clientPorts for the case where the port is already in use 
 				//System.out.println("Trying to use port " + clientPort);
 				try {
@@ -298,7 +316,7 @@ public class AppClient implements AppClientInterface {
 					}
 				}
 			}
-			
+
 			String username;
 			System.out.println("Enter your username.");
 			while (true) {
@@ -308,12 +326,12 @@ public class AppClient implements AppClientInterface {
 				}
 				System.out.println("That name is already taken, choose another one.");
 			}
-			
+
 			clientRequester.register(username);
 			System.out.println("Welcome to Chat App, type ?list to get a list of available commands.");
-	        ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
+			ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
 			System.out.println("Quit program.");
-			
+
 			//clientResponder.join();
 			clientResponder.close();
 			in.close();
@@ -324,7 +342,7 @@ public class AppClient implements AppClientInterface {
 			e.printStackTrace(System.err);
 			System.exit(1);
 		}
-		
+
 	}
 }
 
