@@ -15,8 +15,7 @@ import java.net.UnknownHostException;
 import org.apache.avro.ipc.*;
 import org.apache.avro.ipc.specific.*;
 import org.apache.avro.AvroRemoteException;
-import chat_app.AppServerInterface;
-import chat_app.AppClientInterface;
+import client.AppClientInterface;
 
 /*			MINIMUM VEREISTEN
  * - client registreren: uniek ID (long int) en gebruikersnaam voor elke client
@@ -67,10 +66,10 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	
 	@Override
 	public int exitClient(CharSequence username) throws AvroRemoteException {
-		System.out.println("Removing user: " + username);
+		System.out.println("Removing user: " + username.toString());
 		
 		//remove returns null if element doesnt exist 
-		this.clients.remove((String) username);
+		this.clients.remove(username.toString());
 		
 		this.printClientList();
 		return 1;
@@ -97,27 +96,13 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	}
 
 	@Override
-	public int joinPublicChat(CharSequence username) throws AvroRemoteException {
-		ClientInfo client = this.clients.get(username.toString());
-		client.status = ClientStatus.PUBLICCHAT;
-		return 1;
-	}
-
-	@Override
 	public int sendMessage(CharSequence username, CharSequence message) throws AvroRemoteException {
 		for (Map.Entry<String, ClientInfo> client : this.clients.entrySet()){
-			if (client.getValue().status == ClientStatus.PUBLICCHAT && !client.getKey().equals(username.toString())) {
+			if (client.getValue().status == ClientStatus.PUBLIC && !client.getKey().equals(username.toString())) {
 				System.out.println("Sending message to " + client.getKey());
 				client.getValue().proxy.receiveMessage(username + ": " + message);
 			}
 		}
-		return 0;
-	}
-
-	@Override
-	public int exitPublicChat(CharSequence username) throws AvroRemoteException {
-		ClientInfo client = this.clients.get(username);
-		client.status = ClientStatus.LOBBY;
 		return 0;
 	}
 
@@ -147,13 +132,6 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	public void run() {
 		this.checkConnectedList();
 	}
-
-	@Override
-	public int exitPrivateChat(CharSequence username) throws AvroRemoteException {
-		ClientInfo client = this.clients.get(username);
-		client.status = ClientStatus.PUBLICCHAT;
-		return 1;
-	}
 	
 	public Request getRequest(CharSequence from, CharSequence to) {
 		for (Request r : this.requestList) {
@@ -179,24 +157,18 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		if (r != null) {
 			System.out.println("r != null");
 			// RequestStatus {pending, accepted, declined, deleted};
+			//TODO: kijk eerst na of de andere persoon nog niet in private chat zit
 			r.setStatus(responseBool ? RequestStatus.accepted : RequestStatus.declined);
 		
 			if (responseBool) {
-				ClientInfo accepter = this.clients.get(username1.toString());
-				accepter.status = ClientStatus.PRIVATECHAT;
-				
-				ClientInfo requester = this.clients.get(username2.toString());
-				requester.status = ClientStatus.PRIVATECHAT;
-				
 				System.out.println("Accepter: " + username1.toString() + " Requester: " + username2.toString());
+				ClientInfo accepter  = this.clients.get(username1.toString());
+				ClientInfo requester = this.clients.get(username2.toString());
 				
 				String[] ipAndPort = requester.address.toString().split(":");
 				accepter.proxy.setPrivateChatClient(username2, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
 				ipAndPort = accepter.address.toString().split(":");
 				requester.proxy.setPrivateChatClient(username1, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
-	
-				accepter.proxy.startPrivateChat();
-				requester.proxy.startPrivateChat();
 			}
 		} else {
 			System.out.println("r == null");
@@ -244,5 +216,14 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		} catch (InterruptedException e) {
 			
 		}
+	}
+
+	@Override
+	public int setClientState(CharSequence username, ClientStatus state) throws AvroRemoteException {
+		ClientInfo client = this.clients.get(username.toString());
+		if (client != null) {
+			client.status = state;
+		}
+		return 0;
 	}
 }

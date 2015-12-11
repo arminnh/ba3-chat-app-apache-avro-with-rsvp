@@ -1,5 +1,5 @@
 {
-    "namespace": "chat_app",
+    "namespace": "client",
     "protocol": "AppClientInterface",
     
     "messages" : {
@@ -19,7 +19,7 @@
 	        "request": [],
 	        "response": "int"
         },
-        "stopPrivateChat": {
+        "leftPrivateChat": {
 	        "request": [],
 	        "response": "int"
         },

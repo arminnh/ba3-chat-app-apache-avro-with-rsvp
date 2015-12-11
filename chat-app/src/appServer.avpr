@@ -1,7 +1,13 @@
 {
-    "namespace": "chat_app",
+    "namespace": "server",
     "protocol": "AppServerInterface",
     
+    "types": [
+    {
+		"type": "enum",
+		"name": "ClientStatus",
+		"symbols": ["LOBBY", "PUBLIC", "PRIVATE"]
+	}],
     
     "messages" : {
         "registerClient": {
@@ -20,20 +26,12 @@
 	        "request": [],
 	        "response": {"name": "list", "type": "string"}
         },
-        "joinPublicChat": {
-	        "request": [{"name": "username", "type": "string"}],
+        "setClientState": {
+	        "request": [{"name": "username", "type": "string"}, {"name": "state", "type": "server.ClientStatus"}],
 	        "response": "int"
         },
         "sendMessage": {
 	        "request": [{"name": "username", "type": "string"}, {"name": "message", "type": "string"}],
-	        "response": "int"
-        },
-        "exitPublicChat": {
-	        "request": [{"name": "username", "type": "string"}],
-	        "response": "int"
-        },
-        "exitPrivateChat": {
-	        "request": [{"name": "username", "type": "string"}],
 	        "response": "int"
         },
         "sendRequest": {

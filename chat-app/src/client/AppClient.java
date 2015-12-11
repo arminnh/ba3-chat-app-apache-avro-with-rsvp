@@ -23,8 +23,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Scanner;
 
-import chat_app.AppServerInterface;
-import chat_app.AppClientInterface;
+import server.AppServerInterface;
 
 /*
  * - automatische registratie bij de server
@@ -38,14 +37,14 @@ import chat_app.AppClientInterface;
  * - video streaming
  */
 
-public class AppClient implements AppClientInterface, Runnable {
+public class AppClient implements AppClientInterface {
 	private SaslSocketTransceiver transceiver = null;
 	private AppServerInterface appServer = null;
 	private int clientPort, serverPort;
 	private String clientIP, serverIP;
 	private CharSequence username;
 	private server.ClientInfo privateChatClient = null;
-	private BufferedReader br = null;
+	private boolean privateChat = false;
 	
 	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String clientIP, int clientPort) {
 		this.transceiver = t;
@@ -74,41 +73,74 @@ public class AppClient implements AppClientInterface, Runnable {
 		CharSequence list = appServer.getListOfClients();
 		System.out.println(list);
 	}
-
-	@Command
-	public void joinPublicChat() throws IOException {
-		appServer.joinPublicChat(this.username);
+	
+	@Override
+	public int leftPrivateChat() throws AvroRemoteException {
+		System.out.println(this.privateChatClient.username + " has left the private chat. Messages you write will now not be sent.");
+		System.out.println("You can now choose to go to either the lobby or the public chatroom.");
 		
-		System.out.println("You entered the public chatroom.\nThe commands are different here, type ?list to get the list of commands.");
+		try {
+			this.privateChatClient.transceiver.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		this.privateChatClient = null;
 		
-		br = new BufferedReader(new InputStreamReader(System.in)); 
+		return 0;
+	}
+	
+	public void joinChat(boolean privateChat) throws IOException {
+		if (!privateChat) {
+			System.out.println("You entered the public chatroom.");
+		} else {
+			System.out.println("You entered a private chatroom with " + this.privateChatClient.username + ". Wait for them to arrive.");
+		}
+		System.out.println("The commands are different here, type ?list to get the list of commands.");
+		
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); 
 		String input = br.readLine();
-		//br.close();
 		
 		while (!input.equals("?leave") && !input.equals("?q") ) {
-			
 			if (input.equals("?list")) {
 				System.out.println("To get the list of connected users: ?getListOfUsers or ?glou");
 				System.out.println("To leave the chatroom:              ?leave or ?q");
 			} else if (input.equals("?getListOfUsers") || input.equals("?glou")) {
 				getListOfUsers();
+			} else if (privateChat) {
+				if (input.equals("?joinPrivateChat") || input.equals("?jprc")) {
+					System.out.println("Left the public chatroom.\nJoined private chat with " + this.privateChatClient.username + ".");
+					this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
+					privateChat = true;
+				} else if (this.privateChatClient != null) {
+					this.privateChatClient.proxy.receiveMessage(input);
+				}
 			} else {
-				appServer.sendMessage(this.username, input);
+				if (input.equals("?joinPublicChat") || input.equals("?jpc")) {
+					System.out.println("Left the private chat.\nJoined the public chatroom.");
+					privateChat = false;
+				} else {
+					this.appServer.sendMessage(this.username, input);
+				}
 			}
 			input = br.readLine();
 		}
-		appServer.exitPublicChat(this.username);
-		System.out.println("Left public chat.");
-	}
+		
+		if (privateChat && this.privateChatClient != null) {
+			this.privateChatClient.proxy.leftPrivateChat();
+			this.privateChatClient.transceiver.close();
+			this.privateChatClient = null;
+		}
 
-	public void sendMessage(CharSequence str) throws IOException {
-		appServer.sendMessage(this.username, str);
-	}
-
-	public void exitPublicChat() throws IOException {
-		appServer.exitPublicChat(this.username);
+		this.appServer.setClientState(this.username, server.ClientStatus.LOBBY);
+		System.out.println("Left " + (this.privateChat ? "private" : "public") + " chat.");
 	}
 	
+	@Command
+	public void joinPublicChat() throws IOException {
+		this.appServer.setClientState(this.username, server.ClientStatus.PUBLIC);
+		this.joinChat(false);
+	}
+
 	@Override
 	public int receiveMessage(CharSequence message) throws AvroRemoteException {
 		System.out.println(message);
@@ -143,7 +175,6 @@ public class AppClient implements AppClientInterface, Runnable {
 			e.printStackTrace();
 		}
 		
-		
 		return 0;
 	}
 
@@ -151,7 +182,15 @@ public class AppClient implements AppClientInterface, Runnable {
 	public void respondRequest(String username, boolean responseBool) throws AvroRemoteException {
 		this.appServer.requestResponse(this.username, (CharSequence) username, responseBool);
 		
-		//start private chat
+		if (responseBool) {
+			this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
+			
+			try {
+				this.joinChat(true);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	@Override
@@ -167,57 +206,17 @@ public class AppClient implements AppClientInterface, Runnable {
 		return null;
 	}
 
+	@Command
 	@Override
 	public int startPrivateChat() throws AvroRemoteException {
-		//sysout("Private chat started with user");
-		//this.privateChatClient = true;
-		this.startChat(true); //true mean private chat
-		return 0;
-	}
-
-	private void startChat(boolean b) {
-        Thread  t = new Thread (this, "chat");
-        t.start ();
-        try {
-			t.join();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		System.out.println("You entered the private chatroom with blabla.\nThe commands are different here, type ?list to get the list of commands.");
-		
-		br = new BufferedReader(new InputStreamReader(System.in)); 
-		String input;
+		this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
 		try {
-			input = br.readLine();
-			while (!input.equals("?leave") && !input.equals("?q") ) {
-				if (input.equals("?list")) {
-					System.out.println("To get the list of connected users: ?getListOfUsers or ?glou");
-					System.out.println("To leave the chatroom:              ?leave or ?q");
-				} else {
-					this.privateChatClient.proxy.receiveMessage(input);
-				}
-				input = br.readLine();
-			}
-			System.out.println("Left private chat.");
+			this.joinChat(true); //true means private chat
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		
-	}
-
-	@Override
-	public int stopPrivateChat() throws AvroRemoteException {
-		// TODO Auto-generated method stub
+		} 
 		return 0;
 	}
-	
 	
 	public static void main(String[] argv) {
 		//Take server's ipaddress and port from terminal arguments:
@@ -306,6 +305,7 @@ public class AppClient implements AppClientInterface, Runnable {
 			
 			//clientResponder.join();
 			clientResponder.close();
+			in.close();
 		} catch (AvroRemoteException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
