@@ -366,8 +366,9 @@ void RSVPElement::push(int, Packet *packet) {
 	while (p < end_data) {
 		readRSVPObjectHeader((RSVPObjectHeader*) p, class_num, c_type);
 		
-		uint8_t a; uint16_t b; bool c;
+		uint8_t a; uint16_t b; uint32_t e; bool c; float f;
 		in_addr d = IPAddress("0.0.0.0").in_addr();
+		Vector<in_addr> srcs;
 		
 		switch(class_num) {
 			case RSVP_CLASS_SESSION:
@@ -376,43 +377,43 @@ void RSVPElement::push(int, Packet *packet) {
 				break;
 			case RSVP_CLASS_RSVP_HOP:
 				click_chatter("class HOP");
-				p = readRSVPHop(RSVPHop* hop, in_addr& next_previous_hop_address, uint32_t& logical_interface_handle);
+				p = readRSVPHop(RSVPHop* hop, d, e);
 				break;
 			case RSVP_CLASS_TIME_VALUES:
 				click_chatter("class VALUES");
-				
+				p = readRSVPTimeValues(RSVPTimeValues* timeValues, e);
 				break;
 			case RSVP_CLASS_ERROR_SPEC:
 				click_chatter("class SPEC");
-				
+				p = readRSVPErrorSpec(RSVPErrorSpec* errorSpec, d, c, c, b, b);
 				break;
 			case RSVP_CLASS_STYLE:
 				click_chatter("class STYLE");
-				
+				p = readRSVPStyle(RSVPStyle* style);
 				break;
 			case RSVP_CLASS_SCOPE:
 				click_chatter("class SCOPE");
-				
+				p = readRSVPScope(RSVPObjectHeader* objectHeader, srcs);
 				break;
 			case RSVP_CLASS_FLOWSPEC:
 				click_chatter("class FLOWSPEC");
-				
+				p = readRSVPFlowspec(RSVPFlowspec* flowSpec,f,f,f, e, e);
 				break;
 			case RSVP_CLASS_FILTER_SPEC:
 				click_chatter("class SPEC");
-				
+				p readRSVPFilterSpec(RSVPFilterSpec* filterSpec, d, b);
 				break;
 			case RSVP_CLASS_SENDER_TEMPLATE:
 				click_chatter("class TEMPLATE");
-				
+				p = readRSVPSenderTemplate(RSVPSenderTemplate* senderTemplate, d, b);
 				break;
 			case RSVP_CLASS_SENDER_TSPEC:
 				click_chatter("class TSPEC");
-				
+				p =  readRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,f,f,f,e,e);
 				break;
 			case RSVP_CLASS_RESV_CONF:
 				click_chatter("class CONF");
-				
+				p = readRSVPResvConf(RSVPResvConf* resvConf, d)
 				break;
 			default:
 				click_chatter("class_num %d not found", class_num);
