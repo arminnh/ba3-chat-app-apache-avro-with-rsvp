@@ -1,5 +1,5 @@
-#ifndef CLICK_RSVPElement_HH
-#define CLICK_RSVPElement_HH
+#ifndef CLICK_RSVPELEMENT_HH
+#define CLICK_RSVPELEMENT_HH
 #include <click/element.hh>
 #include <clicknet/ip.h>
 #include <clicknet/ether.h>
@@ -162,7 +162,7 @@ void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
 void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
 void initRSVPResvConf(RSVPResvConf*, in_addr receiverAddress);
-void* initRSVPScope(RSVPObjectHeader, const Vector<in_addr>& src_addresses);
+void* initRSVPScope(RSVPObjectHeader*, const Vector<in_addr>& src_addresses);
 void initRSVPFlowspec(RSVPFlowspec*,
 	float token_bucket_rate,
 	float token_bucket_size,
@@ -177,6 +177,30 @@ void initRSVPSenderTSpec(RSVPSenderTSpec*,
 	float peak_data_rate,
 	uint32_t minimum_policed_unit,
 	uint32_t maximum_packet_size);
+	
+void* readRSVPCommonHeader(RSVPCommonHeader*, uint8_t& msg_type, uint8_t& send_TTL, uint16_t& length);
+void readRSVPObjectHeader(RSVPObjectHeader*, uint8_t& class_num, uint8_t& c_type);
+void* readRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t& protocol_id, bool& police, uint16_t& dst_port);
+void* readRSVPHop(RSVPHop*, in_addr& next_previous_hop_address, uint32_t& logical_interface_handle);
+void* readRSVPTimeValues(RSVPTimeValues*, uint32_t& refresh_period_r);
+void* readRSVPStyle(RSVPStyle*);
+void* readRSVPErrorSpec(RSVPErrorSpec*, in_addr& error_node_address, bool& inPlace, bool& notGuilty, uint8_t& errorCode, uint16_t& errorValue);
+void* readRSVPResvConf(RSVPResvConf*, in_addr& receiverAddress);
+void* readRSVPScope(RSVPObjectHeader*, Vector<in_addr>& src_addresses);
+void* readRSVPFlowspec(RSVPFlowspec*,
+	float& token_bucket_rate,
+	float& token_bucket_size,
+	float& peak_data_rate,
+	uint32_t& minimum_policed_unit,
+	uint32_t& maximum_packet_size);
+void* readRSVPFilterSpec(RSVPFilterSpec*, in_addr& src_address, uint16_t& src_port);
+void* readRSVPSenderTemplate(RSVPSenderTemplate*, in_addr& src_address, uint16_t& src_port);
+void* readRSVPSenderTSpec(RSVPSenderTSpec*,
+	float& token_bucket_rate,
+	float& token_bucket_size,
+	float& peak_data_rate,
+	uint32_t& minimum_policed_unit,
+	uint32_t& maximum_packet_size);
 
 class RSVPElement : public Element {
 public:
@@ -184,7 +208,7 @@ public:
 	~RSVPElement();
 
 	const char *class_name() const	{ return "RSVPElement"; }
-	const char *port_count() const	{ return "0/1"; }
+	const char *port_count() const	{ return "-1/1"; }
 	const char *processing() const	{ return "h/h"; }
 	int configure(Vector<String>&, ErrorHandler*);
 	int initialize(ErrorHandler *);

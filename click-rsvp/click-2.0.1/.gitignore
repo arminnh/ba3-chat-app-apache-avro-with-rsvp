@@ -1,3 +1,5 @@
+userlevel/rsvpelement.d
+userlevel/rsvpelement.o
 autom4te.cache/
 Makefile
 bsdmodule/Makefile
