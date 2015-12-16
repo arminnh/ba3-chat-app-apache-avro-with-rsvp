@@ -1,3 +1,5 @@
+userlevel/ipflowrawsockets.d
+userlevel/ipflowrawsockets.o
 userlevel/rsvpelement.d
 userlevel/rsvpelement.o
 autom4te.cache/
