@@ -180,7 +180,7 @@ void initRSVPSenderTSpec(RSVPSenderTSpec*,
 	
 void* readRSVPCommonHeader(RSVPCommonHeader*, uint8_t& msg_type, uint8_t& send_TTL, uint16_t& length);
 void readRSVPObjectHeader(RSVPObjectHeader*, uint8_t& class_num, uint8_t& c_type);
-void* readRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t& protocol_id, bool& police, uint16_t& dst_port);
+void* readRSVPSession(RSVPSession*, in_addr& destinationAddress, uint8_t& protocol_id, bool& police, uint16_t& dst_port);
 void* readRSVPHop(RSVPHop*, in_addr& next_previous_hop_address, uint32_t& logical_interface_handle);
 void* readRSVPTimeValues(RSVPTimeValues*, uint32_t& refresh_period_r);
 void* readRSVPStyle(RSVPStyle*);

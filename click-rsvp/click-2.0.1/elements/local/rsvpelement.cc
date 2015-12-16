@@ -483,19 +483,22 @@ void RSVPElement::run_timer(Timer *) {
 int RSVPElement::sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
 
-	in_addr destination_address;
 	uint8_t protocol_ID;
 	bool police;
 	uint16_t destination_port;
-
+	
+	in_addr* destination_address = new in_addr;
+	
 	if (cp_va_kparse(conf, me, errh, 
-		"DEST", cpkM, cpIPAddress, &destination_address, 
+		"DEST", cpkM, cpIPAddress, destination_address, 
 		"PROTOCOL", cpkM, cpUnsigned, &protocol_ID,
 		"POLICE", cpkM, cpBool, &police,
 		"PORT", cpkM, cpUnsigned, &destination_port, 
 		cpEnd) < 0) return -1;
 	
-	initRSVPSession(&me->_session, destination_address, protocol_ID, police, destination_port);
+	click_chatter("READING SESSION OBJECT; destination address: %s", IPAddress(*destination_address).s().c_str());
+	
+	initRSVPSession(&me->_session, *destination_address, protocol_ID, police, destination_port);
 
 	return 0;
 }
@@ -519,21 +522,21 @@ int RSVPElement::hopHandle(const String &conf, Element *e, void * thunk, ErrorHa
 int RSVPElement::errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
 	
-	in_addr error_node_address;
+	in_addr* error_node_address = new in_addr;
 	bool inPlace;
 	bool notGuilty;
 	uint8_t errorCode;
 	uint16_t errorValue;
 
 	if (cp_va_kparse(conf, me, errh, 
-		"ERROR_NODE_ADDRESS", cpkM, cpIPAddress, &error_node_address,
+		"ERROR_NODE_ADDRESS", cpkM, cpIPAddress, error_node_address,
 		"INPLACE", cpkM, cpBool, &inPlace,
 		"NOTGUILTY", cpkM, cpBool, &notGuilty,
 		"ERROR_CODE", cpkM, cpUnsigned, &errorCode,
 		"ERROR_VALUE", cpkM, cpUnsigned, &errorValue,
 		cpEnd) < 0) return -1;
 	
-	initRSVPErrorSpec(&me->_errorSpec, error_node_address, inPlace, notGuilty, errorCode, errorValue);
+	initRSVPErrorSpec(&me->_errorSpec, *error_node_address, inPlace, notGuilty, errorCode, errorValue);
 
 	return 0;
 }
@@ -674,7 +677,7 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 
 	double tbr, tbs, pdr;
 
-	in_addr _senderTemplate_src_address;
+	in_addr* _senderTemplate_src_address = new in_addr;
 	uint16_t _senderTemplate_src_port;
 
 	float _senderTSpec_token_bucket_rate;
@@ -685,7 +688,7 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 
 	if (!cp_va_kparse(conf, me, errh,
 		// sender template
-		"SRC_ADDRESS", cpkM, cpIPAddress, &_senderTemplate_src_address,
+		"SRC_ADDRESS", cpkM, cpIPAddress, _senderTemplate_src_address,
 		"SRC_PORT", cpkM, cpUnsigned, &_senderTemplate_src_port,
 		// sender tspec
 		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &tbr,
@@ -699,7 +702,7 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 	_senderTSpec_token_bucket_size = tbs;
 	_senderTSpec_peak_data_rate = pdr;
 
-	initRSVPSenderTemplate(&me->_senderTemplate, _senderTemplate_src_address, _senderTemplate_src_port);
+	initRSVPSenderTemplate(&me->_senderTemplate, *_senderTemplate_src_address, _senderTemplate_src_port);
 	initRSVPSenderTSpec(&me->_senderTSpec, _senderTSpec_token_bucket_rate,
 		_senderTSpec_token_bucket_size, _senderTSpec_peak_data_rate,
 		_senderTSpec_minimum_policed_unit, _senderTSpec_maximum_packet_size);
