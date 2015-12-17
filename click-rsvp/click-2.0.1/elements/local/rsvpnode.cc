@@ -107,9 +107,12 @@ void RSVPNode::updatePathState(Packet* packet) {
 	// make new
 	RSVPPathState pathState;
 	pathState.previous_hop_node = hop->IPv4_next_previous_hop_address;
-	pathState.senderTemplate = *senderTemplate;
-	pathState.senderTSpec = *senderTSpec;
+	if (senderTemplate && senderTSpec) {
+		pathState.senderTemplate = *senderTemplate;
+		pathState.senderTSpec = *senderTSpec;
+	}
 	pathState.timer = new Timer(this);
+	pathState.timer->initialize(this);
 	click_chatter("updatePathState: set table entry stuff");
 	uint32_t refresh_period_r;
 	readRSVPTimeValues(timeValues, refresh_period_r);
@@ -117,8 +120,9 @@ void RSVPNode::updatePathState(Packet* packet) {
 	pathState.timer->schedule_after_sec(refresh_period_r); // TODO: change !!!11
 	_pathStates.set(nodeSession, pathState);
 	click_chatter("updatePathState: set new refresh period");
-	
+	click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
 	hop->IPv4_next_previous_hop_address = _myIP;
+	click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
 	click_chatter("updatePathState: end");
 }
 
