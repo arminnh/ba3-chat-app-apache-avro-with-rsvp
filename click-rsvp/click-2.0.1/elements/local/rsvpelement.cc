@@ -500,6 +500,8 @@ int RSVPElement::sessionHandle(const String &conf, Element *e, void * thunk, Err
 	
 	initRSVPSession(&me->_session, *destination_address, protocol_ID, police, destination_port);
 
+	delete destination_address;
+
 	return 0;
 }
 
@@ -537,6 +539,8 @@ int RSVPElement::errorSpecHandle(const String &conf, Element *e, void * thunk, E
 		cpEnd) < 0) return -1;
 	
 	initRSVPErrorSpec(&me->_errorSpec, *error_node_address, inPlace, notGuilty, errorCode, errorValue);
+
+	delete error_node_address;
 
 	return 0;
 }
@@ -677,35 +681,37 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 
 	double tbr, tbs, pdr;
 
-	in_addr* _senderTemplate_src_address = new in_addr;
-	uint16_t _senderTemplate_src_port;
+	in_addr* senderTemplate_src_address = new in_addr;
+	uint16_t senderTemplate_src_port;
 
-	float _senderTSpec_token_bucket_rate;
-	float _senderTSpec_token_bucket_size;
-	float _senderTSpec_peak_data_rate;
-	uint32_t _senderTSpec_minimum_policed_unit;
-	uint32_t _senderTSpec_maximum_packet_size;
+	float senderTSpec_token_bucket_rate;
+	float senderTSpec_token_bucket_size;
+	float senderTSpec_peak_data_rate;
+	uint32_t senderTSpec_minimum_policed_unit;
+	uint32_t senderTSpec_maximum_packet_size;
 
 	if (!cp_va_kparse(conf, me, errh,
 		// sender template
-		"SRC_ADDRESS", cpkM, cpIPAddress, _senderTemplate_src_address,
-		"SRC_PORT", cpkM, cpUnsigned, &_senderTemplate_src_port,
+		"SRC_ADDRESS", cpkM, cpIPAddress, senderTemplate_src_address,
+		"SRC_PORT", cpkM, cpUnsigned, &senderTemplate_src_port,
 		// sender tspec
 		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &tbr,
 		"TOKEN_BUCKET_SIZE", cpkM, cpDouble, &tbs,
 		"PEAK_DATA_RATE", cpkM, cpDouble, &pdr,
-		"MINIMUM_POLICED_UNIT", cpkM, cpInteger, &_senderTSpec_minimum_policed_unit,
-		"MAXIMUM_PACKET_SIZE", cpkM, cpInteger, &_senderTSpec_maximum_packet_size,
+		"MINIMUM_POLICED_UNIT", cpkM, cpInteger, &senderTSpec_minimum_policed_unit,
+		"MAXIMUM_PACKET_SIZE", cpkM, cpInteger, &senderTSpec_maximum_packet_size,
 		cpEnd)) return -1;
 
-	_senderTSpec_token_bucket_rate = tbr;
-	_senderTSpec_token_bucket_size = tbs;
-	_senderTSpec_peak_data_rate = pdr;
+	senderTSpec_token_bucket_rate = tbr;
+	senderTSpec_token_bucket_size = tbs;
+	senderTSpec_peak_data_rate = pdr;
 
-	initRSVPSenderTemplate(&me->_senderTemplate, *_senderTemplate_src_address, _senderTemplate_src_port);
-	initRSVPSenderTSpec(&me->_senderTSpec, _senderTSpec_token_bucket_rate,
-		_senderTSpec_token_bucket_size, _senderTSpec_peak_data_rate,
-		_senderTSpec_minimum_policed_unit, _senderTSpec_maximum_packet_size);
+	initRSVPSenderTemplate(&me->_senderTemplate, *senderTemplate_src_address, senderTemplate_src_port);
+	initRSVPSenderTSpec(&me->_senderTSpec, senderTSpec_token_bucket_rate,
+		senderTSpec_token_bucket_size, senderTSpec_peak_data_rate,
+		senderTSpec_minimum_policed_unit, senderTSpec_maximum_packet_size);
+
+	delete senderTemplate_src_address;
 
 	me->_senderDescriptor = true;
 
