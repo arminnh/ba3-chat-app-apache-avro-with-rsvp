@@ -58,30 +58,43 @@ uint16_t sizeofRSVPScopeObject(size_t num_addresses) {
 
 const RSVPObjectHeader* nextRSVPObject(const RSVPObjectHeader* header) {
 	if (header->class_num == RSVP_CLASS_SCOPE) {
-		std::runtime_error("Calling nextRSVPObject on a scope object");
+		throw std::runtime_error("Calling nextRSVPObject on a scope object");
 	}
 	
 	switch(header->class_num) {
 		case RSVP_CLASS_SESSION:
+			click_chatter("nextRSVPObject: session");
 			return (const RSVPObjectHeader*) (((const RSVPSession*) header) + 1);
 		case RSVP_CLASS_RSVP_HOP:
+			click_chatter("nextRSVPObject: hop");
 			return (const RSVPObjectHeader*) (((const RSVPHop*) header) + 1);
 		case RSVP_CLASS_TIME_VALUES:
+			click_chatter("nextRSVPObject: time values");
 			return (const RSVPObjectHeader*) (((const RSVPTimeValues*) header) + 1);
 		case RSVP_CLASS_ERROR_SPEC:
+			click_chatter("nextRSVPObject: error spec");
 			return (const RSVPObjectHeader*) (((const RSVPErrorSpec*) header) + 1);
 		case RSVP_CLASS_STYLE:
+			click_chatter("nextRSVPObject: style");
 			return (const RSVPObjectHeader*) (((const RSVPStyle*) header) + 1);
 		case RSVP_CLASS_FLOWSPEC:
+			click_chatter("nextRSVPObject: flowspec");
 			return (const RSVPObjectHeader*) (((const RSVPFlowspec*) header) + 1);
 		case RSVP_CLASS_FILTER_SPEC:
+			click_chatter("nextRSVPObject: filterspec");
 			return (const RSVPObjectHeader*) (((const RSVPFilterSpec*) header) + 1);
 		case RSVP_CLASS_SENDER_TEMPLATE:
+			click_chatter("nextRSVPObject: sender template");
 			return (const RSVPObjectHeader*) (((const RSVPSenderTemplate*) header) + 1);
 		case RSVP_CLASS_SENDER_TSPEC:
+			click_chatter("nextRSVPObject: sender tspec");
 			return (const RSVPObjectHeader*) (((const RSVPSenderTSpec*) header) + 1);
 		case RSVP_CLASS_RESV_CONF:
+			click_chatter("nextRSVPObject: resv conf");
 			return (const RSVPObjectHeader*) (((const RSVPResvConf*) header) + 1);
+		default:
+			click_chatter("nextRSVPObject: class num %d not found", header->class_num);
+			throw std::runtime_error("");
 	}
 }
 

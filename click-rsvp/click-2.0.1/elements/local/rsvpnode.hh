@@ -10,9 +10,10 @@ struct RSVPNodeSession {
 	RSVPNodeSession(in_addr, uint8_t protocol_id, uint8_t dst_port);
 	typedef long unsigned int key_type;
 	typedef const key_type& key_const_reference;
-	key_const_reference hashcode() const;
+	const key_type& hashcode() const;
 	key_type key;
-private:
+	bool operator==(const RSVPNodeSession& other) const;
+public:
 	in_addr _dst_ip_address;
 	uint8_t _protocol_id;
 	uint8_t _dst_port;
@@ -46,8 +47,8 @@ class RSVPNode: public Element {
 		
 		int configure(Vector<String>&, ErrorHandler*);
 	private:
-	HashTable<RSVPNodeSession, RSVPPathState> _pathState;
-	HashTable<RSVPNodeSession, RSVPResvState> _resvState;
+	HashTable<RSVPNodeSession, RSVPPathState> _pathStates;
+	HashTable<RSVPNodeSession, RSVPResvState> _resvStates;
 };
 
 CLICK_ENDDECLS
