@@ -14,7 +14,6 @@ CLICK_DECLS
 #define RSVP_MSG_RESVTEAR		6
 #define RSVP_MSG_RESVCONF		7
 
-
 #define RSVP_CLASS_NULL                 0 //
 #define RSVP_CLASS_SESSION              1 // all
 #define RSVP_CLASS_RSVP_HOP             3 // path, resv, ptear, rtear, rerr
