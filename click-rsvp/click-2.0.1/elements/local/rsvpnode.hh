@@ -32,21 +32,22 @@ struct RSVPResvState {
 };
 
 class RSVPNode: public Element { 
-	public:
-		RSVPNode();
-		~RSVPNode();
-		
-		void push(int port, Packet* packet);
-		void updatePathState(Packet*);
-		
-		void run_timer(Timer*);
-		
-		const char *class_name() const	{ return "RSVPNode"; }
-		const char *port_count() const	{ return "1/1"; }
-		const char *processing() const	{ return PUSH; }
-		
-		int configure(Vector<String>&, ErrorHandler*);
-	private:
+public:
+	RSVPNode();
+	~RSVPNode();
+	
+	void push(int port, Packet* packet);
+	void updatePathState(Packet*);
+	
+	void run_timer(Timer*);
+	
+	const char *class_name() const	{ return "RSVPNode"; }
+	const char *port_count() const	{ return "1/1"; }
+	const char *processing() const	{ return PUSH; }
+	
+	int configure(Vector<String>&, ErrorHandler*);
+private:
+	in_addr _myIP;
 	HashTable<RSVPNodeSession, RSVPPathState> _pathStates;
 	HashTable<RSVPNodeSession, RSVPResvState> _resvStates;
 };
