@@ -810,3 +810,4 @@ cloud.pcap
 network1.pcap
 network2.pcap
 *.cump
+*.dump
