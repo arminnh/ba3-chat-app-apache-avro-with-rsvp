@@ -152,6 +152,7 @@ struct RSVPResvConf { // class num = 15, C-type = 1
 
 uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type);
 uint16_t sizeofRSVPScopeObject(size_t num_addresses);
+const RSVPObjectHeader* nextRSVPObject(const RSVPObjectHeader*);
 
 void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
 void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);

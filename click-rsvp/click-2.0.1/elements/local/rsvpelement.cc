@@ -56,6 +56,35 @@ uint16_t sizeofRSVPScopeObject(size_t num_addresses) {
 	return num_addresses ? (sizeof(RSVPObjectHeader) + num_addresses * sizeof(in_addr)) : 0;
 }
 
+const RSVPObjectHeader* nextRSVPObject(const RSVPObjectHeader* header) {
+	if (header->class_num == RSVP_CLASS_SCOPE) {
+		std::runtime_error("Calling nextRSVPObject on a scope object");
+	}
+	
+	switch(header->class_num) {
+		case RSVP_CLASS_SESSION:
+			return (const RSVPObjectHeader*) (((const RSVPSession*) header) + 1);
+		case RSVP_CLASS_RSVP_HOP:
+			return (const RSVPObjectHeader*) (((const RSVPHop*) header) + 1);
+		case RSVP_CLASS_TIME_VALUES:
+			return (const RSVPObjectHeader*) (((const RSVPTimeValues*) header) + 1);
+		case RSVP_CLASS_ERROR_SPEC:
+			return (const RSVPObjectHeader*) (((const RSVPErrorSpec*) header) + 1);
+		case RSVP_CLASS_STYLE:
+			return (const RSVPObjectHeader*) (((const RSVPStyle*) header) + 1);
+		case RSVP_CLASS_FLOWSPEC:
+			return (const RSVPObjectHeader*) (((const RSVPFlowspec*) header) + 1);
+		case RSVP_CLASS_FILTER_SPEC:
+			return (const RSVPObjectHeader*) (((const RSVPFilterSpec*) header) + 1);
+		case RSVP_CLASS_SENDER_TEMPLATE:
+			return (const RSVPObjectHeader*) (((const RSVPSenderTemplate*) header) + 1);
+		case RSVP_CLASS_SENDER_TSPEC:
+			return (const RSVPObjectHeader*) (((const RSVPSenderTSpec*) header) + 1);
+		case RSVP_CLASS_RESV_CONF:
+			return (const RSVPObjectHeader*) (((const RSVPResvConf*) header) + 1);
+	}
+}
+
 void initRSVPCommonHeader(RSVPCommonHeader* header, uint8_t msg_type, uint8_t send_TTL, uint16_t length)
 {
 	header->vers = 1;
@@ -232,11 +261,11 @@ void initRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
 	return;
 }
 
-void* readRSVPCommonHeader(RSVPCommonHeader* commonHeader, uint8_t* msg_type, uint8_t* send_TTL, uint16_t* length)
+void* readRSVPCommonHeader(RSVPCommonHeader* commonHeader, uint8_t& msg_type, uint8_t& send_TTL, uint16_t& length)
 {
-	*msg_type = commonHeader->msg_type;
-	*send_TTL = commonHeader->send_TTL;
-	*length = htons(commonHeader->RSVP_length);
+	msg_type = commonHeader->msg_type;
+	send_TTL = commonHeader->send_TTL;
+	length = htons(commonHeader->RSVP_length);
 	return commonHeader + 1;
 }
 
@@ -373,7 +402,7 @@ void RSVPElement::push(int, Packet *packet) {
 	
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
-	p = readRSVPCommonHeader((RSVPCommonHeader*) p, &msg_type, &send_TTL, &length);
+	p = readRSVPCommonHeader((RSVPCommonHeader*) p, msg_type, send_TTL, length);
 	
 	uint8_t class_num, c_type;
 	

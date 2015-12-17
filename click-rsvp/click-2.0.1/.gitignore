@@ -1,3 +1,5 @@
+userlevel/rsvpnode.d
+userlevel/rsvpnode.o
 userlevel/ipflowrawsockets.d
 userlevel/ipflowrawsockets.o
 userlevel/rsvpelement.d
