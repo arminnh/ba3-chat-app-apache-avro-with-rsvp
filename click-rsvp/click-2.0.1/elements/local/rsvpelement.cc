@@ -6,401 +6,28 @@
 
 CLICK_DECLS
 
-uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type)
-{
-	size_t size;
-
-	switch (class_num) {
-	case 1:
-		size = sizeof(RSVPSession);
-		break;
-	case 3:
-		size = sizeof(RSVPHop);
-		break;
-	case 4:
-		size = sizeof(RSVPIntegrity);
-		break;
-	case 5:
-		size = sizeof(RSVPTimeValues);
-		break;
-	case 6:
-		size = sizeof(RSVPErrorSpec);
-		break;
-	case 8:
-		size = sizeof(RSVPStyle);
-		break;
-	case 9:
-		size = sizeof(RSVPFlowspec);
-		break;
-	case 10:
-		size = sizeof(RSVPFilterSpec);
-		break;
-	case 11:
-		size = sizeof(RSVPSenderTemplate);
-		break;
-	case 12:
-		size = sizeof(RSVPSenderTSpec);
-		break;
-	case 15:
-		size = sizeof(RSVPResvConf);
-		break;
-	default:
-		printf("sizeofRSVPClass: requesting size of undefined class num %d", class_num);
-		throw std::runtime_error("sizeofRSVPClass: requesting size of undefined class num");
-	}
-
-	return size;
-}
-
-uint16_t sizeofRSVPScopeObject(size_t num_addresses) {
-	return num_addresses ? (sizeof(RSVPObjectHeader) + num_addresses * sizeof(in_addr)) : 0;
-}
-
-const RSVPObjectHeader* nextRSVPObject(const RSVPObjectHeader* header) {
-	if (header->class_num == RSVP_CLASS_SCOPE) {
-		throw std::runtime_error("Calling nextRSVPObject on a scope object");
-	}
+const void* RSVPOjectOfType(Packet* packet, uint8_t wanted_class_num) {
+	uint8_t class_num, c_type;
+	uint8_t obj_type;
 	
-	switch(header->class_num) {
-		case RSVP_CLASS_SESSION:
-			return (const RSVPObjectHeader*) (((const RSVPSession*) header) + 1);
-		case RSVP_CLASS_RSVP_HOP:
-			return (const RSVPObjectHeader*) (((const RSVPHop*) header) + 1);
-		case RSVP_CLASS_TIME_VALUES:
-			return (const RSVPObjectHeader*) (((const RSVPTimeValues*) header) + 1);
-		case RSVP_CLASS_ERROR_SPEC:
-			return (const RSVPObjectHeader*) (((const RSVPErrorSpec*) header) + 1);
-		case RSVP_CLASS_STYLE:
-			return (const RSVPObjectHeader*) (((const RSVPStyle*) header) + 1);
-		case RSVP_CLASS_FLOWSPEC:
-			return (const RSVPObjectHeader*) (((const RSVPFlowspec*) header) + 1);
-		case RSVP_CLASS_FILTER_SPEC:
-			return (const RSVPObjectHeader*) (((const RSVPFilterSpec*) header) + 1);
-		case RSVP_CLASS_SENDER_TEMPLATE:
-			return (const RSVPObjectHeader*) (((const RSVPSenderTemplate*) header) + 1);
-		case RSVP_CLASS_SENDER_TSPEC:
-			return (const RSVPObjectHeader*) (((const RSVPSenderTSpec*) header) + 1);
-		case RSVP_CLASS_RESV_CONF:
-			return (const RSVPObjectHeader*) (((const RSVPResvConf*) header) + 1);
-		default:
-			click_chatter("nextRSVPObject: class num %d not found", header->class_num);
-			throw std::runtime_error("");
-	}
-}
-
-void initRSVPCommonHeader(RSVPCommonHeader* header, uint8_t msg_type, uint8_t send_TTL, uint16_t length)
-{
-	header->vers = 1;
-	header->flags = 0;
-	header->msg_type = msg_type;
-	header->send_TTL = send_TTL;
-	header->RSVP_checksum = 0;
-	header->reserved = 0;
-	header->RSVP_length = htons(length);
-
-	return;
-}
-
-void initRSVPObjectHeader(RSVPObjectHeader* header, uint8_t class_num, uint8_t c_type)
-{
-	header->length = htons(sizeofRSVPObject(class_num, c_type));
-	header->class_num = class_num;
-	header->c_type = c_type;
-
-	return;
-}
-
-void initRSVPSession(RSVPSession* session, in_addr destinationAddress, uint8_t protocol_id, bool police, uint16_t dst_port)
-{
-	initRSVPObjectHeader(&session->header, RSVP_CLASS_SESSION, 1);
-
-	session->IPv4_dest_address = destinationAddress;
-	session->protocol_id = protocol_id;
-	session->flags = 0;
-	if (police) {
-		session->flags |= 0x01;
-	}
-	session->dst_port = htons(dst_port);
-
-	return;
-}
-
-void initRSVPHop(RSVPHop* hop, in_addr next_previous_hop_address, uint32_t logical_interface_handle)
-{
-	initRSVPObjectHeader(&hop->header, RSVP_CLASS_RSVP_HOP, 1);
-
-	hop->IPv4_next_previous_hop_address = next_previous_hop_address;
-	hop->logical_interface_handle = htonl(logical_interface_handle);
-
-	return;
-}
-
-void initRSVPTimeValues(RSVPTimeValues* timeValues, uint32_t refresh_period_r)
-{
-	initRSVPObjectHeader(&timeValues->header, RSVP_CLASS_TIME_VALUES, 1);
-
-	timeValues->refresh_period_r = htonl(refresh_period_r);
-
-	return;
-}
-
-void initRSVPStyle(RSVPStyle* style)
-{
-	initRSVPObjectHeader(&style->header, RSVP_CLASS_STYLE, 1);
-
-	style->flags = 0;
-	style->option_vector = htons(10) << 8; // three rightmost bits: 010 for explicit sender selection, next two bits: 01 for distinct reservations
-
-	return;
-}
-
-void initRSVPErrorSpec(RSVPErrorSpec* errorSpec, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue) {
-	initRSVPObjectHeader(&errorSpec->header, RSVP_CLASS_ERROR_SPEC, 1);
+	const RSVPObjectHeader* p = (const RSVPObjectHeader*) packet->data();
+	p = (const RSVPObjectHeader*) (((const RSVPCommonHeader*) p) + 1);
 	
-	errorSpec->IPv4_error_node_address = error_node_address;
-	errorSpec->flags = 0;
-	
-	errorSpec->flags |= (inPlace ? 0x1 : 0x0) | (notGuilty ? 0x2 : 0x0);
-	errorSpec->error_code = errorCode;
-	errorSpec->error_value = htons(errorValue);
-
-	return;
-}
-
-void initRSVPResvConf(RSVPResvConf* resvConf, in_addr receiverAddress) {
-	initRSVPObjectHeader(&resvConf->header, RSVP_CLASS_RESV_CONF, 1);
-	
-	resvConf->receiver_address = receiverAddress;
-	
-	return;
-}
-
-// returns pointer to the position just after the scope object
-void* initRSVPScope(RSVPObjectHeader* header, const Vector<in_addr>& src_addresses)
-{
-	if (!src_addresses.size()) {
-		return (void *) header;
-	}
-
-	header->length = htons(sizeofRSVPScopeObject(src_addresses.size()));
-	header->class_num = RSVP_CLASS_SCOPE;
-	header->c_type = 1;
-
-	in_addr* address = (in_addr *) (header + 1);
-
-	for (int i = 0; i < src_addresses.size(); ++i) {
-		*address = src_addresses.at(i);
-		address += 1;
-	}
-
-	return (void *) address;
-}
-
-void initRSVPFlowspec(RSVPFlowspec* flowspec,
-	float token_bucket_rate,
-	float token_bucket_size,
-	float peak_data_rate,
-	uint32_t minimum_policed_unit,
-	uint32_t maximum_packet_size)
-{
-	initRSVPObjectHeader(&flowspec->header, RSVP_CLASS_FLOWSPEC, 2);
-
-	flowspec->nothing_1 = 0;
-	flowspec->overall_length = htons(7);
-	flowspec->service_header = 1;
-	flowspec->nothing_2 = 0;
-	flowspec->controlled_load_data_length = htons(6);
-	flowspec->parameter_id = 127;
-	flowspec->flags = 0;
-	flowspec->parameter_127_length = 5;
-	flowspec->token_bucket_rate_float = htonl(* (uint32_t *) (&token_bucket_rate));
-	flowspec->token_bucket_size_float = htonl(* (uint32_t *) (&token_bucket_size));
-	flowspec->peak_data_rate_float = htonl(* (uint32_t *) (&peak_data_rate));
-	flowspec->minimum_policed_unit = htonl(minimum_policed_unit);
-	flowspec->maximum_packet_size = htonl(maximum_packet_size);
-}
-
-void initRSVPFilterSpec(RSVPFilterSpec* filterSpec, in_addr src_address, uint16_t src_port)
-{
-	initRSVPObjectHeader(&filterSpec->header, RSVP_CLASS_FILTER_SPEC, 1);
-
-	filterSpec->src_address = src_address;
-	filterSpec->nothing = 0;
-	filterSpec->src_port = htons(src_port);
-
-	return;
-}
-
-void initRSVPSenderTemplate(RSVPSenderTemplate* senderTemplate, in_addr src_address, uint16_t src_port)
-{
-	initRSVPFilterSpec(senderTemplate, src_address, src_port);
-
-	senderTemplate->header.class_num = RSVP_CLASS_SENDER_TEMPLATE;
-}
-
-void initRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
-	float token_bucket_rate,
-	float token_bucket_size,
-	float peak_data_rate,
-	uint32_t minimum_policed_unit,
-	uint32_t maximum_packet_size)
-{
-	initRSVPObjectHeader(&senderTSpec->header, RSVP_CLASS_SENDER_TSPEC, 2);
-
-	senderTSpec->nothing_1 = 0;
-	senderTSpec->overall_length = htons(7);
-	senderTSpec->service_header = 1;
-	senderTSpec->nothing_2 = 0;
-	senderTSpec->service_data_length = htons(6);
-	senderTSpec->parameter_id = 127;
-	senderTSpec->flags = 0;
-	senderTSpec->parameter_127_length = 5;
-	senderTSpec->token_bucket_rate_float = htonl(* (uint32_t *) (&token_bucket_rate));
-	senderTSpec->token_bucket_size_float = htonl(* (uint32_t *) (&token_bucket_size));
-	senderTSpec->peak_data_rate_float = htonl(* (uint32_t *) (&peak_data_rate));
-	senderTSpec->minimum_policed_unit = htonl(minimum_policed_unit);
-	senderTSpec->maximum_packet_size = htonl(maximum_packet_size);
-
-	return;
-}
-
-void* readRSVPCommonHeader(RSVPCommonHeader* commonHeader, uint8_t& msg_type, uint8_t& send_TTL, uint16_t& length)
-{
-	msg_type = commonHeader->msg_type;
-	send_TTL = commonHeader->send_TTL;
-	length = htons(commonHeader->RSVP_length);
-	return commonHeader + 1;
-}
-
-void readRSVPObjectHeader(RSVPObjectHeader* header, uint8_t& class_num, uint8_t& c_type)
-{
-	class_num = header->class_num;
-	c_type = header->c_type;
-	return;
-}
-
-void* readRSVPSession(RSVPSession* session, in_addr& destinationAddress, uint8_t& protocol_id, bool& police, uint16_t& dst_port)
-{
-	destinationAddress = session->IPv4_dest_address;
-	protocol_id = session->protocol_id;
-	police = session->flags & 0x01;
-	dst_port = htons(session->dst_port);
-	//click_chatter("SESSION OBJECT DATA: dest addr: %s, protocol id: %d, police: %d, dst port: %d", IPAddress(destinationAddress).s().c_str(), protocol_id, police, dst_port);
-	return session + 1;
-}
-
-void* readRSVPHop(RSVPHop* hop, in_addr& next_previous_hop_address, uint32_t& logical_interface_handle)
-{
-	next_previous_hop_address = hop->IPv4_next_previous_hop_address;
-	logical_interface_handle = htonl(hop->logical_interface_handle);
-	//click_chatter("Hop OBJECT DATA: next: %s, lih: %d", IPAddress(next_previous_hop_address).s().c_str(), logical_interface_handle);
-	return hop + 1;
-}
-
-void* readRSVPTimeValues(RSVPTimeValues* timeValues, uint32_t& refresh_period_r)
-{
-	refresh_period_r = htonl(timeValues->refresh_period_r);
-	//click_chatter("TimeValues OBJECT DATA: refresh period: %d", refresh_period_r);
-	return timeValues + 1;
-}
-
-void* readRSVPStyle(RSVPStyle* style)
-{
-	return style + 1;
-}
-
-void* readRSVPErrorSpec(RSVPErrorSpec* errorSpec, in_addr& error_node_address, bool& inPlace, bool& notGuilty, uint8_t& errorCode, uint16_t& errorValue)
-{
-	error_node_address = errorSpec->IPv4_error_node_address;
-	inPlace = errorSpec->flags & 0x1;
-	notGuilty = errorSpec->flags & 0x2;
-	errorCode = errorSpec->error_code;
-	errorValue = htons(errorSpec->error_value);
-	//click_chatter("ErrorSpec OBJECT DATA: node_address: %s, inPlace: %d, notGuilty: %d, errorCode: %d, errorValue: %d", IPAddress(error_node_address).s().c_str(), inPlace, notGuilty, errorCode, errorValue);
-	return errorSpec + 1;
-}
-
-void* readRSVPResvConf(RSVPResvConf* resvConf, in_addr& receiverAddress)
-{
-	receiverAddress = resvConf->receiver_address;
-	//click_chatter("ResvConf OBJECT DATA: receiverAddr: %s", IPAddress(receiverAddress).s().c_str());
-	return resvConf + 1;
-}
-
-void* readRSVPScope(RSVPObjectHeader* objectHeader, Vector<in_addr>& src_addresses)
-{
-	unsigned length = htons(objectHeader->length);
-	unsigned nrAddresses = (length - sizeof(RSVPObjectHeader)) / 4;
-	//click_chatter("readRSVPScope: number of addresses: %d", nrAddresses);
-	
-	in_addr* addr = (in_addr*) (objectHeader + 1);
-	
-	for (int i = 0; i < nrAddresses; ++i) {
-		src_addresses.push_back(*addr);
+	while (p < (const RSVPObjectHeader*) packet->end_data()) {
+		readRSVPObjectHeader(const_cast<RSVPObjectHeader*>(p), class_num, c_type);
+		if (class_num == wanted_class_num) {
+			return p;
+		}
 		
-		//click_chatter("Scope OBJECT DATA: src_addresses: %s", IPAddress(*addr).s().c_str());
-		addr++;
+		p = nextRSVPObject(p);
 	}
-	return addr;
-}
-
-void* readRSVPFlowspec(RSVPFlowspec* flowSpec,
-	float& token_bucket_rate,
-	float& token_bucket_size,
-	float& peak_data_rate,
-	uint32_t& minimum_policed_unit,
-	uint32_t& maximum_packet_size)
-{
-	uint32_t tbr = htonl(flowSpec->token_bucket_rate_float),
-		tbs = htonl(flowSpec->token_bucket_size_float),
-		pdr = htonl(flowSpec->peak_data_rate_float);
-	token_bucket_rate    = *(float*) &tbr;
-	token_bucket_size    = *(float*) &tbs;
-	peak_data_rate       = *(float*) &pdr;
-	minimum_policed_unit = htonl(flowSpec->minimum_policed_unit);
-	maximum_packet_size  = htonl(flowSpec->maximum_packet_size);
-	//click_chatter("Flowspec OBJECT DATA: bucket rate: %f, bucket size: %f, peak rate: %f, min policed: %d, max size: %d", token_bucket_rate, token_bucket_size, peak_data_rate, minimum_policed_unit, maximum_packet_size);
-	return flowSpec + 1;
-}
-
-void* readRSVPFilterSpec(RSVPFilterSpec* filterSpec, in_addr& src_address, uint16_t& src_port)
-{
-	src_address = filterSpec->src_address;
-	src_port    = htons(filterSpec->src_port);
-	//click_chatter("FilterSpec OBJECT DATA: src: %s, port: %d", IPAddress(src_address).s().c_str(), src_port);
-	return filterSpec + 1;
-}
-
-void* readRSVPSenderTemplate(RSVPSenderTemplate* senderTemplate, in_addr& src_address, uint16_t& src_port)
-{
-	src_address = senderTemplate->src_address;
-	src_port    = htons(senderTemplate->src_port);
-	//click_chatter("SenderTemplate OBJECT DATA: src: %s, port: %d", IPAddress(src_address).s().c_str(), src_port);
-	return senderTemplate + 1;
-}
-
-void* readRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
-	float& token_bucket_rate,
-	float& token_bucket_size,
-	float& peak_data_rate,
-	uint32_t& minimum_policed_unit,
-	uint32_t& maximum_packet_size)
-{
-	uint32_t tbr = htonl(senderTSpec->token_bucket_rate_float),
-		tbs = htonl(senderTSpec->token_bucket_size_float),
-		pdr = htonl(senderTSpec->peak_data_rate_float);
-	token_bucket_rate    = *(float*) &tbr;
-	token_bucket_size    = *(float*) &tbs;
-	peak_data_rate       = *(float*) &pdr;
-	minimum_policed_unit = htonl(senderTSpec->minimum_policed_unit);
-	maximum_packet_size  = htonl(senderTSpec->maximum_packet_size);
-	//click_chatter("Flowspec OBJECT DATA: bucket rate: %f, bucket size: %f, peak rate: %f, min policed: %d, max size: %d", token_bucket_rate, token_bucket_size, peak_data_rate, minimum_policed_unit, maximum_packet_size);
-	return senderTSpec + 1;
+	
+	return NULL;
 }
 
 
 void RSVPElement::push(int, Packet *packet) {
-	click_chatter("Received RSVP packet at RSVPElement %s", _name.c_str());
+	/*click_chatter("Received RSVP packet at RSVPElement %s", _name.c_str());
 
 	const void* p = packet->data();
 	const void* end_data = packet->end_data();
@@ -408,6 +35,41 @@ void RSVPElement::push(int, Packet *packet) {
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
 	p = readRSVPCommonHeader((RSVPCommonHeader*) p, msg_type, send_TTL, length);
+	
+	switch (msg_type) {
+		case RSVP_MSG_PATH:
+			clean();
+			RSVPSession session = *const_cast<RSVPSession*>((const RSVPSession*) RSVPOjectOfType(packet, 1));
+			RSVPNodeSession nodeSession(session);
+			// reply with a resv message
+			HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.find(nodeSession);
+			if (it != _pathStates.end()) {
+				initRSVPHop(&_hop, it->second.previous_hop_node, 0);
+				_session = session;
+				initRSVPTimeValues(&_timeValues, 10);
+			}
+			break;
+		case RSVP_MSG_RESV:
+			// update state table
+			break;
+		case RSVP_MSG_PATHERR:
+			// read rfc
+			break;
+		case RSVP_MSG_RESVERR:
+			// read rfc
+			break;
+		case RSVP_MSG_PATHTEAR:
+			// remove session, send resv tear
+			break;
+		case RSVP_MSG_RESVTEAR:
+			// remove session, send path tear
+			break;
+		case RSVP_MSG_RESVCONF:
+			// notify application if session present
+			break;
+		default:
+			click_chatter("RSVPElement %s: no message type %d", _name.c_str(), msg_type);
+	}
 	
 	uint8_t class_num, c_type;
 	
@@ -472,7 +134,7 @@ void RSVPElement::push(int, Packet *packet) {
 	
 	// updateState();
 
-	output(0).push(packet);	
+	output(0).push(packet);	*/
 }
 
 Packet* RSVPElement::pull(int){
