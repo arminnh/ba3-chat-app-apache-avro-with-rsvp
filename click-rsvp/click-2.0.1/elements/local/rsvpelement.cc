@@ -400,6 +400,8 @@ void* readRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
 
 
 void RSVPElement::push(int, Packet *packet) {
+	click_chatter("Received RSVP packet at RSVPElement %s", _name.c_str());
+
 	const void* p = packet->data();
 	const void* end_data = packet->end_data();
 	
@@ -420,47 +422,47 @@ void RSVPElement::push(int, Packet *packet) {
 		click_chatter("\n");
 		switch(class_num) {
 			case RSVP_CLASS_SESSION:
-				//click_chatter("class SESSION");
+				click_chatter("class SESSION");
 				p = readRSVPSession((RSVPSession*) p, d, a, c, b);
 				break;
 			case RSVP_CLASS_RSVP_HOP:
-				//click_chatter("class HOP");
+				click_chatter("class HOP");
 				p = readRSVPHop((RSVPHop*) p, d, e);
 				break;
 			case RSVP_CLASS_TIME_VALUES:
-				//click_chatter("class VALUES");
+				click_chatter("class VALUES");
 				p = readRSVPTimeValues((RSVPTimeValues*) p, e);
 				break;
 			case RSVP_CLASS_ERROR_SPEC:
-				//click_chatter("class SPEC");
+				click_chatter("class SPEC");
 				p = readRSVPErrorSpec((RSVPErrorSpec*) p, d, c, cc, a, b);
 				break;
 			case RSVP_CLASS_STYLE:
-				//click_chatter("class STYLE");
+				click_chatter("class STYLE");
 				p = readRSVPStyle((RSVPStyle*) p);
 				break;
 			case RSVP_CLASS_SCOPE:
-				//click_chatter("class SCOPE");
+				click_chatter("class SCOPE");
 				p = readRSVPScope((RSVPObjectHeader*) p, srcs);
 				break;
 			case RSVP_CLASS_FLOWSPEC:
-				//click_chatter("class FLOWSPEC");
+				click_chatter("class FLOWSPEC");
 				p = readRSVPFlowspec((RSVPFlowspec*) p,f,ff,fff, e, ee);
 				break;
 			case RSVP_CLASS_FILTER_SPEC:
-				//click_chatter("class SPEC");
+				click_chatter("class SPEC");
 				p = readRSVPFilterSpec((RSVPFilterSpec*) p, d, b);
 				break;
 			case RSVP_CLASS_SENDER_TEMPLATE:
-				//click_chatter("class TEMPLATE");
+				click_chatter("class TEMPLATE");
 				p = readRSVPSenderTemplate((RSVPSenderTemplate*) p, d, b);
 				break;
 			case RSVP_CLASS_SENDER_TSPEC:
-				//click_chatter("class TSPEC");
+				click_chatter("class TSPEC");
 				p =  readRSVPSenderTSpec((RSVPSenderTSpec*) p,f,ff,fff,e,ee);
 				break;
 			case RSVP_CLASS_RESV_CONF:
-				//click_chatter("class CONF");
+				click_chatter("class CONF");
 				p = readRSVPResvConf((RSVPResvConf*) p, d);
 				break;
 			default:
@@ -750,6 +752,16 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 	return 0;
 }
 
+int RSVPElement::nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
+	RSVPElement* me = (RSVPElement*) e;
+	if (cp_va_kparse(conf, me, errh, "NAME", cpkP + cpkM, cpString, &me->_name, cpEnd) < 0)
+		return -1;
+	
+	click_chatter("Set host RSVP element name: %s", me->_name.c_str());
+	
+	return 0;
+}
+
 String RSVPElement::getTTLHandle(Element *e, void * thunk) {
 	RSVPElement *me = (RSVPElement *) e;
 	return String((int) me->_TTL);
@@ -764,6 +776,7 @@ void RSVPElement::add_handlers() {
 	add_write_handler("pathtear", &pathTearHandle, (void *) 0);
 	add_write_handler("resvtear", &resvTearHandle, (void *) 0);
 	add_write_handler("resvconf", &resvConfHandle, (void *) 0);
+	add_write_handler("name", &nameHandle, (void *) 0);
 	
 	// types of objects
 	add_write_handler("session", &sessionHandle, (void *) 0);

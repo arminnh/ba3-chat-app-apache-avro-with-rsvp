@@ -226,6 +226,8 @@ public:
 	static int scopeHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int senderDescriptorHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 
+	static int nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
 	// send message handlers
 	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -250,6 +252,7 @@ public:
 	Packet* createResvConfMessage() const;
 	
 private:
+	String _name;
 	void clean();
 
 	Timer _timer;

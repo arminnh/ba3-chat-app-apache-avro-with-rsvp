@@ -12,6 +12,7 @@ elementclass Host {
 			$address:ip/32 0,
 			$address:ipnet 1,
 			0.0.0.0/0 $gateway 1)
+		-> rsvp_cl::IPClassifier(proto 46, -)[1]
 		-> [1]output;
 
 	rt[1]	-> ipgw :: IPGWOptions($address)
@@ -21,6 +22,15 @@ elementclass Host {
 		-> arpq :: ARPQuerier($address)
 		-> output;
 
+	rsvp::RSVPElement
+		-> rsvpipencap::MyIPEncap(46, $address, 0.0.0.0)
+		-> EtherEncap(0x0800, $address, $gateway)
+		-> output;
+		
+	rsvp_cl[0]
+		-> Strip(20)
+		-> rsvp;
+		
 	ipgw[1]	-> ICMPError($address, parameterproblem)
 		-> output;
 
@@ -40,5 +50,5 @@ elementclass Host {
 		-> [1]arpq;
 
 	in_cl[2]
-		-> ip;
+		-> ip ;
 }
