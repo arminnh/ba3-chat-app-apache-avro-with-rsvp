@@ -20,8 +20,8 @@ public class MainTest extends JPanel {
 
 //		test.input = new File("SampleVideo_1080x720_30mb.flv");
 //		test.input = new File("SampleVideo_1080x720_50mb.mp4");
-		test.input = new File("SampleVideo_1080x720_20mb.mkv");
-//		test.input = new File("small.flv");
+//		test.input = new File("SampleVideo_1080x720_20mb.mkv");
+		test.input = new File("small.flv");
 		test.output = new File("myFile.png");
 
 		JFrame frame = new JFrame();
