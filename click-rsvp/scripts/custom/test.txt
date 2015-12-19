@@ -23,6 +23,7 @@ write rsvp.session DEST 5.6.4.8, PROTOCOL 10, POLICE false, PORT 500
 write rsvp.hop NEIGHBOR 21.13.14.51, LIH 51
 write rsvp.timevalues REFRESH 6896
 write rsvp.resvconfobj RECEIVER_ADDRESS 20.21.23.24
+write rsvp.flowdescriptor SRC_ADDRESS 5.8.9.254, SRC_PORT 1001, TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5
 write rsvp.resv TTL 123
 
 write rsvp.session DEST 1.2.3.4, PROTOCOL 1, POLICE true, PORT 50

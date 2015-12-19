@@ -125,7 +125,7 @@ void initRSVPSession(RSVPSession* session, in_addr destinationAddress, uint8_t p
 		session->flags |= 0x01;
 	}
 	session->dst_port = htons(dst_port);
-
+click_chatter("SET PROTOCOL ID TO %d AND DST PORT TO %d", protocol_id, dst_port);
 	return;
 }
 
@@ -289,7 +289,7 @@ void* readRSVPSession(RSVPSession* session, in_addr& destinationAddress, uint8_t
 	protocol_id = session->protocol_id;
 	police = session->flags & 0x01;
 	dst_port = htons(session->dst_port);
-	//click_chatter("SESSION OBJECT DATA: dest addr: %s, protocol id: %d, police: %d, dst port: %d", IPAddress(destinationAddress).s().c_str(), protocol_id, police, dst_port);
+	click_chatter("SESSION OBJECT DATA: dest addr: %s, protocol id: %d, police: %d, dst port: %d", IPAddress(destinationAddress).s().c_str(), protocol_id, police, dst_port);
 	return session + 1;
 }
 
@@ -462,14 +462,30 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 	RSVPObjectHeader* header;
 	uint8_t class_num;
 	
-	RSVPSenderTemplate* senderTemplate = NULL;
-	RSVPSenderTSpec* senderTSpec = NULL;
-	RSVPHop* hop = NULL;
-	RSVPTimeValues* timeValues = NULL;
-	RSVPSession* session = NULL;
-	
+	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TEMPLATE);
+	RSVPSenderTSpec* senderTSpec =  (RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
+	RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
+	RSVPTimeValues* timeValues = (RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES);
+	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
+
+	if (!senderTemplate) {
+		click_chatter("RSVPSENDERTEMPLATE IS NULL");
+	}
+	if (!senderTSpec) {
+		click_chatter("RSVPSENDERTSPEC IS NULL");
+	}
+	if (!hop) {
+		click_chatter("RSVPHOP IS NULL");
+	}
+	if (!timeValues) {
+		click_chatter("RSVPTIMEVALUES IS NULL");
+	}
+	if (!session) {
+		click_chatter("RSVPSESSION IS NULL");
+	}
+
 	//click_chatter("updatePathState: enter while loop");
-	while (p < packet->end_data()) {
+	/*while (p < packet->end_data()) {
 		header = (RSVPObjectHeader*) p;
 		class_num = header->class_num;
 		switch (class_num) {
@@ -498,9 +514,18 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 		}
 		p = (const void*) nextRSVPObject((RSVPObjectHeader*) p);
 		//click_chatter("updatePathState: p = next rsvp object");
-	}
+	}*/
 	//click_chatter("updatePathState: left while loop");
 	
+	in_addr addr;
+	uint8_t protocolID;
+	uint16_t dstPort;
+	bool police = false;
+
+	readRSVPSession(session, addr, protocolID, police, dstPort);
+
+	click_chatter("addr: %s, protocolID: %d, dstPort: %d", IPAddress(addr).unparse().c_str(), protocolID, dstPort);
+
 	RSVPNodeSession nodeSession(session->IPv4_dest_address, session->protocol_id, session->dst_port);
 	HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.find(nodeSession);
 	if (it != _pathStates.end()) {
@@ -525,9 +550,9 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 	pathState.timer->schedule_after_sec(refresh_period_r); // TODO: change !!!11
 	_pathStates.set(nodeSession, pathState);
 	//click_chatter("updatePathState: set new refresh period");
-	//click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
+	click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
 	hop->IPv4_next_previous_hop_address = _myIP;
-	//click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
+	click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
 	//click_chatter("updatePathState: end");
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) packet->data(), packet->length());
