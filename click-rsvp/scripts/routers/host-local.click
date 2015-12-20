@@ -22,8 +22,8 @@ elementclass Host {
 		-> arpq :: ARPQuerier($address)
 		-> output;
 
-	rsvp::RSVPElement
-		-> rsvpipencap::MyIPEncap(46, $address, 0.0.0.0)
+	rsvp::RSVPElement($address)
+		//-> rsvpipencap::MyIPEncap(46, $address, 0.0.0.0)
 		-> EtherEncap(0x0800, $address, $gateway)
 		-> output;
 		

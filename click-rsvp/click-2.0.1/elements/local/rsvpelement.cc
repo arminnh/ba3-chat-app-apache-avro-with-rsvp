@@ -14,7 +14,7 @@ const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
 	p = (const RSVPObjectHeader*) (((const RSVPCommonHeader*) p) + 1);
 	
 	while (p < (const RSVPObjectHeader*) packet->end_data()) {
-		readRSVPObjectHeader(const_cast<RSVPObjectHeader*>(p), class_num, c_type);
+		readRSVPObjectHeader(p, class_num, c_type);
 		if (class_num == wanted_class_num) {
 			return p;
 		}
@@ -40,20 +40,20 @@ void RSVPElement::push(int, Packet *packet) {
 	RSVPNodeSession nodeSession;
 	HashTable<RSVPNodeSession, RSVPPathState>::iterator it;
 
+	WritablePacket* reply;
 	switch (msg_type) {
 		case RSVP_MSG_PATH:
 			clean();
-			session = *((RSVPSession*) RSVPObjectOfType(packet, RSVP_CLASS_SESSION));
-			nodeSession = RSVPNodeSession(session);
-			// reply with a resv message
-			it = _pathStates.find(nodeSession);
-			if (it != _pathStates.end()) {
-				initRSVPHop(&_hop, it->second.previous_hop_node, 0);
-				_session = session;
-				initRSVPTimeValues(&_timeValues, 10);
-			}
+			
+			updatePathState(packet->clone());
+			reply = replyToPathMessage(packet->clone());
+			
+			packet->kill();
+			output(0).push(reply);
+
 			break;
 		case RSVP_MSG_RESV:
+			click_chatter("RSVP host %s received resv message.", _name.c_str());
 			// update state table
 			break;
 		case RSVP_MSG_PATHERR:
@@ -74,86 +74,23 @@ void RSVPElement::push(int, Packet *packet) {
 		default:
 			click_chatter("RSVPElement %s: no message type %d", _name.c_str(), msg_type);
 	}
-	
-	/*uint8_t class_num, c_type;
-	
-	uint8_t obj_type;
-	while (p < end_data) {
-		readRSVPObjectHeader((RSVPObjectHeader*) p, class_num, c_type);
-		
-		uint8_t a = 0; uint16_t b = 0; uint32_t e = 0; uint32_t ee = 0; bool c = true; bool cc = false; float f = 0; float ff = 0; float fff = 0;
-		in_addr d = IPAddress("0.0.0.0").in_addr();
-		Vector<in_addr> srcs;
-		
-		click_chatter("\n");
-		switch(class_num) {
-			case RSVP_CLASS_SESSION:
-				click_chatter("class SESSION");
-				p = readRSVPSession((RSVPSession*) p, d, a, c, b);
-				break;
-			case RSVP_CLASS_RSVP_HOP:
-				click_chatter("class HOP");
-				p = readRSVPHop((RSVPHop*) p, d, e);
-				break;
-			case RSVP_CLASS_TIME_VALUES:
-				click_chatter("class VALUES");
-				p = readRSVPTimeValues((RSVPTimeValues*) p, e);
-				break;
-			case RSVP_CLASS_ERROR_SPEC:
-				click_chatter("class SPEC");
-				p = readRSVPErrorSpec((RSVPErrorSpec*) p, d, c, cc, a, b);
-				break;
-			case RSVP_CLASS_STYLE:
-				click_chatter("class STYLE");
-				p = readRSVPStyle((RSVPStyle*) p);
-				break;
-			case RSVP_CLASS_SCOPE:
-				click_chatter("class SCOPE");
-				p = readRSVPScope((RSVPObjectHeader*) p, srcs);
-				break;
-			case RSVP_CLASS_FLOWSPEC:
-				click_chatter("class FLOWSPEC");
-				p = readRSVPFlowspec((RSVPFlowspec*) p,f,ff,fff, e, ee);
-				break;
-			case RSVP_CLASS_FILTER_SPEC:
-				click_chatter("class SPEC");
-				p = readRSVPFilterSpec((RSVPFilterSpec*) p, d, b);
-				break;
-			case RSVP_CLASS_SENDER_TEMPLATE:
-				click_chatter("class TEMPLATE");
-				p = readRSVPSenderTemplate((RSVPSenderTemplate*) p, d, b);
-				break;
-			case RSVP_CLASS_SENDER_TSPEC:
-				click_chatter("class TSPEC");
-				p =  readRSVPSenderTSpec((RSVPSenderTSpec*) p,f,ff,fff,e,ee);
-				break;
-			case RSVP_CLASS_RESV_CONF:
-				click_chatter("class CONF");
-				p = readRSVPResvConf((RSVPResvConf*) p, d);
-				break;
-			default:
-				click_chatter("class_num %d not found", class_num);
-		}
-	}*/
-	
-	// updateState();
-
-	output(0).push(packet);	
 }
 
 Packet* RSVPElement::pull(int){
 	return NULL;
 }
 
-Packet* RSVPElement::replyToPathMessage(Packet* pathMessage) {
-	// copy session, time values
+WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
+	// copy session
 	_session = * (RSVPSession *) RSVPObjectOfType(pathMessage, RSVP_CLASS_SESSION);
+	// copy time values (for now)
 	_timeValues = * (RSVPTimeValues *) RSVPObjectOfType(pathMessage, RSVP_CLASS_TIME_VALUES);
 
 	// hop address will be the resv messages's destination
 	RSVPHop* pathHop = (RSVPHop *) RSVPObjectOfType(pathMessage, RSVP_CLASS_RSVP_HOP);
 	in_addr resvDestinationAddress; uint32_t lih;
 	readRSVPHop(pathHop, resvDestinationAddress, lih);
+	click_chatter("replyToPathMessage: resvDestinationAddress: %s", IPAddress(resvDestinationAddress).unparse().c_str());
 
 	// resv's hop address is the host's own IP
 	initRSVPHop(&_hop, _myIP, lih);
@@ -169,7 +106,11 @@ Packet* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 		initRSVPFlowspec(&_flowspec, senderTSpec);
 	}
 
-	Packet* resvMessage = createResvMessage();
+	WritablePacket* resvMessage = createResvMessage();
+	click_chatter("replyToPathMessage: resvDestinationAddress: %s", IPAddress(resvDestinationAddress).unparse().c_str());
+	addIPHeader(resvMessage, resvDestinationAddress, _tos);
+
+	pathMessage->kill();
 
 	return resvMessage;
 }
@@ -247,7 +188,7 @@ int RSVPElement::hopHandle(const String &conf, Element *e, void * thunk, ErrorHa
 		"NEIGHBOR", cpkM, cpIPAddress, &neighbor_address, 
 		"LIH", cpkM, cpUnsigned, &logical_interface_handle,  
 		cpEnd) < 0) return -1;
-	
+	click_chatter("hopHandle: neighbor address: %s", IPAddress(neighbor_address).unparse().c_str());
 	initRSVPHop(&me->_hop, neighbor_address, (uint32_t) logical_interface_handle);
 
 	return 0;
@@ -308,6 +249,9 @@ int RSVPElement::resvConfObjectHandle(const String &conf, Element *e, void * thu
 int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
 	in_addr destinationIP = IPAddress("0.0.0.0");
+	
+	uint8_t pid; bool police; uint16_t dst_port;
+	readRSVPSession(&me->_session, destinationIP, pid, police, dst_port);
 
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
@@ -449,13 +393,13 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 	double tbr, tbs, pdr;
 
 	in_addr senderTemplate_src_address;
-	uint16_t senderTemplate_src_port;
+	unsigned senderTemplate_src_port;
 
 	float senderTSpec_token_bucket_rate;
 	float senderTSpec_token_bucket_size;
 	float senderTSpec_peak_data_rate;
-	uint32_t senderTSpec_minimum_policed_unit;
-	uint32_t senderTSpec_maximum_packet_size;
+	int senderTSpec_minimum_policed_unit;
+	int senderTSpec_maximum_packet_size;
 
 	if (!cp_va_kparse(conf, me, errh,
 		// sender template
@@ -473,10 +417,10 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 	senderTSpec_token_bucket_size = tbs;
 	senderTSpec_peak_data_rate = pdr;
 
-	initRSVPSenderTemplate(&me->_senderTemplate, senderTemplate_src_address, senderTemplate_src_port);
+	initRSVPSenderTemplate(&me->_senderTemplate, senderTemplate_src_address, (uint16_t) senderTemplate_src_port);
 	initRSVPSenderTSpec(&me->_senderTSpec, senderTSpec_token_bucket_rate,
 		senderTSpec_token_bucket_size, senderTSpec_peak_data_rate,
-		senderTSpec_minimum_policed_unit, senderTSpec_maximum_packet_size);
+		(uint32_t) senderTSpec_minimum_policed_unit, (uint32_t) senderTSpec_maximum_packet_size);
 
 	me->_senderDescriptor = true;
 
@@ -490,13 +434,13 @@ int RSVPElement::flowDescriptorHandle(const String& conf, Element *e, void *thun
 	double tbr, tbs, pdr;
 
 	in_addr filterSpec_src_address;
-	uint16_t filterSpec_src_port;
+	unsigned filterSpec_src_port;
 
 	float flowspec_token_bucket_rate;
 	float flowspec_token_bucket_size;
 	float flowspec_peak_data_rate;
-	uint32_t flowspec_minimum_policed_unit;
-	uint32_t flowspec_maximum_packet_size;
+	int flowspec_minimum_policed_unit;
+	int flowspec_maximum_packet_size;
 
 	if (!cp_va_kparse(conf, me, errh,
 		// sender template
@@ -514,10 +458,10 @@ int RSVPElement::flowDescriptorHandle(const String& conf, Element *e, void *thun
 	flowspec_token_bucket_size = tbs;
 	flowspec_peak_data_rate = pdr;
 
-	initRSVPFilterSpec(&me->_filterSpec, filterSpec_src_address, filterSpec_src_port);
+	initRSVPFilterSpec(&me->_filterSpec, filterSpec_src_address, (uint16_t) filterSpec_src_port);
 	initRSVPFlowspec(&me->_flowspec, flowspec_token_bucket_rate,
 		flowspec_token_bucket_size, flowspec_peak_data_rate,
-		flowspec_minimum_policed_unit, flowspec_maximum_packet_size);
+		(uint32_t) flowspec_minimum_policed_unit, (uint32_t) flowspec_maximum_packet_size);
 
 	me->_flowDescriptor = true;
 

@@ -22,7 +22,7 @@ public:
 	virtual void push(int, Packet *);
 	Packet* pull(int);
 
-	Packet* replyToPathMessage(Packet* pathMessage);
+	WritablePacket* replyToPathMessage(Packet* pathMessage);
 
 	// specify object fields handlers
 	static int sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
