@@ -1,5 +1,5 @@
-rsvp::RSVPElement -> 
-    myipencap::MyIPEncap(46, 0.0.0.0, 0.0.0.1, TOS 1) ->
+rsvp::RSVPElement(0.0.0.0) -> 
+    //myipencap::MyIPEncap(46, 0.0.0.0, 0.0.0.1, TOS 1) ->
     SetIPChecksum ->
     EtherEncap(0x0800, 0:0:0:0:0:0, 0:0:0:1:0:0) ->
     ToDump(test.dump) -> 
@@ -26,6 +26,6 @@ rsvp::RSVPElement ->
     ToDump(test4.dump) -> 
     
     Strip(34) ->
-    rsvp2::RSVPElement ->
+    rsvp2::RSVPElement(0.0.0.1) ->
     //Print ->
     Discard

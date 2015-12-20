@@ -22,6 +22,8 @@ public:
 	virtual void push(int, Packet *);
 	Packet* pull(int);
 
+	Packet* replyToPathMessage(Packet* pathMessage);
+
 	// specify object fields handlers
 	static int sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -43,22 +45,24 @@ public:
 	static int resvTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvConfHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	
+	static int tosHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static String getTTLHandle(Element *e, void * thunk);
-	
+
 	void add_handlers();
 	
 	WritablePacket* createPacket(uint16_t packetSize) const;
 
-	Packet* createPathMessage() const;
-	Packet* createResvMessage() const;
-	Packet* createPathErrMessage() const;
-	Packet* createResvErrMessage() const;
-	Packet* createPathTearMessage() const;
-	Packet* createResvTearMessage() const;
-	Packet* createResvConfMessage() const;
+	WritablePacket* createPathMessage() const;
+	WritablePacket* createResvMessage() const;
+	WritablePacket* createPathErrMessage() const;
+	WritablePacket* createResvErrMessage() const;
+	WritablePacket* createPathTearMessage() const;
+	WritablePacket* createResvTearMessage() const;
+	WritablePacket* createResvConfMessage() const;
 	
 private:
 
+	int _tos;
 	bool _application;
 	String _name;
 	void clean();

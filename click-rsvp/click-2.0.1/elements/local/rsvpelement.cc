@@ -10,7 +10,7 @@ const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
 	uint8_t class_num, c_type;
 	uint8_t obj_type;
 	
-	const RSVPObjectHeader* p = (const RSVPObjectHeader*) packet->data();
+	const RSVPObjectHeader* p = (const RSVPObjectHeader*) (packet->transport_header() ? packet->transport_header() : packet->data());
 	p = (const RSVPObjectHeader*) (((const RSVPCommonHeader*) p) + 1);
 	
 	while (p < (const RSVPObjectHeader*) packet->end_data()) {
@@ -27,7 +27,7 @@ const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
 
 
 void RSVPElement::push(int, Packet *packet) {
-	/*click_chatter("Received RSVP packet at RSVPElement %s", _name.c_str());
+	click_chatter("Received RSVP packet at RSVPElement %s", _name.c_str());
 
 	const void* p = packet->data();
 	const void* end_data = packet->end_data();
@@ -36,13 +36,17 @@ void RSVPElement::push(int, Packet *packet) {
 	uint16_t length;
 	p = readRSVPCommonHeader((RSVPCommonHeader*) p, msg_type, send_TTL, length);
 	
+	RSVPSession session;
+	RSVPNodeSession nodeSession;
+	HashTable<RSVPNodeSession, RSVPPathState>::iterator it;
+
 	switch (msg_type) {
 		case RSVP_MSG_PATH:
 			clean();
-			RSVPSession session = *const_cast<RSVPSession*>((const RSVPSession*) RSVPOjectOfType(packet, 1));
-			RSVPNodeSession nodeSession(session);
+			session = *((RSVPSession*) RSVPObjectOfType(packet, RSVP_CLASS_SESSION));
+			nodeSession = RSVPNodeSession(session);
 			// reply with a resv message
-			HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.find(nodeSession);
+			it = _pathStates.find(nodeSession);
 			if (it != _pathStates.end()) {
 				initRSVPHop(&_hop, it->second.previous_hop_node, 0);
 				_session = session;
@@ -71,7 +75,7 @@ void RSVPElement::push(int, Packet *packet) {
 			click_chatter("RSVPElement %s: no message type %d", _name.c_str(), msg_type);
 	}
 	
-	uint8_t class_num, c_type;
+	/*uint8_t class_num, c_type;
 	
 	uint8_t obj_type;
 	while (p < end_data) {
@@ -130,15 +134,44 @@ void RSVPElement::push(int, Packet *packet) {
 			default:
 				click_chatter("class_num %d not found", class_num);
 		}
-	}
+	}*/
 	
 	// updateState();
 
-	output(0).push(packet);	*/
+	output(0).push(packet);	
 }
 
 Packet* RSVPElement::pull(int){
 	return NULL;
+}
+
+Packet* RSVPElement::replyToPathMessage(Packet* pathMessage) {
+	// copy session, time values
+	_session = * (RSVPSession *) RSVPObjectOfType(pathMessage, RSVP_CLASS_SESSION);
+	_timeValues = * (RSVPTimeValues *) RSVPObjectOfType(pathMessage, RSVP_CLASS_TIME_VALUES);
+
+	// hop address will be the resv messages's destination
+	RSVPHop* pathHop = (RSVPHop *) RSVPObjectOfType(pathMessage, RSVP_CLASS_RSVP_HOP);
+	in_addr resvDestinationAddress; uint32_t lih;
+	readRSVPHop(pathHop, resvDestinationAddress, lih);
+
+	// resv's hop address is the host's own IP
+	initRSVPHop(&_hop, _myIP, lih);
+
+	RSVPSenderTemplate* senderTemplate;
+	RSVPSenderTSpec* senderTSpec;
+	if ((senderTemplate = (RSVPSenderTemplate *) RSVPObjectOfType(pathMessage, RSVP_CLASS_SENDER_TEMPLATE))
+			&& (senderTSpec = (RSVPSenderTSpec *) RSVPObjectOfType(pathMessage, RSVP_CLASS_SENDER_TSPEC))) {
+		_flowDescriptor = true;
+
+		// reserve the capacity the sender provides
+		_filterSpec = *senderTemplate;
+		initRSVPFlowspec(&_flowspec, senderTSpec);
+	}
+
+	Packet* resvMessage = createResvMessage();
+
+	return resvMessage;
 }
 
 RSVPElement::RSVPElement() : _timer(this)
@@ -151,6 +184,7 @@ int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 	_application = false;
 
 	if (cp_va_kparse(conf, this, errh,
+		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
 		"APPLICATION", 0, cpBool, &_application, cpEnd) < 0) return -1;
 
 	return 0;
@@ -159,6 +193,7 @@ int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 int RSVPElement::initialize(ErrorHandler* errh) {
 	// _timer.initialize(this);
 
+	_tos = 0;
 	clean();
 
 	// _timer.schedule_after_msec(1000);
@@ -188,18 +223,16 @@ int RSVPElement::sessionHandle(const String &conf, Element *e, void * thunk, Err
 	bool police;
 	int destination_port;
 	
-	in_addr* destination_address = new in_addr;
+	in_addr destination_address;
 	
 	if (cp_va_kparse(conf, me, errh, 
-		"DEST", cpkM, cpIPAddress, destination_address, 
+		"DEST", cpkM, cpIPAddress, &destination_address, 
 		"PROTOCOL", cpkM, cpUnsigned, &protocol_ID,
 		"POLICE", cpkM, cpBool, &police,
 		"PORT", cpkM, cpUnsigned, &destination_port, 
 		cpEnd) < 0) return -1;
 	
-	initRSVPSession(&me->_session, *destination_address, (uint8_t) protocol_ID, police, (uint16_t) destination_port);
-
-	delete destination_address;
+	initRSVPSession(&me->_session, destination_address, (uint8_t) protocol_ID, police, (uint16_t) destination_port);
 
 	return 0;
 }
@@ -223,23 +256,21 @@ int RSVPElement::hopHandle(const String &conf, Element *e, void * thunk, ErrorHa
 int RSVPElement::errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
 	
-	in_addr* error_node_address = new in_addr;
+	in_addr error_node_address;
 	bool inPlace;
 	bool notGuilty;
 	int errorCode;
 	int errorValue;
 
 	if (cp_va_kparse(conf, me, errh, 
-		"ERROR_NODE_ADDRESS", cpkM, cpIPAddress, error_node_address,
+		"ERROR_NODE_ADDRESS", cpkM, cpIPAddress, &error_node_address,
 		"INPLACE", cpkM, cpBool, &inPlace,
 		"NOTGUILTY", cpkM, cpBool, &notGuilty,
 		"ERROR_CODE", cpkM, cpUnsigned, &errorCode,
 		"ERROR_VALUE", cpkM, cpUnsigned, &errorValue,
 		cpEnd) < 0) return -1;
 	
-	initRSVPErrorSpec(&me->_errorSpec, *error_node_address, inPlace, notGuilty, (uint8_t) errorCode, (uint16_t) errorValue);
-
-	delete error_node_address;
+	initRSVPErrorSpec(&me->_errorSpec, error_node_address, inPlace, notGuilty, (uint8_t) errorCode, (uint16_t) errorValue);
 
 	return 0;
 }
@@ -276,10 +307,14 @@ int RSVPElement::resvConfObjectHandle(const String &conf, Element *e, void * thu
 
 int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
+	in_addr destinationIP = IPAddress("0.0.0.0");
 
-	if (cp_va_kparse(conf, me, errh, "TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	if (cp_va_kparse(conf, me, errh,
+		"DST", cpkP, cpIPAddress, &destinationIP,
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	Packet* message = me->createPathMessage();
+	WritablePacket* message = me->createPathMessage();
+	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -288,10 +323,14 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 
 int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
+	in_addr destinationIP = IPAddress("0.0.0.0");
 
-	if (cp_va_kparse(conf, me, errh, "TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	if (cp_va_kparse(conf, me, errh,
+		"DST", cpkP, cpIPAddress, &destinationIP,
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	Packet* message = me->createResvMessage();
+	WritablePacket* message = me->createResvMessage();
+	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -300,10 +339,14 @@ int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorH
 
 int RSVPElement::pathErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
+	in_addr destinationIP = IPAddress("0.0.0.0");
 
-	if (cp_va_kparse(conf, me, errh, "TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	if (cp_va_kparse(conf, me, errh,
+		"DST", cpkP, cpIPAddress, &destinationIP,
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	Packet* message = me->createPathErrMessage();
+	WritablePacket* message = me->createPathErrMessage();
+	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -313,10 +356,14 @@ int RSVPElement::pathErrHandle(const String &conf, Element *e, void * thunk, Err
 
 int RSVPElement::resvErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
+	in_addr destinationIP = IPAddress("0.0.0.0");
 
-	if (cp_va_kparse(conf, me, errh, "TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	if (cp_va_kparse(conf, me, errh,
+		"DST", cpkP, cpIPAddress, &destinationIP,
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	Packet* message = me->createResvErrMessage();
+	WritablePacket* message = me->createResvErrMessage();
+	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -326,10 +373,14 @@ int RSVPElement::resvErrHandle(const String &conf, Element *e, void * thunk, Err
 
 int RSVPElement::pathTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
+	in_addr destinationIP = IPAddress("0.0.0.0");
 
-	if (cp_va_kparse(conf, me, errh, "TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	if (cp_va_kparse(conf, me, errh,
+		"DST", cpkP, cpIPAddress, &destinationIP,
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	Packet* message = me->createPathTearMessage();
+	WritablePacket* message = me->createPathTearMessage();
+	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -339,10 +390,14 @@ int RSVPElement::pathTearHandle(const String &conf, Element *e, void * thunk, Er
 
 int RSVPElement::resvTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
+	in_addr destinationIP = IPAddress("0.0.0.0");
 
-	if (cp_va_kparse(conf, me, errh, "TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	if (cp_va_kparse(conf, me, errh,
+		"DST", cpkP, cpIPAddress, &destinationIP,
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	Packet* message = me->createResvTearMessage();
+	WritablePacket* message = me->createResvTearMessage();
+	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -352,12 +407,25 @@ int RSVPElement::resvTearHandle(const String &conf, Element *e, void * thunk, Er
 
 int RSVPElement::resvConfHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	if (cp_va_kparse(conf, me, errh, "TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	in_addr destinationIP = IPAddress("0.0.0.0");
+
+	if (cp_va_kparse(conf, me, errh,
+		"DST", cpkP, cpIPAddress, &destinationIP,
+		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	Packet* message = me->createResvConfMessage();
+	WritablePacket* message = me->createResvConfMessage();
+	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
+	return 0;
+}
+
+int RSVPElement::tosHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
+	RSVPElement* me = (RSVPElement *) e;
+	
+	cp_va_kparse(conf, e, errh, "TOS", cpkP + cpkM, cpInteger, &me->_tos, cpEnd);
+
 	return 0;
 }
 
@@ -380,7 +448,7 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 
 	double tbr, tbs, pdr;
 
-	in_addr* senderTemplate_src_address = new in_addr;
+	in_addr senderTemplate_src_address;
 	uint16_t senderTemplate_src_port;
 
 	float senderTSpec_token_bucket_rate;
@@ -391,7 +459,7 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 
 	if (!cp_va_kparse(conf, me, errh,
 		// sender template
-		"SRC_ADDRESS", cpkM, cpIPAddress, senderTemplate_src_address,
+		"SRC_ADDRESS", cpkM, cpIPAddress, &senderTemplate_src_address,
 		"SRC_PORT", cpkM, cpUnsigned, &senderTemplate_src_port,
 		// sender tspec
 		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &tbr,
@@ -405,12 +473,10 @@ int RSVPElement::senderDescriptorHandle(const String &conf, Element *e, void *th
 	senderTSpec_token_bucket_size = tbs;
 	senderTSpec_peak_data_rate = pdr;
 
-	initRSVPSenderTemplate(&me->_senderTemplate, *senderTemplate_src_address, senderTemplate_src_port);
+	initRSVPSenderTemplate(&me->_senderTemplate, senderTemplate_src_address, senderTemplate_src_port);
 	initRSVPSenderTSpec(&me->_senderTSpec, senderTSpec_token_bucket_rate,
 		senderTSpec_token_bucket_size, senderTSpec_peak_data_rate,
 		senderTSpec_minimum_policed_unit, senderTSpec_maximum_packet_size);
-
-	delete senderTemplate_src_address;
 
 	me->_senderDescriptor = true;
 
@@ -423,7 +489,7 @@ int RSVPElement::flowDescriptorHandle(const String& conf, Element *e, void *thun
 
 	double tbr, tbs, pdr;
 
-	in_addr* filterSpec_src_address = new in_addr;
+	in_addr filterSpec_src_address;
 	uint16_t filterSpec_src_port;
 
 	float flowspec_token_bucket_rate;
@@ -434,7 +500,7 @@ int RSVPElement::flowDescriptorHandle(const String& conf, Element *e, void *thun
 
 	if (!cp_va_kparse(conf, me, errh,
 		// sender template
-		"SRC_ADDRESS", cpkM, cpIPAddress, filterSpec_src_address,
+		"SRC_ADDRESS", cpkM, cpIPAddress, &filterSpec_src_address,
 		"SRC_PORT", cpkM, cpUnsigned, &filterSpec_src_port,
 		// sender tspec
 		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &tbr,
@@ -448,12 +514,10 @@ int RSVPElement::flowDescriptorHandle(const String& conf, Element *e, void *thun
 	flowspec_token_bucket_size = tbs;
 	flowspec_peak_data_rate = pdr;
 
-	initRSVPFilterSpec(&me->_filterSpec, *filterSpec_src_address, filterSpec_src_port);
+	initRSVPFilterSpec(&me->_filterSpec, filterSpec_src_address, filterSpec_src_port);
 	initRSVPFlowspec(&me->_flowspec, flowspec_token_bucket_rate,
 		flowspec_token_bucket_size, flowspec_peak_data_rate,
 		flowspec_minimum_policed_unit, flowspec_maximum_packet_size);
-
-	delete filterSpec_src_address;
 
 	me->_flowDescriptor = true;
 
@@ -484,6 +548,7 @@ void RSVPElement::add_handlers() {
 	add_write_handler("pathtear", &pathTearHandle, (void *) 0);
 	add_write_handler("resvtear", &resvTearHandle, (void *) 0);
 	add_write_handler("resvconf", &resvConfHandle, (void *) 0);
+	add_write_handler("tos", &tosHandle, (void *) 0);
 	add_write_handler("name", &nameHandle, (void *) 0);
 	
 	// types of objects
@@ -514,7 +579,7 @@ WritablePacket* RSVPElement::createPacket(uint16_t packetSize) const
 	return message;
 }
 
-Packet* RSVPElement::createPathMessage() const
+WritablePacket* RSVPElement::createPathMessage() const
 {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
@@ -550,7 +615,7 @@ Packet* RSVPElement::createPathMessage() const
 	return message;
 }
 
-Packet* RSVPElement::createResvMessage() const {
+WritablePacket* RSVPElement::createResvMessage() const {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
@@ -576,20 +641,23 @@ Packet* RSVPElement::createResvMessage() const {
 	*session = _session;
 	*hop = _hop;
 	*timeValues = _timeValues;
-	*flowspec = _flowspec;
-	*filterSpec = _filterSpec;
+	initRSVPStyle(style);
+	
 	if (_resvConf_given) {
 		*resvConf = _resvConf;
 	}
-	initRSVPStyle(style);
-	initRSVPFlowspec(flowspec, 30.5, 0.4e38f, -5.0, 50, 100);
 	
+	if (_flowDescriptor) {
+		*flowspec = _flowspec;
+		*filterSpec = _filterSpec;
+	}
+
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
 	
 	return message;
 }
 
-Packet* RSVPElement::createPathErrMessage() const
+WritablePacket* RSVPElement::createPathErrMessage() const
 {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
@@ -624,7 +692,7 @@ Packet* RSVPElement::createPathErrMessage() const
 	return message;
 }
 
-Packet* RSVPElement::createResvErrMessage() const
+WritablePacket* RSVPElement::createResvErrMessage() const
 {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
@@ -663,7 +731,7 @@ Packet* RSVPElement::createResvErrMessage() const
 	return message;
 }
 
-Packet* RSVPElement::createPathTearMessage() const
+WritablePacket* RSVPElement::createPathTearMessage() const
 {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
@@ -693,7 +761,7 @@ Packet* RSVPElement::createPathTearMessage() const
 	return message;
 }
 
-Packet* RSVPElement::createResvTearMessage() const
+WritablePacket* RSVPElement::createResvTearMessage() const
 {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
@@ -727,7 +795,7 @@ Packet* RSVPElement::createResvTearMessage() const
 	return message;
 }
 
-Packet* RSVPElement::createResvConfMessage() const
+WritablePacket* RSVPElement::createResvConfMessage() const
 {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +

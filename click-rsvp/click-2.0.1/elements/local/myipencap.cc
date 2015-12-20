@@ -188,12 +188,12 @@ MyIPEncap::add_handlers()
 }
 
 int MyIPEncap::setTosHandle(const String &conf, Element *e, void *, ErrorHandler * errh) {
-	uint8_t tos;
+	int tos;
 	click_chatter(conf.c_str());
 
 	cp_va_kparse(conf, e, errh, "TOS", cpkP + cpkM, cpInteger, &tos, cpEnd);
 
-	((MyIPEncap *) e)->_iph.ip_tos = tos;
+	((MyIPEncap *) e)->_iph.ip_tos = (uint8_t) tos;
 	
 	return 0;
 	

@@ -7,6 +7,7 @@
 #include <clicknet/ip.h>
 #include <clicknet/udp.h>
 #include <stdexcept>
+#include <cassert>
 
 CLICK_DECLS
 
@@ -224,6 +225,22 @@ void initRSVPFlowspec(RSVPFlowspec* flowspec,
 	flowspec->maximum_packet_size = htonl(maximum_packet_size);
 }
 
+void initRSVPFlowspec(RSVPFlowspec* flowspec, const RSVPSenderTSpec* senderTSpec) {
+	flowspec->nothing_1 = 0;
+	flowspec->overall_length = htons(7);
+	flowspec->service_header = 1;
+	flowspec->nothing_2 = 0;
+	flowspec->controlled_load_data_length = htons(6);
+	flowspec->parameter_id = 127;
+	flowspec->flags = 0;
+	flowspec->parameter_127_length = 5;
+	flowspec->token_bucket_rate_float = senderTSpec->token_bucket_rate_float;
+	flowspec->token_bucket_size_float = senderTSpec->token_bucket_size_float;
+	flowspec->peak_data_rate_float = senderTSpec->peak_data_rate_float;
+	flowspec->minimum_policed_unit = senderTSpec->minimum_policed_unit;
+	flowspec->maximum_packet_size = senderTSpec->maximum_packet_size;
+}
+
 void initRSVPFilterSpec(RSVPFilterSpec* filterSpec, in_addr src_address, uint16_t src_port)
 {
 	initRSVPObjectHeader(&filterSpec->header, RSVP_CLASS_FILTER_SPEC, 1);
@@ -402,6 +419,7 @@ void* readRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
 	return senderTSpec + 1;
 }
 
+RSVPNodeSession::RSVPNodeSession() {}
 
 RSVPNodeSession::RSVPNodeSession(in_addr dst_addr, uint8_t protocol_id, uint8_t dst_port) : _dst_ip_address(dst_addr), _protocol_id(protocol_id), _dst_port(dst_port) {
 	// key = IPAddress(_dst_ip_address).unparse() + String(_protocol_id) + String(_dst_port);
@@ -451,23 +469,25 @@ void RSVPNode::push(int port, Packet* packet) {
 }
 
 Packet* RSVPNode::updatePathState(Packet* packet) {
-	click_chatter("packet %p entering updatePathState", (void *) packet);
+	//click_chatter("packet %p entering updatePathState", (void *) packet);
 	//click_chatter("updatePathState: start");
 	WritablePacket* wp = packet->uniqueify();
 	packet = wp;
-	click_chatter("packet, after uniquefying: %p", (void *) packet);
+	//click_chatter("packet, after uniquefying: %p", (void *) packet);
 	const void* p = packet->data();
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader*) p;
 	p = (void*) (commonHeader + 1);
 	RSVPObjectHeader* header;
 	uint8_t class_num;
 	
+	// get the necessary objects from the packet
 	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TEMPLATE);
 	RSVPSenderTSpec* senderTSpec =  (RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
 	RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
 	RSVPTimeValues* timeValues = (RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES);
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 
+	// create the key to look for in the hash table
 	RSVPNodeSession nodeSession(*session);
 	HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.find(nodeSession);
 	if (it != _pathStates.end()) {
@@ -476,6 +496,7 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 		// unschedule running timer so it won't run out
 		it->second.timer->unschedule();
 		delete it->second.timer;
+		it->second.timer = NULL;
 	}
 	//click_chatter("updatePathState: setting table entry");
 
@@ -497,11 +518,12 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 	pathState.timer->initialize(this);
 	pathState.timer->schedule_after_sec(refresh_period_r); // TODO: change !!!11
 	
+	// add new / updated path state to path state table
 	_pathStates.set(nodeSession, pathState);
 	//click_chatter("updatePathState: set new refresh period");
-	click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
+	//click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
 	hop->IPv4_next_previous_hop_address = _myIP;
-	click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
+	//click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
 	//click_chatter("updatePathState: end");
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) packet->data(), packet->length());
@@ -530,6 +552,32 @@ int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {
 		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
 		cpEnd) < 0) return -1;
 	return 0;
+}
+
+void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, uint8_t tos) {
+	int transportSize = p->length();
+
+	p = p->push(sizeof(click_ip));
+	p->set_network_header(p->data(), sizeof(click_ip));
+
+	struct click_ip* ip = (click_ip *) p->data();
+	memset(ip, 0, sizeof(click_ip));
+
+	ip->ip_v = 4;
+	ip->ip_hl = 5;
+
+	ip->ip_tos = tos;
+	ip->ip_len = htons(sizeof(click_ip) + transportSize);
+	ip->ip_id = 0;
+	ip->ip_off = 0;
+	ip->ip_ttl = 200;
+	ip->ip_p = 46; // RSVP
+	ip->ip_src = _myIP;
+	ip->ip_dst = dst_ip;
+	p->set_dst_ip_anno(dst_ip);
+
+	ip->ip_sum = click_in_cksum((const unsigned char*) ip, sizeof(click_ip));
+
 }
 
 CLICK_ENDDECLS

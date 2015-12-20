@@ -152,6 +152,7 @@ struct RSVPResvConf { // class num = 15, C-type = 1
 };
 
 struct RSVPNodeSession {
+	RSVPNodeSession();
 	RSVPNodeSession(in_addr, uint8_t protocol_id, uint8_t dst_port);
 	RSVPNodeSession(const RSVPSession&);
 	typedef long unsigned int key_type;
@@ -197,6 +198,7 @@ void initRSVPFlowspec(RSVPFlowspec*,
 	float peak_data_rate,
 	uint32_t minimum_policed_unit,
 	uint32_t maximum_packet_size);
+void initRSVPFlowspec(RSVPFlowspec*, const RSVPSenderTSpec*);
 void initRSVPFilterSpec(RSVPFilterSpec*, in_addr src_address, uint16_t src_port);
 void initRSVPSenderTemplate(RSVPSenderTemplate*, in_addr src_address, uint16_t src_port);
 void initRSVPSenderTSpec(RSVPSenderTSpec*,
@@ -245,6 +247,8 @@ public:
 	const char *processing() const	{ return PUSH; }
 	
 	int configure(Vector<String>&, ErrorHandler*);
+
+	void addIPHeader(WritablePacket*, in_addr dst_ip, uint8_t tos=0);
 protected:
 	in_addr _myIP;
 	HashTable<RSVPNodeSession, RSVPPathState> _pathStates;
