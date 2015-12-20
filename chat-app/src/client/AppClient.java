@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
@@ -123,13 +124,16 @@ public class AppClient implements AppClientInterface {
 		try {
 			String input = br.readLine();
 			if (input.equals("y") || input.equals("y")) {
+				System.out.println("accepted video");
 
-				/*frame.getContentPane().add(test);
+				JPanel contentPane = new JPanel(new BorderLayout());
+				frame = new JFrame();
+				frame.getContentPane().add(contentPane);
 				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				frame.setSize(800, 600);
 				frame.setVisible(true);
 				frame.setBounds(900,  0,  800,  600);
-				g = frame.getGraphics();*/
+				g = frame.getGraphics();
 				
 				return true;
 			}
@@ -143,9 +147,12 @@ public class AppClient implements AppClientInterface {
 	@Override
 	public int receiveImage(ByteBuffer imgBytes) throws AvroRemoteException {
 		byte[] bytes = imgBytes.array();
-		Image img;
+		
 		try {
-			img = ImageIO.read(new ByteArrayInputStream(bytes));
+    		ByteArrayInputStream bis = new ByteArrayInputStream(imgBytes.array());
+    		ObjectInputStream in = new ObjectInputStream(bis);
+    		
+			Image img = ImageIO.read(in);
 	    	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -154,9 +161,6 @@ public class AppClient implements AppClientInterface {
 	}
 
 	private void sendVideo() {
-		System.out.println("Working Directory = " + System.getProperty("user.dir"));
-		MainTest test = new MainTest();
-
 		JPanel contentPane = new JPanel(new BorderLayout());
 		frame = new JFrame();
 		frame.getContentPane().add(contentPane);
@@ -168,15 +172,15 @@ public class AppClient implements AppClientInterface {
 		BufferedImage img = null;
 		try {
 			System.out.println("try");
-			Image iimg = ImageIO.read(new File("img.png"));
-        	g.drawImage(iimg, 0, 0, frame.getWidth(), frame.getHeight(), null);
+			img = ImageIO.read(new File("img.png"));
+        	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
 			System.out.println("try drawn");
         	
-        	/*ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        	ByteArrayOutputStream bos = new ByteArrayOutputStream();
         	ObjectOutputStream out = new ObjectOutputStream(bos);
         	ImageIO.write((RenderedImage) img,  "jpeg",  ImageIO.createImageOutputStream(out));
     		byte[] inBytes = bos.toByteArray();
-    		this.privateChatClient.proxy.receiveImage(ByteBuffer.wrap(inBytes));*/
+    		this.privateChatClient.proxy.receiveImage(ByteBuffer.wrap(inBytes));
 
 			System.out.println("sent");
         	
