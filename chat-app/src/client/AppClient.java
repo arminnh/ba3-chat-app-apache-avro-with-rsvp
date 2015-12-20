@@ -1,13 +1,25 @@
 package client;
 
+import java.awt.BorderLayout;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 
 import asg.cliche.Command;
 import asg.cliche.ShellFactory;
@@ -23,7 +35,14 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
 import server.AppServerInterface;
+import server.ClientInfo;
+import videotest.FrameGrabber;
+import videotest.MainTest;
 
 /*
  * - automatische registratie bij de server
@@ -46,6 +65,9 @@ public class AppClient implements AppClientInterface {
 	private server.ClientInfo privateChatClient = null;
 	private boolean privateChatClientArrived = false;
 	private boolean privateChat = false;
+	MainTest test = new MainTest();
+	JFrame frame = new JFrame();
+	Graphics g = null;
 
 	public AppClient(SaslSocketTransceiver t, AppServerInterface a, String clientIP, int clientPort) {
 		this.transceiver = t;
@@ -96,6 +118,107 @@ public class AppClient implements AppClientInterface {
 		return 0;
 	}
 
+	@Override
+	public boolean videoRequest() throws AvroRemoteException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); 
+		try {
+			String input = br.readLine();
+			if (input.equals("y") || input.equals("y")) {
+				System.out.println("accepted video");
+
+				JPanel contentPane = new JPanel(new BorderLayout());
+				frame = new JFrame();
+				frame.getContentPane().add(contentPane);
+				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				frame.setSize(800, 600);
+				frame.setVisible(true);
+				frame.setBounds(900,  0,  800,  600);
+				g = frame.getGraphics();
+				
+				return true;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+
+	@Override
+	public int receiveImage(ByteBuffer imgBytes) throws AvroRemoteException {
+		byte[] bytes = imgBytes.array();
+		
+		try {
+    		ByteArrayInputStream bis = new ByteArrayInputStream(imgBytes.array());
+    		ObjectInputStream in = new ObjectInputStream(bis);
+    		
+			Image img = ImageIO.read(in);
+	    	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+
+	private void sendVideo() {
+		JPanel contentPane = new JPanel(new BorderLayout());
+		frame = new JFrame();
+		frame.getContentPane().add(contentPane);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(800, 600);
+		frame.setVisible(true);
+		g = frame.getGraphics();
+		
+		BufferedImage img = null;
+		try {
+			System.out.println("try");
+			img = ImageIO.read(new File("img.png"));
+        	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
+			System.out.println("try drawn");
+        	
+        	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        	ObjectOutputStream out = new ObjectOutputStream(bos);
+        	ImageIO.write((RenderedImage) img,  "jpeg",  ImageIO.createImageOutputStream(out));
+    		byte[] inBytes = bos.toByteArray();
+    		this.privateChatClient.proxy.receiveImage(ByteBuffer.wrap(inBytes));
+
+			System.out.println("sent");
+        	
+        	//ByteBuffer image = this.convertToBytes(img);
+    		//this.privateChatClient.proxy.receiveImage(image);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		//new FrameGrabber(test.input, frame);
+	}
+
+	private ByteBuffer convertToBytes(Image img) throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutput out = null;
+		
+		try {
+			out = new ObjectOutputStream(bos);   
+			out.writeObject(img);
+			//ImageIO.write((RenderedImage) img, "file", out);
+			byte[] imageInByte = bos.toByteArray();
+			return ByteBuffer.wrap(imageInByte);
+		} finally {
+			try {
+				if (out != null) {
+					out.close();
+				}
+			} catch (IOException ex) {
+				// ignore close exception
+			}
+			try {
+				bos.close();
+			} catch (IOException ex) {
+				// ignore close exception
+			}
+		}
+	}
+
 	public void joinChat(boolean privateChat) throws IOException {
 		if (!privateChat) {
 			System.out.println("You entered the public chatroom.");
@@ -118,6 +241,11 @@ public class AppClient implements AppClientInterface {
 					System.out.println("Left the public chatroom.\nJoined private chat with " + this.privateChatClient.username + ".");
 					this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
 					privateChat = true;
+				} else if (input.equals("?video")) {
+					this.privateChatClient.proxy.receiveMessage(this.username + " has requested to videochat. Type y/n to accept/decline");
+					if (this.privateChatClient.proxy.videoRequest()) {
+						this.sendVideo();
+					}
 				} else if (this.privateChatClient != null && this.privateChatClientArrived) {
 					this.privateChatClient.proxy.receiveMessage(input);
 				}
@@ -226,13 +354,6 @@ public class AppClient implements AppClientInterface {
 	}
 
 	@Command
-	@Override
-	public CharSequence video(CharSequence iets) throws AvroRemoteException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Command
 	public int startPrivateChat() throws AvroRemoteException {
 		this.appServer.setClientState(this.username, server.ClientStatus.PRIVATE);
 		try {
@@ -326,8 +447,31 @@ public class AppClient implements AppClientInterface {
 				}
 				System.out.println("That name is already taken, choose another one.");
 			}
-
+			
 			clientRequester.register(username);
+			clientRequester.privateChatClient = new ClientInfo();
+
+			if (username.equals("a")) {
+				clientPort = 2346;
+				System.out.println("clientport =" + clientPort);
+			}
+			else clientPort = 2345;
+			
+			while (true) {  
+				try {
+					clientRequester.setPrivateChatClient("b", "00.0.0.0", clientPort);
+					break;
+				} catch (Exception e) {
+					if (clientPort < 65535) {
+						clientPort++;
+					} else {
+						System.err.println("Failed to find open port, quitting program.");
+						System.exit(1);
+					}
+				}
+			}
+			clientRequester.startPrivateChat();
+			
 			System.out.println("Welcome to Chat App, type ?list to get a list of available commands.");
 			ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
 			System.out.println("Quit program.");
@@ -343,6 +487,13 @@ public class AppClient implements AppClientInterface {
 			System.exit(1);
 		}
 
+	}
+
+	@Override
+	public int receiveImage2(List<ByteBuffer> imgBytes)
+			throws AvroRemoteException {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }
 

@@ -23,9 +23,17 @@
 	        "request": [{"name": "arrived", "type": "boolean"}],
 	        "response": "int"
         },
-        "video": {
-	        "request": [{"name": "iets", "type": "string"}],
-	        "response": "string"
+        "videoRequest": {
+	        "request": [],
+	        "response": "boolean"
+        },
+        "receiveImage": {
+	        "request": [{"name": "imgBytes", "type": "bytes"}],
+	        "response": "int"
+        },
+        "receiveImage2": {
+	        "request": [{"name": "imgBytes", "type": {"type" : "array", "items": "bytes"}}],
+	        "response": "int"
         }
     }
 }
