@@ -177,6 +177,59 @@ struct RSVPResvState {
 	
 };
 
+uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type);
+uint16_t sizeofRSVPScopeObject(size_t num_addresses);
+const RSVPObjectHeader* nextRSVPObject(const RSVPObjectHeader*);
+const void* RSVPObjectOfType(Packet*, uint8_t wanted_class_num);
+
+void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
+void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
+void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_id, bool police, uint16_t dst_port);
+void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);
+void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
+void initRSVPStyle(RSVPStyle*);
+void initRSVPErrorSpec(RSVPErrorSpec*, in_addr error_node_address, bool inPlace, bool notGuilty, uint8_t errorCode, uint16_t errorValue);
+void initRSVPResvConf(RSVPResvConf*, in_addr receiverAddress);
+void* initRSVPScope(RSVPObjectHeader*, const Vector<in_addr>& src_addresses);
+void initRSVPFlowspec(RSVPFlowspec*,
+	float token_bucket_rate,
+	float token_bucket_size,
+	float peak_data_rate,
+	uint32_t minimum_policed_unit,
+	uint32_t maximum_packet_size);
+void initRSVPFilterSpec(RSVPFilterSpec*, in_addr src_address, uint16_t src_port);
+void initRSVPSenderTemplate(RSVPSenderTemplate*, in_addr src_address, uint16_t src_port);
+void initRSVPSenderTSpec(RSVPSenderTSpec*,
+	float token_bucket_rate,
+	float token_bucket_size,
+	float peak_data_rate,
+	uint32_t minimum_policed_unit,
+	uint32_t maximum_packet_size);
+	
+void* readRSVPCommonHeader(RSVPCommonHeader*, uint8_t& msg_type, uint8_t& send_TTL, uint16_t& length);
+void readRSVPObjectHeader(RSVPObjectHeader*, uint8_t& class_num, uint8_t& c_type);
+void* readRSVPSession(RSVPSession*, in_addr& destinationAddress, uint8_t& protocol_id, bool& police, uint16_t& dst_port);
+void* readRSVPHop(RSVPHop*, in_addr& next_previous_hop_address, uint32_t& logical_interface_handle);
+void* readRSVPTimeValues(RSVPTimeValues*, uint32_t& refresh_period_r);
+void* readRSVPStyle(RSVPStyle*);
+void* readRSVPErrorSpec(RSVPErrorSpec*, in_addr& error_node_address, bool& inPlace, bool& notGuilty, uint8_t& errorCode, uint16_t& errorValue);
+void* readRSVPResvConf(RSVPResvConf*, in_addr& receiverAddress);
+void* readRSVPScope(RSVPObjectHeader*, Vector<in_addr>& src_addresses);
+void* readRSVPFlowspec(RSVPFlowspec*,
+	float& token_bucket_rate,
+	float& token_bucket_size,
+	float& peak_data_rate,
+	uint32_t& minimum_policed_unit,
+	uint32_t& maximum_packet_size);
+void* readRSVPFilterSpec(RSVPFilterSpec*, in_addr& src_address, uint16_t& src_port);
+void* readRSVPSenderTemplate(RSVPSenderTemplate*, in_addr& src_address, uint16_t& src_port);
+void* readRSVPSenderTSpec(RSVPSenderTSpec*,
+	float& token_bucket_rate,
+	float& token_bucket_size,
+	float& peak_data_rate,
+	uint32_t& minimum_policed_unit,
+	uint32_t& maximum_packet_size);
+
 class RSVPNode: public Element { 
 public:
 	RSVPNode();
