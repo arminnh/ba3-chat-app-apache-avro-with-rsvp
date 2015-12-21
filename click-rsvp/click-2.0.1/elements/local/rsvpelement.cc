@@ -39,24 +39,29 @@ void RSVPElement::push(int, Packet *packet) {
 	RSVPSession session;
 	RSVPNodeSession nodeSession;
 	HashTable<RSVPNodeSession, RSVPPathState>::iterator it;
+	RSVPPathState pathState; bool pathStateFound = false;
 
 	WritablePacket* reply;
 	switch (msg_type) {
 		case RSVP_MSG_PATH:
 			clean();
 			
-			updatePathState(packet->clone());
-			
 			session = * (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 			nodeSession = RSVPNodeSession(session);
 			
 			click_chatter("Looking for session with hashcode %d", nodeSession.hashcode());
 			
+			// workaround finding the path state because HashTable's find function doesn't work for an entirely unknown reason
 			for (HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.begin(); it != _pathStates.end(); it++) {
-				click_chatter("hashcode in map: %d", nodeSession.hashcode());
+				if (nodeSession == it->first) {
+					pathStateFound = true;
+					click_chatter("%s: path state found!!!", _name.c_str());
+					pathState = it->second;
+					break;
+				}
 			}
 			
-			if (_pathStates.find(nodeSession) == _pathStates.end()) {
+			if (!pathStateFound) {
 				click_chatter("didn't find nodeSession in _pathStates");
 				reply = replyToPathMessage(packet->clone());
 				output(0).push(reply);
