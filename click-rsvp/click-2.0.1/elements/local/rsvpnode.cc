@@ -130,6 +130,11 @@ click_chatter("SET PROTOCOL ID TO %d AND DST PORT TO %d", protocol_id, dst_port)
 	return;
 }
 
+void initRSVPSession(RSVPSession* session, const RSVPNodeSession* nodeSession)
+{
+	initRSVPSession(session, nodeSession->_dst_ip_address, nodeSession->_protocol_id, false, nodeSession->_dst_port);
+}
+
 void initRSVPHop(RSVPHop* hop, in_addr next_previous_hop_address, uint32_t logical_interface_handle)
 {
 	initRSVPObjectHeader(&hop->header, RSVP_CLASS_RSVP_HOP, 1);
@@ -570,6 +575,16 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 
 void RSVPNode::run_timer(Timer* timer) {
 	click_chatter("timer ran out");
+}
+
+const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer) {	
+	for (HashTable<RSVPNodeSession, RSVPPathState>::const_iterator it = _pathStates.begin(); it != _pathStates.end(); it++) {
+		if (it->second.timer == timer) {
+			return &it->first;
+		}
+	}
+	
+	return NULL;
 }
 
 int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {

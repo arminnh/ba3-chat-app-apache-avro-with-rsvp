@@ -151,6 +151,7 @@ struct RSVPResvConf { // class num = 15, C-type = 1
 	in_addr receiver_address;
 };
 
+// used to locally store a session
 struct RSVPNodeSession {
 	RSVPNodeSession();
 	RSVPNodeSession(in_addr, uint8_t protocol_id, uint8_t dst_port);
@@ -170,10 +171,12 @@ struct RSVPPathState {
 	in_addr previous_hop_node;
 	RSVPSenderTSpec senderTSpec;
 	RSVPSenderTemplate senderTemplate;
+	uint32_t refresh_period_r;
 	Timer* timer;
 };
 
 struct RSVPResvState {
+	RSVPFilterSpec filterSpec;
 	RSVPFlowspec flowspec;
 	
 };
@@ -186,6 +189,7 @@ const void* RSVPObjectOfType(Packet*, uint8_t wanted_class_num);
 void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
 void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
 void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_id, bool police, uint16_t dst_port);
+void initRSVPSession(RSVPSession*, const RSVPNodeSession*);
 void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);
 void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
@@ -241,6 +245,7 @@ public:
 	Packet* updatePathState(Packet*);
 	
 	void run_timer(Timer*);
+	const RSVPNodeSession* sessionForPathStateTimer(const Timer*);
 	
 	const char *class_name() const	{ return "RSVPNode"; }
 	const char *port_count() const	{ return "1/1"; }

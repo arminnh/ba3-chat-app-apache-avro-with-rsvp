@@ -18,6 +18,7 @@ public:
 	int configure(Vector<String>&, ErrorHandler*);
 	int initialize(ErrorHandler *);
 	void run_timer(Timer *);
+	const RSVPNodeSession* sessionForSenderTimer(const Timer *) const;
 
 	virtual void push(int, Packet *);
 	Packet* pull(int);
@@ -25,6 +26,7 @@ public:
 	WritablePacket* replyToPathMessage(Packet* pathMessage);
 
 	// specify object fields handlers
+	// session handle needs to be called first
 	static int sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int hopHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int errorSpecHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -37,6 +39,7 @@ public:
 	static int nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 
 	// send message handlers
+	// calling the path handle will send the first path message
 	static int pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static int pathErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
@@ -52,7 +55,11 @@ public:
 	
 	WritablePacket* createPacket(uint16_t packetSize) const;
 
-	WritablePacket* createPathMessage() const;
+	WritablePacket* createPathMessage(const RSVPSession* session,
+		const RSVPHop* hop,
+		const RSVPTimeValues* timeValues,
+		const RSVPSenderTemplate* senderTemplate,
+		const RSVPSenderTSpec* senderTSpec) const;
 	WritablePacket* createResvMessage() const;
 	WritablePacket* createPathErrMessage() const;
 	WritablePacket* createResvErrMessage() const;
@@ -61,6 +68,8 @@ public:
 	WritablePacket* createResvConfMessage() const;
 	
 private:
+
+	HashTable<RSVPNodeSession, RSVPPathState> _senders;
 
 	int _tos;
 	bool _application;
