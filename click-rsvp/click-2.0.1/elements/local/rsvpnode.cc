@@ -446,13 +446,13 @@ const void* readRSVPSenderTSpec(const RSVPSenderTSpec* senderTSpec,
 	return senderTSpec + 1;
 }
 
-RSVPNodeSession::RSVPNodeSession() {}
+RSVPNodeSession::RSVPNodeSession() : _own(false) {}
 
-RSVPNodeSession::RSVPNodeSession(in_addr dst_addr, uint8_t protocol_id, uint8_t dst_port) : _dst_ip_address(dst_addr), _protocol_id(protocol_id), _dst_port(dst_port) {
+RSVPNodeSession::RSVPNodeSession(in_addr dst_addr, uint8_t protocol_id, uint8_t dst_port) : _own(false), _dst_ip_address(dst_addr), _protocol_id(protocol_id), _dst_port(dst_port) {
 	// key = IPAddress(_dst_ip_address).unparse() + String(_protocol_id) + String(_dst_port);
 }
 
-RSVPNodeSession::RSVPNodeSession(const RSVPSession& session) {
+RSVPNodeSession::RSVPNodeSession(const RSVPSession& session) : _own(false) {
 	readRSVPSession(const_cast<RSVPSession*>(&session), &_dst_ip_address, &_protocol_id, NULL, &_dst_port);
 }
 

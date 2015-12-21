@@ -1,6 +1,7 @@
 #include <click/config.h>
 #include <click/confparse.hh>
 #include <click/error.hh>
+#include <click/router.hh>
 #include "rsvpelement.hh"
 #include <stdexcept>
 
@@ -258,6 +259,9 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 	WritablePacket* message = me->createPathMessage();
 	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
+	
+	Element* classifier = me->router()->find("in_cl", me);
+	click_chatter("find returned %p", (void*) classifier);
 	
 	me->clean();
 	return 0;

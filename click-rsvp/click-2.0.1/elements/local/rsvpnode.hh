@@ -160,10 +160,10 @@ struct RSVPNodeSession {
 	const key_type& hashcode() const;
 	key_type key;
 	bool operator==(const RSVPNodeSession& other) const;
-public:
 	in_addr _dst_ip_address;
 	uint8_t _protocol_id;
 	uint16_t _dst_port;
+	bool _own;
 };
 
 struct RSVPPathState {
