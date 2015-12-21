@@ -141,13 +141,15 @@ public class VideoSender extends MediaListenerAdapter {
             	BufferedImage img = event.getImage();
             	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
             	
-        		try {
+            	Thread frameSender = new Thread(new FrameSender(img, this.proxy));
+            	frameSender.run();
+        		/*try {
         			ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 	ImageIO.write(img,  "jpg",  bos);
             		this.proxy.receiveImage(ByteBuffer.wrap(bos.toByteArray()));
         		} catch (Exception e) {
         			e.printStackTrace();
-        		}
+        		}*/
             }
             
         } catch (Exception e) {
