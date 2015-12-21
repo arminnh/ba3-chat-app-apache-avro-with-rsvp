@@ -239,7 +239,8 @@ public:
 	
 	virtual void push(int port, Packet* packet);
 	Packet* updatePathState(Packet*);
-	
+	Packet* updateReservation(Packet*);
+
 	void run_timer(Timer*);
 	
 	const char *class_name() const	{ return "RSVPNode"; }

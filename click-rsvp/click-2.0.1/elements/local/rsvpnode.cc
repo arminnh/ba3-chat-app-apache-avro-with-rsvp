@@ -449,29 +449,39 @@ RSVPNode::~RSVPNode()
 
 void RSVPNode::push(int port, Packet* packet) {
 	click_chatter("RSVPNode: Got a packet of size %d", packet->length());
-	// packet analyzation
+	// packet analysis
 	
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
-	
+
 	readRSVPCommonHeader((RSVPCommonHeader*) packet->data(), msg_type, send_TTL, length);
+	
+	Packet* forward;
+
 	if (msg_type == RSVP_MSG_PATH) {
-		//click_chatter("RSVPNODE msg_type == PATH");
-		packet = updatePathState(packet);
-	} else if (msg_type == RSVP_MSG_RESV) {
-		//click_chatter("RSVPNODE msg_type == RESV");
+		forward = updatePathState(packet->clone());
 		
+		packet->kill();
+		output(0).push(forward);
+	} else if (msg_type == RSVP_MSG_RESV) {
+		updateReservation(packet->clone());
+
+		forward = packet->uniqueify();
+		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
+		addIPHeader(packet, hop->IPv4_next_previous_hop_address, _tos);
+		hop->IPv4_next_previous_hop_address = _myIP;
+
+		packet->kill();
+		output(0).push(forward);
 	}
 	click_chatter("pushing packet %p out the door", (void *) packet);
-	output(0).push(packet);
-	//click_chatter("RSVPNODE push pushed it out");
 }
 
 Packet* RSVPNode::updatePathState(Packet* packet) {
 	//click_chatter("packet %p entering updatePathState", (void *) packet);
 	//click_chatter("updatePathState: start");
 	WritablePacket* wp = packet->uniqueify();
-	packet = wp;
+
 	//click_chatter("packet, after uniquefying: %p", (void *) packet);
 	const void* p = packet->data();
 	RSVPCommonHeader* commonHeader = (RSVPCommonHeader*) p;
@@ -480,11 +490,11 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 	uint8_t class_num;
 	
 	// get the necessary objects from the packet
-	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TEMPLATE);
-	RSVPSenderTSpec* senderTSpec =  (RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
-	RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
-	RSVPTimeValues* timeValues = (RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES);
-	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
+	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) RSVPObjectOfType(wp, RSVP_CLASS_SENDER_TEMPLATE);
+	RSVPSenderTSpec* senderTSpec =  (RSVPSenderTSpec *) RSVPObjectOfType(wp, RSVP_CLASS_SENDER_TSPEC);
+	RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(wp, RSVP_CLASS_RSVP_HOP);
+	RSVPTimeValues* timeValues = (RSVPTimeValues *) RSVPObjectOfType(wp, RSVP_CLASS_TIME_VALUES);
+	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(wp, RSVP_CLASS_SESSION);
 
 	// create the key to look for in the hash table
 	RSVPNodeSession nodeSession(*session);
@@ -539,7 +549,14 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 		click_chatter("\tprevious node address: %s", IPAddress(pathState.previous_hop_node).s().c_str());
 	}
 	
-	return packet;
+	packet->kill();
+
+	return wp;
+}
+
+void RSVPNode::updateReservation(Packet* packet) {
+	packet->kill();
+	return;
 }
 
 void RSVPNode::run_timer(Timer* timer) {
