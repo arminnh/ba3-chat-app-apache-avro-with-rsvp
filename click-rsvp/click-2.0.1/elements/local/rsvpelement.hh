@@ -72,9 +72,7 @@ private:
 
 	HashTable<RSVPNodeSession, RSVPPathState> _senders;
 
-	int _tos;
 	bool _application;
-	String _name;
 	void clean();
 
 	Timer _timer;

@@ -484,7 +484,7 @@ void RSVPNode::push(int port, Packet* packet) {
 	
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
-	Packet* forward;
+	WritablePacket* forward;
 	
 	readRSVPCommonHeader((RSVPCommonHeader*) packet->data(), &msg_type, &send_TTL, &length);
 
@@ -498,7 +498,7 @@ void RSVPNode::push(int port, Packet* packet) {
 
 		forward = packet->uniqueify();
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
-		addIPHeader(packet, hop->IPv4_next_previous_hop_address, _tos);
+		addIPHeader(forward, hop->IPv4_next_previous_hop_address, _tos);
 		hop->IPv4_next_previous_hop_address = _myIP;
 
 		packet->kill();
@@ -507,7 +507,7 @@ void RSVPNode::push(int port, Packet* packet) {
 	click_chatter("pushing packet %p out the door", (void *) packet);
 }
 
-Packet* RSVPNode::updatePathState(Packet* packet) {
+WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	//click_chatter("packet %p entering updatePathState", (void *) packet);
 	//click_chatter("updatePathState: start");
 	WritablePacket* wp = packet->uniqueify();
@@ -584,9 +584,9 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 	return wp;
 }
 
-void RSVPNode::updateReservation(Packet* packet) {
+WritablePacket* RSVPNode::updateReservation(Packet* packet) {
 	packet->kill();
-	return;
+	return NULL;
 }
 
 void RSVPNode::run_timer(Timer* timer) {
@@ -603,11 +603,25 @@ const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer) {
 	return NULL;
 }
 
+int RSVPNode::nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
+	RSVPElement* me = (RSVPElement*) e;
+	if (cp_va_kparse(conf, me, errh, "NAME", cpkP + cpkM, cpString, &me->_name, cpEnd) < 0)
+		return -1;
+	
+	click_chatter("Set host RSVP element name: %s", me->_name.c_str());
+	
+	return 0;
+}
+
 int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {
 	if (cp_va_kparse(conf, this, errh, 
 		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
 		cpEnd) < 0) return -1;
 	return 0;
+}
+
+void RSVPNode::add_handlers() {
+	add_write_handler("name", &nameHandle, (void *) 0);
 }
 
 void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, uint8_t tos) {

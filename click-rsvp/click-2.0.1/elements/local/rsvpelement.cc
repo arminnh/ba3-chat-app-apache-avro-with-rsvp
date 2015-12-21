@@ -550,6 +550,8 @@ String RSVPElement::getTTLHandle(Element *e, void * thunk) {
 }
 
 void RSVPElement::add_handlers() {
+	RSVPNode::add_handlers();
+
 	// types of messages
 	add_write_handler("path", &pathHandle, (void *) 0);
 	add_write_handler("resv", &resvHandle, (void *) 0);
@@ -559,7 +561,6 @@ void RSVPElement::add_handlers() {
 	add_write_handler("resvtear", &resvTearHandle, (void *) 0);
 	add_write_handler("resvconf", &resvConfHandle, (void *) 0);
 	add_write_handler("tos", &tosHandle, (void *) 0);
-	add_write_handler("name", &nameHandle, (void *) 0);
 	
 	// types of objects
 	add_write_handler("session", &sessionHandle, (void *) 0);

@@ -242,8 +242,8 @@ public:
 	~RSVPNode();
 	
 	virtual void push(int port, Packet* packet);
-	Packet* updatePathState(Packet*);
-	Packet* updateReservation(Packet*);
+	WritablePacket* updatePathState(Packet*);
+	WritablePacket* updateReservation(Packet*);
 
 	void run_timer(Timer*);
 	const RSVPNodeSession* sessionForPathStateTimer(const Timer*);
@@ -252,10 +252,16 @@ public:
 	const char *port_count() const	{ return "1/1"; }
 	const char *processing() const	{ return PUSH; }
 	
+	static int nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
 	int configure(Vector<String>&, ErrorHandler*);
+	void add_handlers();
 
 	void addIPHeader(WritablePacket*, in_addr dst_ip, uint8_t tos=0);
 protected:
+
+	int _tos;
+	String _name;
 	in_addr _myIP;
 	HashTable<RSVPNodeSession, RSVPPathState> _pathStates;
 	HashTable<RSVPNodeSession, RSVPResvState> _resvStates;
