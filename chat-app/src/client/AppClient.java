@@ -126,13 +126,8 @@ public class AppClient implements AppClientInterface {
 			if (input.equals("y") || input.equals("y")) {
 				System.out.println("accepted video");
 
-				JPanel contentPane = new JPanel(new BorderLayout());
-				frame = new JFrame();
-				frame.getContentPane().add(contentPane);
-				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				frame.setSize(800, 600);
-				frame.setVisible(true);
-				frame.setBounds(900,  0,  800,  600);
+				this.setFrameAndGraphics(200, 200);
+				frame.setBounds(900,  0,  200,  200);
 				g = frame.getGraphics();
 				
 				return true;
@@ -146,79 +141,48 @@ public class AppClient implements AppClientInterface {
 
 	@Override
 	public int receiveImage(ByteBuffer imgBytes) throws AvroRemoteException {
-		byte[] bytes = imgBytes.array();
-		
 		try {
     		ByteArrayInputStream bis = new ByteArrayInputStream(imgBytes.array());
     		ObjectInputStream in = new ObjectInputStream(bis);
     		
 			Image img = ImageIO.read(in);
 	    	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
+	    	
+	    	return 1;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return 0;
 	}
-
-	private void sendVideo() {
+	
+	private void setFrameAndGraphics(int x, int y) {
 		JPanel contentPane = new JPanel(new BorderLayout());
 		frame = new JFrame();
 		frame.getContentPane().add(contentPane);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(800, 600);
+		frame.setSize(x, y);
 		frame.setVisible(true);
 		g = frame.getGraphics();
+	}
+	
+	public int destroyFrame() throws AvroRemoteException {
+		frame.setVisible(false);
+		frame.dispose();
 		
-		BufferedImage img = null;
-		try {
-			System.out.println("try");
-			img = ImageIO.read(new File("img.png"));
-        	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
-			System.out.println("try drawn");
-        	
-        	ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        	ObjectOutputStream out = new ObjectOutputStream(bos);
-        	ImageIO.write((RenderedImage) img,  "jpeg",  ImageIO.createImageOutputStream(out));
-    		byte[] inBytes = bos.toByteArray();
-    		this.privateChatClient.proxy.receiveImage(ByteBuffer.wrap(inBytes));
-
-			System.out.println("sent");
-        	
-        	//ByteBuffer image = this.convertToBytes(img);
-    		//this.privateChatClient.proxy.receiveImage(image);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		//new FrameGrabber(test.input, frame);
+		return 0;
 	}
 
-	private ByteBuffer convertToBytes(Image img) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutput out = null;
+	private void sendVideo() throws AvroRemoteException {
+		this.setFrameAndGraphics(200, 200);
 		
-		try {
-			out = new ObjectOutputStream(bos);   
-			out.writeObject(img);
-			//ImageIO.write((RenderedImage) img, "file", out);
-			byte[] imageInByte = bos.toByteArray();
-			return ByteBuffer.wrap(imageInByte);
-		} finally {
-			try {
-				if (out != null) {
-					out.close();
-				}
-			} catch (IOException ex) {
-				// ignore close exception
-			}
-			try {
-				bos.close();
-			} catch (IOException ex) {
-				// ignore close exception
-			}
-		}
+		VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, this.privateChatClient.proxy);
+//		VideoSender videoSender = new VideoSender(new File("small.ogv"), frame, this.privateChatClient.proxy);
+		videoSender.send();
+		
+		this.destroyFrame();
+		this.privateChatClient.proxy.destroyFrame();
 	}
-
+	
 	public void joinChat(boolean privateChat) throws IOException {
 		if (!privateChat) {
 			System.out.println("You entered the public chatroom.");
