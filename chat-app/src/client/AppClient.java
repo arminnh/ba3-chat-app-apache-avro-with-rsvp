@@ -453,6 +453,11 @@ public class AppClient implements AppClientInterface {
 		}
 
 	}
+
+	@Override
+	public int echo(int message) throws AvroRemoteException {
+		return message;
+	}
 }
 
 // Runtime.getRuntime().addShutdownHook

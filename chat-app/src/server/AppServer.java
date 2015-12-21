@@ -129,26 +129,18 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	}
 
 	public void checkConnectedList() {
-		System.out.println("checkConnectedList, connected users: " + this.clients.size());
-		
 		for (Iterator<ClientInfo> iterator = this.clients.values().iterator(); iterator.hasNext();) {
 			ClientInfo client = iterator.next();
-			//.isConnected() geeft natuurlijk nooit true 
-			if (!client.transceiver.isConnected()) {
-				/*
+			
+			try {
+				client.proxy.echo(666);
+			} catch (AvroRemoteException e) {
 				System.out.println("User: " + client.username + " disconnected. Removed from list.");
-				System.out.println("client.transceiver.getRemoteName(): " + client.transceiver.getRemoteName());
-				try {
-					client.proxy.receiveMessage("yo");
-				} catch (AvroRemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				*/
-				
-				//iterator.remove();
+				iterator.remove();
 			}
+			
 		}
+		System.out.println("checkConnectedList, connected users: " + this.clients.size());
 	}
 	
 	public void run() {
@@ -252,7 +244,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		}
 		
 		server.start();
-		timer.schedule(appServer, 0, 15000);
+		timer.schedule(appServer, 0, 3000);
 		
 		try {
 			//appServer.checkConnectedUsers();
