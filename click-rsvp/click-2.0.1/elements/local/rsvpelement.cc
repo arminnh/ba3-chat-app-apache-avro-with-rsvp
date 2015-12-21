@@ -7,14 +7,13 @@
 CLICK_DECLS
 
 const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
-	uint8_t class_num, c_type;
-	uint8_t obj_type;
+	uint8_t class_num;
 	
 	const RSVPObjectHeader* p = (const RSVPObjectHeader*) (packet->transport_header() ? packet->transport_header() : packet->data());
 	p = (const RSVPObjectHeader*) (((const RSVPCommonHeader*) p) + 1);
 	
 	while (p < (const RSVPObjectHeader*) packet->end_data()) {
-		readRSVPObjectHeader(p, class_num, c_type);
+		readRSVPObjectHeader(p, &class_num, NULL);
 		if (class_num == wanted_class_num) {
 			return p;
 		}
@@ -32,9 +31,8 @@ void RSVPElement::push(int, Packet *packet) {
 	const void* p = packet->data();
 	const void* end_data = packet->end_data();
 	
-	uint8_t msg_type, send_TTL;
-	uint16_t length;
-	p = readRSVPCommonHeader((RSVPCommonHeader*) p, msg_type, send_TTL, length);
+	uint8_t msg_type;
+	p = readRSVPCommonHeader((RSVPCommonHeader*) p, &msg_type, NULL, NULL);
 	
 	RSVPSession session;
 	RSVPNodeSession nodeSession;
@@ -89,7 +87,7 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 	// hop address will be the resv messages's destination
 	RSVPHop* pathHop = (RSVPHop *) RSVPObjectOfType(pathMessage, RSVP_CLASS_RSVP_HOP);
 	in_addr resvDestinationAddress; uint32_t lih;
-	readRSVPHop(pathHop, resvDestinationAddress, lih);
+	readRSVPHop(pathHop, &resvDestinationAddress, &lih);
 	click_chatter("replyToPathMessage: resvDestinationAddress: %s", IPAddress(resvDestinationAddress).unparse().c_str());
 
 	// resv's hop address is the host's own IP
@@ -250,9 +248,9 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 	RSVPElement * me = (RSVPElement *) e;
 	in_addr destinationIP = IPAddress("0.0.0.0");
 	
-	uint8_t pid; bool police; uint16_t dst_port;
-	readRSVPSession(&me->_session, destinationIP, pid, police, dst_port);
+	readRSVPSession(&me->_session, &destinationIP, NULL, NULL, NULL);
 
+	//click_chatter("pathHandle: destinationIP: %s", IPAddress(destinationIP).unparse().c_str());
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
