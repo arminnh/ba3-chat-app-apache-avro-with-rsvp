@@ -3,6 +3,10 @@
     "protocol": "AppClientInterface",
     
     "messages" : {
+    	"echo": {
+    		"request": [{"name": "message", "type" : "int"}],
+    		"response": "int"
+		},
         "receiveMessage": {
 	        "request": [{"name": "message", "type": "string"}],
 	        "response": "int"
@@ -15,12 +19,12 @@
 	        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
 	        "response": "int"
         },
-        "leftPrivateChat": {
-	        "request": [],
-	        "response": "int"
-        },
         "setPrivateChatClientArrived": {
 	        "request": [{"name": "arrived", "type": "boolean"}],
+	        "response": "int"
+        },
+        "leftPrivateChat": {
+	        "request": [],
 	        "response": "int"
         },
         "videoRequest": {
@@ -34,10 +38,6 @@
         "destroyFrame": {
         	"request": [],
         	"response": "int"
-    	},
-    	"echo": {
-    		"request": [{"name": "message", "type" : "int"}],
-    		"response": "int"
-		}
+    	}
     }
 }
