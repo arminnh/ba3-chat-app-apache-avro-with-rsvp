@@ -34,6 +34,10 @@
         "receiveImage2": {
 	        "request": [{"name": "imgBytes", "type": {"type" : "array", "items": "bytes"}}],
 	        "response": "int"
-        }
+        },
+        "destroyFrame": {
+        	"request": [],
+        	"response": "int"
+    	}
     }
 }
