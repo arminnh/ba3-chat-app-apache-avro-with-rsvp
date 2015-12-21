@@ -19,6 +19,7 @@ public:
 	int initialize(ErrorHandler *);
 	void run_timer(Timer *);
 	const RSVPNodeSession* sessionForSenderTimer(const Timer *) const;
+	void sendPeriodicPathMessage(const RSVPNodeSession* session);
 
 	virtual void push(int, Packet *);
 	Packet* pull(int);

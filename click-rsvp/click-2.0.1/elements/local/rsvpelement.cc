@@ -12,7 +12,6 @@ const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
 	
 	const RSVPObjectHeader* p = (const RSVPObjectHeader *) (packet->transport_header() ? packet->transport_header() : ((const unsigned char*) packet->data()) + sizeof(click_ip));
 	
-	click_chatter("objectOfType: transport_header(): %p", packet->transport_header());
 	p = (const RSVPObjectHeader*) (((const RSVPCommonHeader*) p) + 1);
 	
 	while (p < (const RSVPObjectHeader*) packet->end_data()) {
@@ -47,10 +46,23 @@ void RSVPElement::push(int, Packet *packet) {
 			clean();
 			
 			updatePathState(packet->clone());
-			reply = replyToPathMessage(packet->clone());
 			
+			session = * (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
+			nodeSession = RSVPNodeSession(session);
+			
+			click_chatter("Looking for session with hashcode %d", nodeSession.hashcode());
+			
+			for (HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.begin(); it != _pathStates.end(); it++) {
+				click_chatter("hashcode in map: %d", nodeSession.hashcode());
+			}
+			
+			if (_pathStates.find(nodeSession) == _pathStates.end()) {
+				click_chatter("didn't find nodeSession in _pathStates");
+				reply = replyToPathMessage(packet->clone());
+				output(0).push(reply);
+			}
+			updatePathState(packet->clone());
 			packet->kill();
-			output(0).push(reply);
 
 			break;
 		case RSVP_MSG_RESV:
@@ -143,16 +155,43 @@ int RSVPElement::initialize(ErrorHandler* errh) {
 	return 0;
 }
 
-void RSVPElement::run_timer(Timer * timer) {
+void RSVPElement::run_timer(Timer* timer) {
 	clean();
 	click_chatter("timer went off");
 	// figure out which session the timer belongs to
 	RSVPNodeSession* session = (RSVPNodeSession *) sessionForSenderTimer(timer);
-	WritablePacket* message;
+	if (session) {
+		sendPeriodicPathMessage(session);
+	} else {
+		click_chatter("RSVPElement::run_timer: didn't find session for timer %p", (void*) timer);
+		throw std::runtime_error("");
+	}
+	
 	
 	timer->reschedule_after_msec(1000);
 	
 	return;
+}
+
+void RSVPElement::sendPeriodicPathMessage(const RSVPNodeSession* session) {
+	HashTable<RSVPNodeSession, RSVPPathState>::const_iterator it = _senders.find(*session);
+	if (it == _senders.end()) {
+		throw std::runtime_error("RSVPElement::sendPeriodicPathMessage: session not found");
+	}
+	
+	const RSVPPathState& pathState = it->second;
+	
+	RSVPSession packetSession;
+	initRSVPSession(&packetSession, session);
+	RSVPHop hop;
+	initRSVPHop(&hop, _myIP, 0);
+	RSVPTimeValues timeValues;
+	initRSVPTimeValues(&timeValues, pathState.refresh_period_r);
+
+	WritablePacket* message = createPathMessage(&packetSession,
+		&hop, &timeValues, &pathState.senderTemplate, &pathState.senderTSpec);
+	addIPHeader(message, session->_dst_ip_address, (uint8_t) _tos);
+	output(0).push(message);
 }
 
 const RSVPNodeSession* RSVPElement::sessionForSenderTimer(const Timer* timer) const {
@@ -163,7 +202,7 @@ const RSVPNodeSession* RSVPElement::sessionForSenderTimer(const Timer* timer) co
 			return &it->first;
 		}
 	}
-	
+	click_chatter("returning null");
 	return NULL;
 }
 
@@ -275,12 +314,10 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 	readRSVPTimeValues(&me->_timeValues, &pathState.refresh_period_r);
 	pathState.timer = new Timer(me);
 	pathState.timer->initialize(me);
-	// pathState.timer->schedule_now();
 	
-	WritablePacket* message = me->createPathMessage(&me->_session,
-		&me->_hop, &me->_timeValues, &me->_senderTemplate, &me->_senderTSpec);
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
-	me->output(0).push(message);
+	me->_senders.set(nodeSession, pathState);
+	
+	pathState.timer->schedule_now();
 	
 	//Element* classifier = me->router()->find("in_cl", me);
 	//click_chatter("find returned %p", (void*) classifier);

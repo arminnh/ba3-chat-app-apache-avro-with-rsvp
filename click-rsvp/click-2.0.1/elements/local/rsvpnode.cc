@@ -466,6 +466,14 @@ RSVPNodeSession::key_const_reference RSVPNodeSession::hashcode() const {
 }
 
 bool RSVPNodeSession::operator==(const RSVPNodeSession& other) const {
+	click_chatter("RSVPNode::operator== entered.");
+	if (IPAddress(_dst_ip_address) == IPAddress(other._dst_ip_address)
+		&& (_protocol_id != other._protocol_id || _dst_port != other._dst_port)) {
+		click_chatter("RSVPNodeSession operator==: this.protocol_id = %d, other.protocol_id = %d, this.dst_port = %d, other.dst_port = %d", _protocol_id, other._protocol_id, _dst_port, other._dst_port);
+	}
+	click_chatter("returning %d", IPAddress(_dst_ip_address) == IPAddress(other._dst_ip_address)
+		&& _protocol_id == other._protocol_id
+		&& _dst_port == other._dst_port);
 	return IPAddress(_dst_ip_address) == IPAddress(other._dst_ip_address)
 		&& _protocol_id == other._protocol_id
 		&& _dst_port == other._dst_port;
@@ -521,7 +529,7 @@ Packet* RSVPNode::updatePathState(Packet* packet) {
 	RSVPNodeSession nodeSession(*session);
 	HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.find(nodeSession);
 	if (it != _pathStates.end()) {
-		//click_chatter("updatePathState: found table entry");
+		click_chatter("updatePathState: found table entry");
 
 		// unschedule running timer so it won't run out
 		it->second.timer->unschedule();
