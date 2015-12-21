@@ -16,7 +16,6 @@ public interface AppClientInterface {
   int setPrivateChatClientArrived(boolean arrived) throws org.apache.avro.AvroRemoteException;
   boolean videoRequest() throws org.apache.avro.AvroRemoteException;
   int receiveImage(java.nio.ByteBuffer imgBytes) throws org.apache.avro.AvroRemoteException;
-  int receiveImage2(java.util.List<java.nio.ByteBuffer> imgBytes) throws org.apache.avro.AvroRemoteException;
   int destroyFrame() throws org.apache.avro.AvroRemoteException;
 
   @SuppressWarnings("all")

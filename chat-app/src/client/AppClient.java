@@ -127,7 +127,7 @@ public class AppClient implements AppClientInterface {
 				System.out.println("accepted video");
 
 				this.setFrameAndGraphics(400, 300);
-				frame.setBounds(500,  0,  400,  300);
+				frame.setBounds(0,  0,  400,  300);
 				g = frame.getGraphics();
 				
 				return true;
@@ -158,7 +158,7 @@ public class AppClient implements AppClientInterface {
 		JPanel contentPane = new JPanel(new BorderLayout());
 		frame = new JFrame();
 		frame.getContentPane().add(contentPane);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(x, y);
 		frame.setVisible(true);
 		g = frame.getGraphics();
@@ -180,10 +180,8 @@ public class AppClient implements AppClientInterface {
 //		VideoSender videoSender = new VideoSender(new File("ArchitectVideo_512kb.mp4"), frame, this.privateChatClient.proxy);
 		VideoSender videoSender = new VideoSender(new File("ArchitectVideo_dvd.mpg"), frame, this.privateChatClient.proxy);
 //		VideoSender videoSender = new VideoSender(new File(""), frame, this.privateChatClient.proxy);
-		videoSender.send();
-		
-		this.destroyFrame();
-		this.privateChatClient.proxy.destroyFrame();
+		Thread sender = new Thread(videoSender);
+		sender.start();
 	}
 	
 	public void joinChat(boolean privateChat) throws IOException {
@@ -370,12 +368,12 @@ public class AppClient implements AppClientInterface {
 		}*/
 
 		Scanner in = new Scanner(System.in);
-		/*System.out.println("Enter the IP address of the server.");
+		System.out.println("Enter the IP address of the server.");
 		InetSocketAddress serverIP = new InetSocketAddress(in.nextLine(), port);
 
 		System.out.println("Enter the IP address the server will need to connect to.");
-		clientIP = in.nextLine();*/
-		InetSocketAddress serverIP = new InetSocketAddress("0.0.0.0", port);
+		clientIP = in.nextLine();
+		//InetSocketAddress serverIP = new InetSocketAddress("0.0.0.0", port);
 
 		Server clientResponder = null;
 		AppClient clientRequester = null;
@@ -416,7 +414,7 @@ public class AppClient implements AppClientInterface {
 			}
 			
 			clientRequester.register(username);
-			clientRequester.privateChatClient = new ClientInfo();
+			/*clientRequester.privateChatClient = new ClientInfo();
 
 			if (username.equals("a")) {
 				clientPort = 2346;
@@ -437,7 +435,7 @@ public class AppClient implements AppClientInterface {
 					}
 				}
 			}
-			clientRequester.startPrivateChat();
+			clientRequester.startPrivateChat();*/
 			
 			System.out.println("Welcome to Chat App, type ?list to get a list of available commands.");
 			ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
@@ -454,13 +452,6 @@ public class AppClient implements AppClientInterface {
 			System.exit(1);
 		}
 
-	}
-
-	@Override
-	public int receiveImage2(List<ByteBuffer> imgBytes)
-			throws AvroRemoteException {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 }
 

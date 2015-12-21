@@ -23,11 +23,13 @@ import java.util.logging.Logger;
 
 import javax.swing.JFrame;
 
+import org.apache.avro.AvroRemoteException;
+
 /**
  * Using IMediaReader, takes a media container, finds the first video  stream, decodes that stream, 
  * and then writes video frames out to a PNG image file, based on the video presentation timestamps.
  */
-public class VideoSender extends MediaListenerAdapter {
+public class VideoSender extends MediaListenerAdapter implements Runnable {
     private int CAPTURED_FRAMES = 0; // count of the number of frames captures
     
     // The number of seconds between frames.
@@ -81,7 +83,7 @@ public class VideoSender extends MediaListenerAdapter {
     public void send() {
         // read out the contents of the media file, note that nothing else happens here. 
         // action happens in the onVideoPicture() method which is called when complete video pictures are extracted from the media source
-        while (this.reader.readPacket() == null) {
+        while (this.reader.readPacket() == null && frame.isVisible()) {
             do { } while (false);
         }
 
@@ -159,4 +161,17 @@ public class VideoSender extends MediaListenerAdapter {
             		+ new Object[] {input.getAbsolutePath(), e.getLocalizedMessage()});
         }
     }
+
+	@Override
+	public void run() {
+		this.send();
+
+		frame.setVisible(false);
+		frame.dispose();
+		try {
+			proxy.destroyFrame();
+		} catch (AvroRemoteException e) {
+			e.printStackTrace();
+		}
+	}
 }
