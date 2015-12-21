@@ -126,8 +126,8 @@ public class AppClient implements AppClientInterface {
 			if (input.equals("y") || input.equals("y")) {
 				System.out.println("accepted video");
 
-				this.setFrameAndGraphics(200, 200);
-				frame.setBounds(900,  0,  200,  200);
+				this.setFrameAndGraphics(400, 300);
+				frame.setBounds(500,  0,  400,  300);
 				g = frame.getGraphics();
 				
 				return true;
@@ -143,9 +143,8 @@ public class AppClient implements AppClientInterface {
 	public int receiveImage(ByteBuffer imgBytes) throws AvroRemoteException {
 		try {
     		ByteArrayInputStream bis = new ByteArrayInputStream(imgBytes.array());
-    		ObjectInputStream in = new ObjectInputStream(bis);
-    		
-			Image img = ImageIO.read(in);
+			Image img = ImageIO.read(bis);
+			
 	    	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
 	    	
 	    	return 1;
@@ -173,10 +172,14 @@ public class AppClient implements AppClientInterface {
 	}
 
 	private void sendVideo() throws AvroRemoteException {
-		this.setFrameAndGraphics(200, 200);
+		this.setFrameAndGraphics(400, 300);
 		
-		VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, this.privateChatClient.proxy);
+//		VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, this.privateChatClient.proxy);
 //		VideoSender videoSender = new VideoSender(new File("small.ogv"), frame, this.privateChatClient.proxy);
+//		VideoSender videoSender = new VideoSender(new File("sample_mpeg4.mp4"), frame, this.privateChatClient.proxy);
+//		VideoSender videoSender = new VideoSender(new File("ArchitectVideo_512kb.mp4"), frame, this.privateChatClient.proxy);
+		VideoSender videoSender = new VideoSender(new File("ArchitectVideo_dvd.mpg"), frame, this.privateChatClient.proxy);
+//		VideoSender videoSender = new VideoSender(new File(""), frame, this.privateChatClient.proxy);
 		videoSender.send();
 		
 		this.destroyFrame();
