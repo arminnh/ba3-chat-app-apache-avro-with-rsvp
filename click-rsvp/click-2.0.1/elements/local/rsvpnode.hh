@@ -151,6 +151,7 @@ struct RSVPResvConf { // class num = 15, C-type = 1
 	in_addr receiver_address;
 };
 
+// used to locally store a session
 struct RSVPNodeSession {
 	RSVPNodeSession();
 	RSVPNodeSession(in_addr, uint8_t protocol_id, uint8_t dst_port);
@@ -160,20 +161,22 @@ struct RSVPNodeSession {
 	const key_type& hashcode() const;
 	key_type key;
 	bool operator==(const RSVPNodeSession& other) const;
-public:
 	in_addr _dst_ip_address;
 	uint8_t _protocol_id;
 	uint16_t _dst_port;
+	bool _own;
 };
 
 struct RSVPPathState {
 	in_addr previous_hop_node;
 	RSVPSenderTSpec senderTSpec;
 	RSVPSenderTemplate senderTemplate;
+	uint32_t refresh_period_r;
 	Timer* timer;
 };
 
 struct RSVPResvState {
+	RSVPFilterSpec filterSpec;
 	RSVPFlowspec flowspec;
 	
 };
@@ -186,6 +189,7 @@ const void* RSVPObjectOfType(Packet*, uint8_t wanted_class_num);
 void initRSVPCommonHeader(RSVPCommonHeader*, uint8_t msg_type, uint8_t send_TTL, uint16_t length);
 void initRSVPObjectHeader(RSVPObjectHeader*, uint8_t class_num, uint8_t c_type);
 void initRSVPSession(RSVPSession*, in_addr destinationAddress, uint8_t protocol_id, bool police, uint16_t dst_port);
+void initRSVPSession(RSVPSession*, const RSVPNodeSession*);
 void initRSVPHop(RSVPHop*, in_addr next_previous_hop_address, uint32_t logical_interface_handle);
 void initRSVPTimeValues(RSVPTimeValues*, uint32_t refresh_period_r);
 void initRSVPStyle(RSVPStyle*);
@@ -208,29 +212,29 @@ void initRSVPSenderTSpec(RSVPSenderTSpec*,
 	uint32_t minimum_policed_unit,
 	uint32_t maximum_packet_size);
 	
-const void* readRSVPCommonHeader(const RSVPCommonHeader*, uint8_t& msg_type, uint8_t& send_TTL, uint16_t& length);
-const void readRSVPObjectHeader(const RSVPObjectHeader*, uint8_t& class_num, uint8_t& c_type);
-const void* readRSVPSession(const RSVPSession*, in_addr& destinationAddress, uint8_t& protocol_id, bool& police, uint16_t& dst_port);
-const void* readRSVPHop(const RSVPHop*, in_addr& next_previous_hop_address, uint32_t& logical_interface_handle);
-const void* readRSVPTimeValues(const RSVPTimeValues*, uint32_t& refresh_period_r);
+const void* readRSVPCommonHeader(const RSVPCommonHeader*, uint8_t* msg_type, uint8_t* send_TTL, uint16_t* length);
+const void readRSVPObjectHeader(const RSVPObjectHeader*, uint8_t* class_num, uint8_t* c_type);
+const void* readRSVPSession(const RSVPSession*, in_addr* destinationAddress, uint8_t* protocol_id, bool* police, uint16_t* dst_port);
+const void* readRSVPHop(const RSVPHop*, in_addr* next_previous_hop_address, uint32_t* logical_interface_handle);
+const void* readRSVPTimeValues(const RSVPTimeValues*, uint32_t* refresh_period_r);
 const void* readRSVPStyle(const RSVPStyle*);
-const void* readRSVPErrorSpec(const RSVPErrorSpec*, in_addr& error_node_address, bool& inPlace, bool& notGuilty, uint8_t& errorCode, uint16_t& errorValue);
-const void* readRSVPResvConf(const RSVPResvConf*, in_addr& receiverAddress);
-const void* readRSVPScope(const RSVPObjectHeader*, Vector<in_addr>& src_addresses);
+const void* readRSVPErrorSpec(const RSVPErrorSpec*, in_addr* error_node_address, bool* inPlace, bool* notGuilty, uint8_t* errorCode, uint16_t* errorValue);
+const void* readRSVPResvConf(const RSVPResvConf*, in_addr* receiverAddress);
+const void* readRSVPScope(const RSVPObjectHeader*, Vector<in_addr>* src_addresses);
 const void* readRSVPFlowspec(const RSVPFlowspec*,
 	float& token_bucket_rate,
 	float& token_bucket_size,
 	float& peak_data_rate,
 	uint32_t& minimum_policed_unit,
 	uint32_t& maximum_packet_size);
-void* readRSVPFilterSpec(RSVPFilterSpec*, in_addr& src_address, uint16_t& src_port);
-void* readRSVPSenderTemplate(RSVPSenderTemplate*, in_addr& src_address, uint16_t& src_port);
+void* readRSVPFilterSpec(RSVPFilterSpec*, in_addr* src_address, uint16_t* src_port);
+void* readRSVPSenderTemplate(RSVPSenderTemplate*, in_addr* src_address, uint16_t* src_port);
 void* readRSVPSenderTSpec(RSVPSenderTSpec*,
-	float& token_bucket_rate,
-	float& token_bucket_size,
-	float& peak_data_rate,
-	uint32_t& minimum_policed_unit,
-	uint32_t& maximum_packet_size);
+	float* token_bucket_rate,
+	float* token_bucket_size,
+	float* peak_data_rate,
+	uint32_t* minimum_policed_unit,
+	uint32_t* maximum_packet_size);
 
 class RSVPNode: public Element { 
 public:
@@ -242,6 +246,7 @@ public:
 	Packet* updateReservation(Packet*);
 
 	void run_timer(Timer*);
+	const RSVPNodeSession* sessionForPathStateTimer(const Timer*);
 	
 	const char *class_name() const	{ return "RSVPNode"; }
 	const char *port_count() const	{ return "1/1"; }

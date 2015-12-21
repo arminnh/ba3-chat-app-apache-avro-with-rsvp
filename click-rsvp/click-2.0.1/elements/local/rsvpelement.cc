@@ -1,20 +1,21 @@
 #include <click/config.h>
 #include <click/confparse.hh>
 #include <click/error.hh>
+#include <click/router.hh>
 #include "rsvpelement.hh"
 #include <stdexcept>
 
 CLICK_DECLS
 
 const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
-	uint8_t class_num, c_type;
-	uint8_t obj_type;
+	uint8_t class_num;
 	
-	const RSVPObjectHeader* p = (const RSVPObjectHeader*) (packet->transport_header() ? packet->transport_header() : packet->data());
+	const RSVPObjectHeader* p = (const RSVPObjectHeader *) (packet->transport_header() ? packet->transport_header() : ((const unsigned char*) packet->data()) + sizeof(click_ip));
+	
 	p = (const RSVPObjectHeader*) (((const RSVPCommonHeader*) p) + 1);
 	
 	while (p < (const RSVPObjectHeader*) packet->end_data()) {
-		readRSVPObjectHeader(p, class_num, c_type);
+		readRSVPObjectHeader(p, &class_num, NULL);
 		if (class_num == wanted_class_num) {
 			return p;
 		}
@@ -29,27 +30,44 @@ const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
 void RSVPElement::push(int, Packet *packet) {
 	click_chatter("Received RSVP packet at RSVPElement %s", _name.c_str());
 
-	const void* p = packet->data();
+	const void* p = (const void *) (packet->transport_header() ? packet->transport_header() : ((const unsigned char*) packet->data()) + sizeof(click_ip));
 	const void* end_data = packet->end_data();
 	
-	uint8_t msg_type, send_TTL;
-	uint16_t length;
-	p = readRSVPCommonHeader((RSVPCommonHeader*) p, msg_type, send_TTL, length);
+	uint8_t msg_type;
+	p = readRSVPCommonHeader((RSVPCommonHeader*) p, &msg_type, NULL, NULL);
 	
 	RSVPSession session;
 	RSVPNodeSession nodeSession;
 	HashTable<RSVPNodeSession, RSVPPathState>::iterator it;
+	RSVPPathState pathState; bool pathStateFound = false;
 
 	WritablePacket* reply;
 	switch (msg_type) {
 		case RSVP_MSG_PATH:
 			clean();
 			
-			updatePathState(packet->clone());
-			reply = replyToPathMessage(packet->clone());
+			session = * (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
+			nodeSession = RSVPNodeSession(session);
 			
+			click_chatter("Looking for session with hashcode %d", nodeSession.hashcode());
+			
+			// workaround finding the path state because HashTable's find function doesn't work for an entirely unknown reason
+			for (HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.begin(); it != _pathStates.end(); it++) {
+				if (nodeSession == it->first) {
+					pathStateFound = true;
+					click_chatter("%s: path state found!!!", _name.c_str());
+					pathState = it->second;
+					break;
+				}
+			}
+			
+			if (!pathStateFound) {
+				click_chatter("didn't find nodeSession in _pathStates");
+				reply = replyToPathMessage(packet->clone());
+				output(0).push(reply);
+			}
+			updatePathState(packet->clone());
 			packet->kill();
-			output(0).push(reply);
 
 			break;
 		case RSVP_MSG_RESV:
@@ -89,7 +107,7 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 	// hop address will be the resv messages's destination
 	RSVPHop* pathHop = (RSVPHop *) RSVPObjectOfType(pathMessage, RSVP_CLASS_RSVP_HOP);
 	in_addr resvDestinationAddress; uint32_t lih;
-	readRSVPHop(pathHop, resvDestinationAddress, lih);
+	readRSVPHop(pathHop, &resvDestinationAddress, &lih);
 	click_chatter("replyToPathMessage: resvDestinationAddress: %s", IPAddress(resvDestinationAddress).unparse().c_str());
 
 	// resv's hop address is the host's own IP
@@ -142,19 +160,55 @@ int RSVPElement::initialize(ErrorHandler* errh) {
 	return 0;
 }
 
-void RSVPElement::run_timer(Timer *) {
+void RSVPElement::run_timer(Timer* timer) {
 	clean();
-	/*output(0).push(createResvMessage());
-	output(0).push(createPathMessage());
-	output(0).push(createPathErrMessage());
-	output(0).push(createResvErrMessage());
-	output(0).push(createPathTearMessage());
-	output(0).push(createResvTearMessage());
-	output(0).push(createResvConfMessage());*/
+	click_chatter("timer went off");
+	// figure out which session the timer belongs to
+	RSVPNodeSession* session = (RSVPNodeSession *) sessionForSenderTimer(timer);
+	if (session) {
+		sendPeriodicPathMessage(session);
+	} else {
+		click_chatter("RSVPElement::run_timer: didn't find session for timer %p", (void*) timer);
+		throw std::runtime_error("");
+	}
 	
-	//_timer.reschedule_after_msec(1000);
+	
+	timer->reschedule_after_msec(1000);
 	
 	return;
+}
+
+void RSVPElement::sendPeriodicPathMessage(const RSVPNodeSession* session) {
+	HashTable<RSVPNodeSession, RSVPPathState>::const_iterator it = _senders.find(*session);
+	if (it == _senders.end()) {
+		throw std::runtime_error("RSVPElement::sendPeriodicPathMessage: session not found");
+	}
+	
+	const RSVPPathState& pathState = it->second;
+	
+	RSVPSession packetSession;
+	initRSVPSession(&packetSession, session);
+	RSVPHop hop;
+	initRSVPHop(&hop, _myIP, 0);
+	RSVPTimeValues timeValues;
+	initRSVPTimeValues(&timeValues, pathState.refresh_period_r);
+
+	WritablePacket* message = createPathMessage(&packetSession,
+		&hop, &timeValues, &pathState.senderTemplate, &pathState.senderTSpec);
+	addIPHeader(message, session->_dst_ip_address, (uint8_t) _tos);
+	output(0).push(message);
+}
+
+const RSVPNodeSession* RSVPElement::sessionForSenderTimer(const Timer* timer) const {
+	// very efficient
+	
+	for (HashTable<RSVPNodeSession, RSVPPathState>::const_iterator it = _senders.begin(); it != _senders.end(); it++) {
+		if (it->second.timer == timer) {
+			return &it->first;
+		}
+	}
+	click_chatter("returning null");
+	return NULL;
 }
 
 int RSVPElement::sessionHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
@@ -250,16 +304,28 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 	RSVPElement * me = (RSVPElement *) e;
 	in_addr destinationIP = IPAddress("0.0.0.0");
 	
-	uint8_t pid; bool police; uint16_t dst_port;
-	readRSVPSession(&me->_session, destinationIP, pid, police, dst_port);
+	readRSVPSession(&me->_session, &destinationIP, NULL, NULL, NULL);
 
+	//click_chatter("pathHandle: destinationIP: %s", IPAddress(destinationIP).unparse().c_str());
 	if (cp_va_kparse(conf, me, errh,
-		"DST", cpkP, cpIPAddress, &destinationIP,
-		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	WritablePacket* message = me->createPathMessage();
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
-	me->output(0).push(message);
+	uint32_t r;
+	
+	RSVPNodeSession nodeSession(me->_session);
+	RSVPPathState pathState;
+	pathState.senderTemplate = me->_senderTemplate;
+	pathState.senderTSpec = me->_senderTSpec;
+	readRSVPTimeValues(&me->_timeValues, &pathState.refresh_period_r);
+	pathState.timer = new Timer(me);
+	pathState.timer->initialize(me);
+	
+	me->_senders.set(nodeSession, pathState);
+	
+	pathState.timer->schedule_now();
+	
+	//Element* classifier = me->router()->find("in_cl", me);
+	//click_chatter("find returned %p", (void*) classifier);
 	
 	me->clean();
 	return 0;
@@ -271,7 +337,7 @@ int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorH
 
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
-		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvMessage();
 	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
@@ -287,7 +353,7 @@ int RSVPElement::pathErrHandle(const String &conf, Element *e, void * thunk, Err
 
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
-		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createPathErrMessage();
 	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
@@ -304,7 +370,7 @@ int RSVPElement::resvErrHandle(const String &conf, Element *e, void * thunk, Err
 
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
-		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvErrMessage();
 	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
@@ -321,7 +387,7 @@ int RSVPElement::pathTearHandle(const String &conf, Element *e, void * thunk, Er
 
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
-		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createPathTearMessage();
 	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
@@ -338,7 +404,7 @@ int RSVPElement::resvTearHandle(const String &conf, Element *e, void * thunk, Er
 
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
-		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvTearMessage();
 	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
@@ -355,7 +421,7 @@ int RSVPElement::resvConfHandle(const String &conf, Element *e, void * thunk, Er
 
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
-		"TTL", cpkM, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvConfMessage();
 	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
@@ -523,14 +589,18 @@ WritablePacket* RSVPElement::createPacket(uint16_t packetSize) const
 	return message;
 }
 
-WritablePacket* RSVPElement::createPathMessage() const
+WritablePacket* RSVPElement::createPathMessage(const RSVPSession* p_session,
+	const RSVPHop* p_hop,
+	const RSVPTimeValues* p_timeValues,
+	const RSVPSenderTemplate* p_senderTemplate,
+	const RSVPSenderTSpec* p_senderTSpec) const
 {
 	uint16_t packetSize =
 		sizeof(RSVPCommonHeader) +
 		sizeof(RSVPSession) +
 		sizeof(RSVPHop) +
 		sizeof(RSVPTimeValues) +
-		(_senderDescriptor ?
+		(p_senderTemplate && p_senderTSpec ?
 			sizeof(RSVPSenderTemplate) +
 			sizeof(RSVPSenderTSpec)
 			: 0);
@@ -545,12 +615,12 @@ WritablePacket* RSVPElement::createPathMessage() const
 	RSVPSenderTSpec* senderTSpec   = (RSVPSenderTSpec *)  (senderTemplate + 1);
 
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATH, _TTL, packetSize);
-	*session = _session;
-	*hop = _hop;
-	*timeValues = _timeValues;
-	if (_senderDescriptor) {
-		*senderTemplate = _senderTemplate;
-		*senderTSpec = _senderTSpec;
+	*session = *p_session;
+	*hop = *p_hop;
+	*timeValues = *p_timeValues;
+	if (p_senderTemplate && p_senderTSpec) {
+		*senderTemplate = *p_senderTemplate;
+		*senderTSpec = *p_senderTSpec;
 	}
 	
 	
@@ -780,7 +850,7 @@ void RSVPElement::clean() {
 	
 	memset(&_session, 0, sizeof(RSVPSession));
 	memset(&_errorSpec, 0, sizeof(RSVPErrorSpec));
-	memset(&_hop, 0, sizeof(RSVPHop));
+	initRSVPHop(&_hop, _myIP, sizeof(RSVPHop));
 	memset(&_timeValues, 0, sizeof(RSVPTimeValues));
 	
 	_senderDescriptor = false;memset(&_senderTemplate, 0, sizeof(RSVPSenderTemplate));

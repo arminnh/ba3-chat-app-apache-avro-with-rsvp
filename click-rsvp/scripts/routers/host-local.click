@@ -28,7 +28,7 @@ elementclass Host {
 		-> output;
 		
 	rsvp_cl[0]
-		-> Strip(20)
+		//-> Strip(20)
 		-> rsvp;
 		
 	ipgw[1]	-> ICMPError($address, parameterproblem)
