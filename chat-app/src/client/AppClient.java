@@ -19,6 +19,7 @@ import org.apache.avro.ipc.*;
 import org.apache.avro.ipc.specific.*;
 
 import server.*;
+import errorwriter.ErrorWriter;
 
 public class AppClient implements AppClientInterface, Runnable {
 	private CharSequence username;
@@ -126,12 +127,11 @@ public class AppClient implements AppClientInterface, Runnable {
 
 			g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
 
-			return 1;
+			return 0;
 		} catch (IOException e) {
 			e.printStackTrace();
+			return 8;
 		}
-
-		return 0;
 	}
 
 	public int destroyFrame() throws AvroRemoteException {
@@ -169,16 +169,16 @@ public class AppClient implements AppClientInterface, Runnable {
 	public void sendRequest(String username) throws AvroRemoteException {
 		int response = this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
 		
-		if (response == 1) {
-			
-		} else if (response == 2) {
-			
-		}
+		if (response != 0)
+			ErrorWriter.printError(response);
 	}
 
 	@Command
 	public void cancelRequest(String username) throws AvroRemoteException {
-		this.appServer.cancelRequest(this.username, username);
+		int response = this.appServer.cancelRequest(this.username, username);
+		
+		if (response != 0)
+			ErrorWriter.printError(response);
 	}
 
 	@Command
@@ -193,7 +193,7 @@ public class AppClient implements AppClientInterface, Runnable {
 			System.out.println("You entered a private chatroom with " + this.privateChatClient.username + ". Wait for them to arrive.");
 			this.joinPrivateChat();
 		} else {
-			System.out.println("Something went wrong, error code: " + response);
+			ErrorWriter.printError(response);
 		}
 	}
 
@@ -204,12 +204,17 @@ public class AppClient implements AppClientInterface, Runnable {
 		if (response == 0) {
 			System.out.println("You have declined the request from" + username);
 		} else {
-			System.out.println("You do not have any open requests from" + username);
+			ErrorWriter.printError(response);
 		}
 	}
 
 	@Command
 	public void startPrivateChat() throws AvroRemoteException {
+		if (!this.appServer.isRequestPending(this.username)) {
+			ErrorWriter.printError(11);
+			return;
+		}
+		
 		this.setStatus(ClientStatus.PRIVATE);
 
 		this.privateChatClientArrived = true;
@@ -226,14 +231,13 @@ public class AppClient implements AppClientInterface, Runnable {
 	 */
 
 	public int register(String username) throws AvroRemoteException {
-		// if name was not already taken
 		if (this.appServer.isNameAvailable((CharSequence) username)) {
 			appServer.registerClient((CharSequence) username, (CharSequence) clientIP, clientPort);
 			this.username = username;
 			return 0;
 		}
 
-		return 1;
+		return 9;
 	}
 
 	private int setStatus(ClientStatus status) throws AvroRemoteException {
@@ -302,7 +306,7 @@ public class AppClient implements AppClientInterface, Runnable {
 		} catch (IOException e) {
 			this.setStatus(ClientStatus.LOBBY);
 			e.printStackTrace();
-			return 1;
+			return 10;
 		}
 
 		// set state back to lobby after finished
@@ -333,11 +337,10 @@ public class AppClient implements AppClientInterface, Runnable {
 		this.setFrameAndGraphics(25, 25, 400, 300);
 
 		VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, g, this.privateChatClient.proxy);
-		//		VideoSender videoSender = new VideoSender(new File("small.ogv"), frame, this.privateChatClient.proxy);
-		//		VideoSender videoSender = new VideoSender(new File("sample_mpeg4.mp4"), frame, this.privateChatClient.proxy);
-		//		VideoSender videoSender = new VideoSender(new File("ArchitectVideo_512kb.mp4"), frame, this.privateChatClient.proxy);
-		//VideoSender videoSender = new VideoSender(new File("ArchitectVideo_dvd.mpg"), this.frame, this.g,  this.privateChatClient.proxy);
-		//		VideoSender videoSender = new VideoSender(new File(""), frame, this.privateChatClient.proxy);
+		//VideoSender videoSender = new VideoSender(new File("small.ogv"), frame, this.g, this.privateChatClient.proxy);
+		//VideoSender videoSender = new VideoSender(new File("sample_mpeg4.mp4"), frame, this.g, this.privateChatClient.proxy);
+		//VideoSender videoSender = new VideoSender(new File("ArchitectVideo_512kb.mp4"), frame, this.g, this.privateChatClient.proxy);
+		//VideoSender videoSender = new VideoSender(new File("ArchitectVideo_dvd.mpg"), this.frame, this.g, this.privateChatClient.proxy);
 		Thread sender = new Thread(videoSender);
 		sender.start();
 	}
