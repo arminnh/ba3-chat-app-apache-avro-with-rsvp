@@ -32,9 +32,10 @@ public class AppClient implements AppClientInterface, Runnable {
 	private ClientInfo privateChatClient;
 	private boolean privateChatClientArrived = false;
 
-	private JFrame senderFrame;
-	private JFrame receiverFrame;
-	private Graphics senderG, receiverG;
+	public JFrame senderFrame = new JFrame();
+	public JFrame receiverFrame = new JFrame();
+	public Graphics senderG = senderFrame.getGraphics();
+	public Graphics receiverG = receiverFrame.getGraphics();
 
 	//======================================================================================
 
@@ -42,15 +43,18 @@ public class AppClient implements AppClientInterface, Runnable {
 		this.appServer = a;
 		this.clientIP = clientIP;
 		this.clientPort = clientPort;
+		this.status = ClientStatus.LOBBY;
 
 		this.senderFrame = new JFrame();
 		this.senderFrame.getContentPane().add(new JPanel(new BorderLayout()));
-		this.senderFrame.setBounds(250,  250,  400,  300);
+		this.senderFrame.setBounds(250-250, 250,  400,  300);
+		this.senderFrame.setVisible(true);
 		this.senderG = this.senderFrame.getGraphics();
 		
 		this.receiverFrame = new JFrame();
 		this.receiverFrame.getContentPane().add(new JPanel(new BorderLayout()));
-		this.receiverFrame.setBounds(750,  250,  400,  300);
+		this.receiverFrame.setBounds(700-250, 250,  400,  300);
+		this.receiverFrame.setVisible(true);
 		this.receiverG = this.receiverFrame.getGraphics();
 	}
 
@@ -118,7 +122,7 @@ public class AppClient implements AppClientInterface, Runnable {
 				this.privateChatClient.proxy.receiveMessage(this.username.toString() + " has accepted the video request.");
 
 				// set up the frame for the receiving side
-				this.setFrameAndGraphics(500, 25, 400, 300, false);
+				//this.setFrameAndGraphics(500, 25, 400, 300, false);
 				return true;
 			}
 		} catch (IOException e) {
@@ -146,9 +150,8 @@ public class AppClient implements AppClientInterface, Runnable {
 		}
 	}
 
-	public int destroyFrame() throws AvroRemoteException {
-		this.receiverFrame.setVisible(false);
-		//this.receiverFrame.dispose();
+	public int hideFrame() throws AvroRemoteException {
+		//this.receiverFrame.setVisible(false);
 
 		return 0;
 	}
@@ -346,7 +349,7 @@ public class AppClient implements AppClientInterface, Runnable {
 	}
 
 	private void sendVideo() throws AvroRemoteException {
-		this.setFrameAndGraphics(25, 25, 400, 300, true);
+		//this.setFrameAndGraphics(25, 25, 400, 300, true);
 		VideoFileChooser fc = new VideoFileChooser();
 		
 		//VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, g, this.privateChatClient.proxy);
@@ -375,11 +378,11 @@ public class AppClient implements AppClientInterface, Runnable {
 		} else {
 			this.receiverG = this.receiverFrame.getGraphics();
 		}*/
-		if (sending) {
+		/*if (sending) {
 			this.senderFrame.setVisible(true);
 		} else {
-			this.receiverFrame.setVisible(false);
-		}
+			this.receiverFrame.setVisible(true);
+		}*/
 		
 
 

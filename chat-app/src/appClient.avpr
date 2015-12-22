@@ -35,7 +35,7 @@
 	        "request": [{"name": "imgBytes", "type": "bytes"}],
 	        "response": "int"
         },
-        "destroyFrame": {
+        "hideFrame": {
         	"request": [],
         	"response": "int"
     	}

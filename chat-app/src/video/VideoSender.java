@@ -54,26 +54,17 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
     private Graphics g;
     private AppClientInterface proxy;
     private IMediaReader reader = null;
-	ByteArrayOutputStream bos = null;
-	ObjectOutputStream out = null;
     
     //====================================================================================================================
 
-    public VideoSender(File Input, JFrame frame, Graphics g, AppClientInterface proxy) {
-    	this.input = Input;
+    public VideoSender(File input, JFrame frame, Graphics g, AppClientInterface proxy) {
+    	this.input = input;
         this.frame = frame;
         this.g = g;
         this.proxy = proxy;
         
-    	this.bos = new ByteArrayOutputStream();
-    	try {
-			this.out = new ObjectOutputStream(this.bos);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-        
         // create a media reader for processing video
-        this.reader = ToolFactory.makeReader(Input.getAbsolutePath());
+        this.reader = ToolFactory.makeReader(input.getAbsolutePath());
 
         // stipulate that we want BufferedImages created in BGR 24bit color space
         this.reader.setBufferedImageTypeToGenerate(BufferedImage.TYPE_3BYTE_BGR);
@@ -146,17 +137,14 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
             	BufferedImage img = event.getImage();
             	g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
             	
-            	Thread frameSender = new Thread(new FrameSender(img, this.proxy));
-            	frameSender.run();
-        		/*try {
+        		try {
         			ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 	ImageIO.write(img,  "jpg",  bos);
             		this.proxy.receiveImage(ByteBuffer.wrap(bos.toByteArray()));
         		} catch (Exception e) {
         			e.printStackTrace();
-        		}*/
+        		}
             }
-            
         } catch (Exception e) {
         	e.printStackTrace();
             System.err.println(Level.SEVERE.toString() 
@@ -169,12 +157,11 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
 	public void run() {
 		this.send();
 
-		frame.setVisible(false);
-		frame.dispose();
+		/*frame.setVisible(false);
 		try {
-			proxy.destroyFrame();
+			proxy.hideFrame();
 		} catch (AvroRemoteException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 }

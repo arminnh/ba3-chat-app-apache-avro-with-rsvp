@@ -17,7 +17,7 @@ public interface AppClientInterface {
   int leftPrivateChat() throws org.apache.avro.AvroRemoteException;
   boolean videoRequest() throws org.apache.avro.AvroRemoteException;
   int receiveImage(java.nio.ByteBuffer imgBytes) throws org.apache.avro.AvroRemoteException;
-  int destroyFrame() throws org.apache.avro.AvroRemoteException;
+  int hideFrame() throws org.apache.avro.AvroRemoteException;
 
   @SuppressWarnings("all")
   public interface Callback extends AppClientInterface {
@@ -30,6 +30,6 @@ public interface AppClientInterface {
     void leftPrivateChat(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void videoRequest(org.apache.avro.ipc.Callback<java.lang.Boolean> callback) throws java.io.IOException;
     void receiveImage(java.nio.ByteBuffer imgBytes, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void destroyFrame(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void hideFrame(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
   }
 }
