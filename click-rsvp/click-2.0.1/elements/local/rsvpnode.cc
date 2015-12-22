@@ -231,6 +231,8 @@ void initRSVPFlowspec(RSVPFlowspec* flowspec,
 }
 
 void initRSVPFlowspec(RSVPFlowspec* flowspec, const RSVPSenderTSpec* senderTSpec) {
+	initRSVPObjectHeader(&flowspec->header, RSVP_CLASS_FLOWSPEC, 2);
+
 	flowspec->nothing_1 = 0;
 	flowspec->overall_length = htons(7);
 	flowspec->service_header = 1;
@@ -488,7 +490,7 @@ RSVPNode::~RSVPNode()
 
 
 void RSVPNode::push(int port, Packet* packet) {
-	click_chatter("RSVPNode: Got a packet of size %d", packet->length());
+	click_chatter("RSVPNode %s received an RSVP packet of size %d", _name.c_str(), packet->length());
 	// packet analysis
 	
 	in_addr srcIP, dstIP;
@@ -497,7 +499,7 @@ void RSVPNode::push(int port, Packet* packet) {
 	dstIP = ip_header->ip_dst;
 	
 	packet->pull(sizeof(click_ip));
-	
+	click_chatter("packet size after pulling: %d", packet->length());
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
 	WritablePacket* forward;
@@ -518,7 +520,9 @@ void RSVPNode::push(int port, Packet* packet) {
 		
 		addIPHeader(forward, dstIP, srcIP, _tos);
 		
-		packet->kill();
+		// packet->kill();
+
+		click_chatter("%s forwarding path message %p", _name.c_str(), (void *) packet);
 		output(0).push(forward);
 	} else if (msg_type == RSVP_MSG_RESV) {
 		RSVPFilterSpec* filterSpec = (RSVPFilterSpec *) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
@@ -534,10 +538,9 @@ void RSVPNode::push(int port, Packet* packet) {
 		addIPHeader(forward, hop->IPv4_next_previous_hop_address, IPAddress("0.0.0.0"), _tos);
 		hop->IPv4_next_previous_hop_address = _myIP;
 
-		packet->kill();
+		click_chatter("%s forwarding resv message %p", _name.c_str(), (void *) forward);
 		output(0).push(forward);
 	}
-	click_chatter("pushing packet %p out the door", (void *) packet);
 }
 
 WritablePacket* RSVPNode::updatePathState(Packet* packet) {
@@ -602,7 +605,7 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) packet->data(), packet->length());
 	
-	click_chatter("Table contents:");
+	click_chatter("Table contents at %s:", _name.c_str());
 	for (HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.begin();
 		it != _pathStates.end(); it++) {
 		const RSVPNodeSession& nodeSession = it->first;
@@ -614,7 +617,7 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 		click_chatter("\tprevious node address: %s", IPAddress(pathState.previous_hop_node).s().c_str());
 	}
 	
-	packet->kill();
+	// packet->kill();
 
 	return wp;
 }
@@ -663,11 +666,11 @@ int RSVPNode::initialize(ErrorHandler* errh) {
 
 void RSVPNode::run_timer(Timer* timer) {
 	RSVPNodeSession* session;
-	if (session = (RSVPNodeSession *) sessionForPathStateTimer(timer)) {
+	if ((session = (RSVPNodeSession *) sessionForPathStateTimer(timer))) {
 		_pathStates.erase(find(_pathStates, *session));
 		click_chatter("Deleted path state from %s", _name.c_str());
 		delete timer;
-	}else if (session = (RSVPNodeSession *) sessionForResvStateTimer(timer)) {
+	} else if ((session = (RSVPNodeSession *) sessionForResvStateTimer(timer))) {
 		_resvStates.erase(find(_resvStates, *session));
 		click_chatter("Deleted resv state from %s", _name.c_str());
 	} // TODO

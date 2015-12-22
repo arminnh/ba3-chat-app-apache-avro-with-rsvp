@@ -1,5 +1,7 @@
 write host1/rsvp.name host1
 write host2/rsvp.name host2
+write router1/rsvp.name router1
+write router2/rsvp.name router2
 #write host1/rsvpipencap.dst 192.168.11.1
 #write host2/rsvpipencap.dst 192.168.10.1
 write host1/rsvp.session DEST 192.168.11.1, PROTOCOL 1, POLICE true, PORT 50
