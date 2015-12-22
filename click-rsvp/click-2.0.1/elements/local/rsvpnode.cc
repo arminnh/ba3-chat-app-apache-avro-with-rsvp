@@ -648,19 +648,28 @@ void RSVPNode::run_timer(Timer* timer) {
 	if (session = (RSVPNodeSession *) sessionForPathStateTimer(timer)) {
 		_pathStates.erase(find(_pathStates, *session));
 		click_chatter("Deleted path state from %s", _name.c_str());
-	}/*else if (session = (RSVPNodeSession *) sessionForResvStateTimer(timer)) {
+		delete timer;
+	}else if (session = (RSVPNodeSession *) sessionForResvStateTimer(timer)) {
 		_resvStates.erase(find(_resvStates, *session));
 		click_chatter("Deleted resv state from %s", _name.c_str());
-	} */ // TODO
+	} // TODO
 }
 
-const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer) {	
+const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer) const {	
 	for (HashTable<RSVPNodeSession, RSVPPathState>::const_iterator it = _pathStates.begin(); it != _pathStates.end(); it++) {
 		if (it->second.timer == timer) {
 			return &it->first;
 		}
 	}
-	
+	return NULL;
+}
+
+const RSVPNodeSession* RSVPNode::sessionForResvStateTimer(const Timer* timer) const {	
+	for (HashTable<RSVPNodeSession, RSVPResvState>::const_iterator it = _resvStates.begin(); it != _resvStates.end(); it++) {
+		if (it->second.timer == timer) {
+			return &it->first;
+		}
+	}
 	return NULL;
 }
 
