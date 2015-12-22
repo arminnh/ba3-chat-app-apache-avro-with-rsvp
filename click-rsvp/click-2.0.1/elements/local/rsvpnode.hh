@@ -270,7 +270,8 @@ public:
 	int initialize(ErrorHandler* errh);
 
 	void run_timer(Timer*);
-	const RSVPNodeSession* sessionForPathStateTimer(const Timer*);
+	const RSVPNodeSession* sessionForPathStateTimer(const Timer*) const;
+	const RSVPNodeSession* sessionForResvStateTimer(const Timer*) const;
 	
 	const char *class_name() const	{ return "RSVPNode"; }
 	const char *port_count() const	{ return "1/1"; }

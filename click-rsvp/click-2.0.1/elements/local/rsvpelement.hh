@@ -69,7 +69,7 @@ public:
 	WritablePacket* createResvConfMessage() const;
 	
 private:
-
+	bool _autoResv;
 	HashTable<RSVPNodeSession, RSVPPathState> _senders;
 
 	bool _application;

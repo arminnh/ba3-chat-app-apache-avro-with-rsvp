@@ -4,6 +4,7 @@
 #include <click/router.hh>
 #include "rsvpelement.hh"
 #include <stdexcept>
+#include <ctime>
 
 CLICK_DECLS
 
@@ -49,7 +50,8 @@ void RSVPElement::push(int, Packet *packet) {
 			session = * (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 			nodeSession = RSVPNodeSession(session);
 			
-			if (find(_pathStates, nodeSession) == _pathStates.end()) {
+			// if auto reservation is on, respond to the path message with a reservation message
+			if (find(_pathStates, nodeSession) == _pathStates.end() && _autoResv) {
 				click_chatter("didn't find nodeSession in _pathStates");
 				reply = replyToPathMessage(packet->clone());
 				output(0).push(reply);
@@ -118,6 +120,10 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 	click_chatter("replyToPathMessage: resvDestinationAddress: %s", IPAddress(resvDestinationAddress).unparse().c_str());
 	addIPHeader(resvMessage, resvDestinationAddress, _tos);
 
+	uint32_t refresh_period;
+	readRSVPTimeValues(&_timeValues, &refresh_period);
+	updateReservation(_session, _filterSpec, _flowspec, refresh_period);
+
 	pathMessage->kill();
 
 	return resvMessage;
@@ -132,9 +138,12 @@ RSVPElement::~ RSVPElement()
 int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 	_application = false;
 
+	_autoResv = true;
+
 	if (cp_va_kparse(conf, this, errh,
 		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
-		"APPLICATION", 0, cpBool, &_application, cpEnd) < 0) return -1;
+		"APPLICATION", 0, cpBool, &_application,
+		"AUTORESV", 0, cpBool, &_autoResv, cpEnd) < 0) return -1;
 
 	return 0;
 }
@@ -142,10 +151,10 @@ int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 int RSVPElement::initialize(ErrorHandler* errh) {
 	// _timer.initialize(this);
 
+	srand(time(NULL));
+
 	_tos = 0;
 	clean();
-
-	// _timer.schedule_after_msec(1000);
 
 	return 0;
 }
@@ -156,11 +165,12 @@ void RSVPElement::run_timer(Timer* timer) {
 	// figure out which session the timer belongs to
 	RSVPNodeSession* session;
 	
+	unsigned refresh_period; // TODO
+	
 	if (session = (RSVPNodeSession *) sessionForSenderTimer(timer)) {
 		sendPeriodicPathMessage(session);
+		timer->reschedule_after_msec(1000);
 	} else RSVPNode::run_timer(timer);
-	
-	//timer->reschedule_after_msec(1000);
 	
 	return;
 }
@@ -194,7 +204,7 @@ const RSVPNodeSession* RSVPElement::sessionForSenderTimer(const Timer* timer) co
 			return &it->first;
 		}
 	}
-	click_chatter("returning null");
+	click_chatter("%s: returning null", _name.c_str());
 	return NULL;
 }
 
@@ -290,12 +300,14 @@ int RSVPElement::resvConfObjectHandle(const String &conf, Element *e, void * thu
 int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
 	in_addr destinationIP = IPAddress("0.0.0.0");
+	bool refresh = true;
 	
 	readRSVPSession(&me->_session, &destinationIP, NULL, NULL, NULL);
 
 	//click_chatter("pathHandle: destinationIP: %s", IPAddress(destinationIP).unparse().c_str());
 	if (cp_va_kparse(conf, me, errh,
-		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL,
+		"REFRESH", 0, cpBool, &refresh, cpEnd) < 0) return -1;
 	
 	uint32_t r;
 	
@@ -309,7 +321,13 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 	
 	me->_senders.set(nodeSession, pathState);
 	
-	pathState.timer->schedule_now();
+	if (refresh) {
+		pathState.timer->schedule_now();
+	} else {
+		me->sendPeriodicPathMessage(&nodeSession);
+		me->_senders.erase(find(me->_senders, nodeSession));
+	}
+	
 	
 	//Element* classifier = me->router()->find("in_cl", me);
 	//click_chatter("find returned %p", (void*) classifier);
