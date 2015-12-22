@@ -29,14 +29,18 @@
         },
         "videoRequest": {
 	        "request": [],
-	        "response": "boolean"
+	        "response": "int"
+        },
+        "videoRequestAccepted": {
+	        "request": [],
+	        "response": "int"
         },
         "receiveImage": {
 	        "request": [{"name": "imgBytes", "type": "bytes"}],
 	        "response": "int"
         },
-        "hideFrame": {
-        	"request": [],
+        "setFrameVisible": {
+        	"request": [{"name": "visible", "type": "boolean"}],
         	"response": "int"
     	}
     }

@@ -3,6 +3,7 @@ verbinding met server nakijken
 verbinding met chat buddy nakijken
 "x" has stopped the video bericht
 geen request naar jezelf
+interrupt input prompt bij exceptions
 
 server offline -> boodschap in terminal
 	prive gesprek gaat voort

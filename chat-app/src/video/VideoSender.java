@@ -57,11 +57,11 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
     
     //====================================================================================================================
 
-    public VideoSender(File input, JFrame frame, Graphics g, AppClientInterface proxy) {
+    public VideoSender(File input, JFrame frame, AppClientInterface proxy) {
     	this.input = input;
         this.frame = frame;
-        this.g = g;
         this.proxy = proxy;
+        this.g = this.frame.getGraphics();
         
         // create a media reader for processing video
         this.reader = ToolFactory.makeReader(input.getAbsolutePath());
@@ -140,10 +140,11 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
         		try {
         			ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 	ImageIO.write(img,  "jpg",  bos);
-            		this.proxy.receiveImage(ByteBuffer.wrap(bos.toByteArray()));
-        		} catch (Exception e) {
-        			e.printStackTrace();
-        		}
+            		proxy.receiveImage(ByteBuffer.wrap(bos.toByteArray()));
+        		} catch (IOException e) {
+        			// other user has disconnected, stop sending video
+        			frame.setVisible(false);
+        		} 
             }
         } catch (Exception e) {
         	e.printStackTrace();
@@ -157,11 +158,11 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
 	public void run() {
 		this.send();
 
-		/*frame.setVisible(false);
+		frame.setVisible(false);
 		try {
-			proxy.hideFrame();
-		} catch (AvroRemoteException e) {
-			e.printStackTrace();
-		}*/
+			proxy.setFrameVisible(false);
+		} catch (IOException e) {
+			System.err.println("The other user has disconnected, stopping video.");
+		}
 	}
 }
