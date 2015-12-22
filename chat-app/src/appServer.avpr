@@ -7,6 +7,11 @@
 		"type": "enum",
 		"name": "ClientStatus",
 		"symbols": ["LOBBY", "PUBLIC", "PRIVATE"]
+	},
+    {
+		"type": "enum",
+		"name": "RequestStatus",
+		"symbols": ["PENDING", "ACCEPTED", "DECLINED", "DELETED"]
 	}],
     
     "messages" : {
@@ -58,8 +63,8 @@
 	        "request": [{"name": "username", "type": "string"}],
 	        "response": {"name": "list", "type": "string"}
         },
-        "isRequestPending": {
-        	"request": [{"name": "username", "type": "string"}],
+        "isRequestStatus": {
+        	"request": [{"name": "username", "type": "string"}, {"name": "state", "type": "server.RequestStatus"}],
         	"response": "boolean"
     	}
     }

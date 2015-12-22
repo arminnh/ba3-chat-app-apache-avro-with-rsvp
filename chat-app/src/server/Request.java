@@ -1,7 +1,5 @@
 package server;
 
-enum RequestStatus {pending, accepted, declined, deleted};
-
 public class Request {
 	private String from, to;
 	private RequestStatus status;

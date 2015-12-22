@@ -1,10 +1,12 @@
-package client;
+package video;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 
 import javax.imageio.ImageIO;
+
+import client.AppClientInterface;
 
 public class FrameSender implements Runnable {
 	

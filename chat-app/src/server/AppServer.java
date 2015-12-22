@@ -110,7 +110,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		}
 		
 		if (this.clients.containsKey(username2.toString())) {
-			this.requests.add(new Request(username1.toString(), username2.toString(), RequestStatus.pending));
+			this.requests.add(new Request(username1.toString(), username2.toString(), RequestStatus.PENDING));
 			this.clients.get(username2.toString()).proxy.receiveMessage("You have received a private chat request from " + username1.toString() + ".");
 			return 0;
 		}
@@ -163,7 +163,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			if (requester.status != ClientStatus.PRIVATE) {
 				System.out.println("Accepter: " + to.toString() + " Requester: " + from.toString());
 
-				r.setStatus(RequestStatus.accepted);
+				r.setStatus(RequestStatus.ACCEPTED);
 				requester.proxy.receiveMessage(to.toString() + " has accepted your request.");
 
 				System.out.println(requester.clientIP);
@@ -181,7 +181,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			}
 		} else {
 			requester.proxy.receiveMessage(to.toString() + " has declined your request.");
-			r.setStatus(RequestStatus.declined);
+			r.setStatus(RequestStatus.DECLINED);
 			this.removeRequest(from.toString(), to.toString());
 			
 			return 0;
@@ -212,9 +212,10 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	}
 
 	@Override
-	public boolean isRequestPending(CharSequence username) throws AvroRemoteException {
+	public boolean isRequestStatus(CharSequence username, RequestStatus status) throws AvroRemoteException {
 		for (Request r : this.requests) {
-			if (r.getTo().equals(username.toString())) {
+			System.out.println(r.getStatus() + ", " + status);
+			if (r.getFrom().equals(username.toString()) && r.getStatus() == status) {
 				return true;
 			}
 		}

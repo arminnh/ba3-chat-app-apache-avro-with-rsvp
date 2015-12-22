@@ -19,6 +19,7 @@ import org.apache.avro.ipc.*;
 import org.apache.avro.ipc.specific.*;
 
 import server.*;
+import video.*;
 import errorwriter.ErrorWriter;
 
 public class AppClient implements AppClientInterface, Runnable {
@@ -30,9 +31,10 @@ public class AppClient implements AppClientInterface, Runnable {
 	
 	private ClientInfo privateChatClient;
 	private boolean privateChatClientArrived = false;
-	
-	private JFrame frame = new JFrame();
-	private Graphics g = null;
+
+	private JFrame senderFrame;
+	private JFrame receiverFrame;
+	private Graphics senderG, receiverG;
 
 	//======================================================================================
 
@@ -40,6 +42,16 @@ public class AppClient implements AppClientInterface, Runnable {
 		this.appServer = a;
 		this.clientIP = clientIP;
 		this.clientPort = clientPort;
+
+		this.senderFrame = new JFrame();
+		this.senderFrame.getContentPane().add(new JPanel(new BorderLayout()));
+		this.senderFrame.setBounds(250,  250,  400,  300);
+		this.senderG = this.senderFrame.getGraphics();
+		
+		this.receiverFrame = new JFrame();
+		this.receiverFrame.getContentPane().add(new JPanel(new BorderLayout()));
+		this.receiverFrame.setBounds(750,  250,  400,  300);
+		this.receiverG = this.receiverFrame.getGraphics();
 	}
 
 	/*
@@ -106,7 +118,7 @@ public class AppClient implements AppClientInterface, Runnable {
 				this.privateChatClient.proxy.receiveMessage(this.username.toString() + " has accepted the video request.");
 
 				// set up the frame for the receiving side
-				this.setFrameAndGraphics(500, 25, 400, 300);
+				this.setFrameAndGraphics(500, 25, 400, 300, false);
 				return true;
 			}
 		} catch (IOException e) {
@@ -125,7 +137,7 @@ public class AppClient implements AppClientInterface, Runnable {
 			ByteArrayInputStream bis = new ByteArrayInputStream(imgBytes.array());
 			Image img = ImageIO.read(bis);
 
-			g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
+			this.receiverG.drawImage(img, 0, 0, this.receiverFrame.getWidth(), this.receiverFrame.getHeight(), null);
 
 			return 0;
 		} catch (IOException e) {
@@ -135,8 +147,8 @@ public class AppClient implements AppClientInterface, Runnable {
 	}
 
 	public int destroyFrame() throws AvroRemoteException {
-		frame.setVisible(false);
-		frame.dispose();
+		this.receiverFrame.setVisible(false);
+		//this.receiverFrame.dispose();
 
 		return 0;
 	}
@@ -210,7 +222,7 @@ public class AppClient implements AppClientInterface, Runnable {
 
 	@Command
 	public void startPrivateChat() throws AvroRemoteException {
-		if (!this.appServer.isRequestPending(this.username)) {
+		if (!this.appServer.isRequestStatus(this.username, RequestStatus.ACCEPTED)) {
 			ErrorWriter.printError(11);
 			return;
 		}
@@ -259,7 +271,7 @@ public class AppClient implements AppClientInterface, Runnable {
 				if (input.matches("(\\?)list")) {
 					System.out.println("To get the list of connected users: ?getListOfUsers or ?glou");
 					System.out.println("To leave the chatroom:              ?leave or ?q");
-					if (this.appServer.isRequestPending(this.username))
+					if (this.appServer.isRequestStatus(this.username, RequestStatus.ACCEPTED))
 						System.out.println("To start the private chat:          ?joinPrivateChat or ?jpc");
 					if (this.status == ClientStatus.PRIVATE) {
 						System.out.println("To send a video request:            ?video");
@@ -271,7 +283,7 @@ public class AppClient implements AppClientInterface, Runnable {
 					this.getListOfUsers();
 
 					// go to the private chat
-				} else if (input.matches("(\\?)(joinprivatechat|jprc|jpc|spc)") && this.appServer.isRequestPending(this.username)) {
+				} else if (input.matches("(\\?)(joinprivatechat|jprc|jpc|spc)") && this.appServer.isRequestStatus(this.username, RequestStatus.ACCEPTED)) {
 					System.out.println("Left the public chatroom.\nJoined private chat with " + this.privateChatClient.username + ".");
 					this.setStatus(ClientStatus.PRIVATE);
 
@@ -334,26 +346,57 @@ public class AppClient implements AppClientInterface, Runnable {
 	}
 
 	private void sendVideo() throws AvroRemoteException {
-		this.setFrameAndGraphics(25, 25, 400, 300);
-
-		VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, g, this.privateChatClient.proxy);
+		this.setFrameAndGraphics(25, 25, 400, 300, true);
+		VideoFileChooser fc = new VideoFileChooser();
+		
+		//VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, g, this.privateChatClient.proxy);
 		//VideoSender videoSender = new VideoSender(new File("small.ogv"), frame, this.g, this.privateChatClient.proxy);
 		//VideoSender videoSender = new VideoSender(new File("sample_mpeg4.mp4"), frame, this.g, this.privateChatClient.proxy);
 		//VideoSender videoSender = new VideoSender(new File("ArchitectVideo_512kb.mp4"), frame, this.g, this.privateChatClient.proxy);
 		//VideoSender videoSender = new VideoSender(new File("ArchitectVideo_dvd.mpg"), this.frame, this.g, this.privateChatClient.proxy);
+		VideoSender videoSender = new VideoSender(fc.getFile(), this.senderFrame, this.senderG, this.privateChatClient.proxy);
 		Thread sender = new Thread(videoSender);
 		sender.start();
 	}
 
-	private void setFrameAndGraphics(int x, int y, int width, int height) {
-		JPanel contentPane = new JPanel(new BorderLayout());
+	private void setFrameAndGraphics(int x, int y, int width, int height, boolean sending) {
+		//JPanel contentPane = new JPanel(new BorderLayout());
 
-		frame = new JFrame();
+		/*JFrame frame = sending ? this.senderFrame : this.receiverFrame;
+		Graphics g = sending ? this.senderG : this.receiverG;
+		
 		frame.getContentPane().add(contentPane);
+		// if there is no frame on screen yet
 		frame.setBounds(x,  y,  width,  height);
 		frame.setVisible(true);
-
 		g = frame.getGraphics();
+		if (sending) {
+			this.senderG = this.senderFrame.getGraphics();
+		} else {
+			this.receiverG = this.receiverFrame.getGraphics();
+		}*/
+		if (sending) {
+			this.senderFrame.setVisible(true);
+		} else {
+			this.receiverFrame.setVisible(false);
+		}
+		
+
+
+		/*if (sending) {
+			this.senderFrame = new JFrame();
+			this.senderFrame.getContentPane().add(contentPane);
+			this.senderFrame.setBounds(x+width+50,  y+height+50,  width,  height);
+			this.senderFrame.setVisible(true);
+			this.senderG = this.senderFrame.getGraphics();
+			
+		} else {
+			this.receiverFrame = new JFrame();
+			this.receiverFrame.getContentPane().add(contentPane);
+			this.receiverFrame.setBounds(x,  y,  width,  height);
+			this.receiverFrame.setVisible(true);
+			this.receiverG = this.receiverFrame.getGraphics();
+		}*/
 	}
 
 	// function that will be ran periodically by a Timer
@@ -372,11 +415,11 @@ public class AppClient implements AppClientInterface, Runnable {
 			serverIP = argv[1];
 			System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP + " from command line argumets");
 		} else {
-			System.out.println("Enter the IP address of the server.");
+			/*System.out.println("Enter the IP address of the server.");
 			serverIP = in.nextLine();
 			System.out.println("Enter the IP address the server will need to connect to.");
 			clientIP = in.nextLine();
-			System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP);
+			System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP);*/
 		}
 
 		Server clientResponder = null;

@@ -7,6 +7,7 @@ import org.apache.avro.ipc.specific.SpecificRequestor;
 
 import client.AppClientInterface;
 
+
 public class ClientInfo {
 	public String username;
 	public ClientStatus status;

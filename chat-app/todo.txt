@@ -2,6 +2,7 @@ video file kunnen kiezen
 verbinding met server nakijken
 verbinding met chat buddy nakijken
 "x" has stopped the video bericht
+geen request naar jezelf
 
 server offline -> boodschap in terminal
 	prive gesprek gaat voort
@@ -19,7 +20,7 @@ Verbinding use cases:
 	2. user is in public chat -> a, b
 	3. user is in private chat
 		3.1 disconnected met server	-> a 
-		3.2 disconnecter met user	-> a, b
+		3.2 disconnected met user	-> a, b
 			-> bij verlaten van chatroom (?q of ?jpc) naar (1) sturen 
 		
  a. trying to reconnect message & kan geen commands uitvoeren
