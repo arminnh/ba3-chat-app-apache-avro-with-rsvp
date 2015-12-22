@@ -53,7 +53,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		// remove all requests with the client, then remove them from the clients map
 		if (this.removeRequestsWithUser(username.toString()) ||
 			this.clients.remove(username.toString()) != null) {
-			return 1;
+			return 2;
 		}
 		
 		this.printClientList();
@@ -81,7 +81,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			return 0;
 		}
 		
-		return 1;
+		return 3;
 	}
 
 	@Override
@@ -98,6 +98,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 				client.getValue().proxy.receiveMessage(time + " " + username + ": " + message);
 			}
 		}
+		
 		return 0;
 	}
 
@@ -105,7 +106,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	public int sendRequest(CharSequence username1, CharSequence username2) throws AvroRemoteException {
 		// if request already exists, return error value
 		if (this.getRequest(username1, username2) != null) {
-			return 1;
+			return 4;
 		}
 		
 		if (this.clients.containsKey(username2.toString())) {
@@ -115,7 +116,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		}
 
 		// if user does not exist, return error value
-		return 2;
+		return 3;
 	}
 
 	@Override
@@ -125,7 +126,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			return 0;
 		}
 		
-		return 1;
+		return 5;
 	}
 
 	@Override
@@ -140,7 +141,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			}
 		}
 		
-		return 1;
+		return 6;
 	}
 
 	@Override
@@ -150,7 +151,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 
 		// if request does not exist
 		if (r == null) {
-			return 1;
+			return 5;
 		}
 
 		ClientInfo requester = this.clients.get(from.toString());
@@ -176,7 +177,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 				this.removeRequest(from.toString(), to.toString());
 				this.sendRequest(to, from);
 				
-				return 2;
+				return 7;
 			}
 		} else {
 			requester.proxy.receiveMessage(to.toString() + " has declined your request.");
@@ -191,6 +192,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	public CharSequence getMyRequests(CharSequence username) throws AvroRemoteException {
 		String clientUsername = username.toString();
 		CharSequence requests = "Requests:\n\t";
+		boolean hasRequests = false;
 
 		for (Request r : this.requests) {
 			if (r.getFrom().equals(clientUsername) || r.getTo().equals(clientUsername)) {
@@ -198,7 +200,12 @@ public class AppServer extends TimerTask implements AppServerInterface {
 				String from = r.getFrom().equals(clientUsername) ? "  to: " : "from: ";
 
 				requests = requests + from + user + ", Status: " + r.getStatus().toString() + "\n\t";
+				hasRequests = true;
 			}
+		}
+		
+		if (!hasRequests) {
+			requests = requests + "No requests";
 		}
 
 		return requests;
