@@ -282,7 +282,7 @@ public:
 	int configure(Vector<String>&, ErrorHandler*);
 	void add_handlers();
 
-	void addIPHeader(WritablePacket*, in_addr dst_ip, uint8_t tos=0);
+	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip=IPAddress("0.0.0.0"), uint8_t tos=0);
 protected:
 
 	int _tos;
