@@ -54,6 +54,7 @@ void RSVPElement::push(int, Packet *packet) {
 			if (find(_pathStates, nodeSession) == _pathStates.end() && _autoResv) {
 				click_chatter("didn't find nodeSession in _pathStates");
 				reply = replyToPathMessage(packet->clone());
+				click_chatter("%s: sending reply to path message of size %d, data pointer %p, packet pointer %p", _name.c_str(), reply->length(), (void*) reply->data(), (void*) reply);
 				output(0).push(reply);
 			}
 			//_pathStates.set(nodeSession, pathState);
@@ -113,7 +114,10 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 
 		// reserve the capacity the sender provides
 		_filterSpec = *senderTemplate;
+		initRSVPObjectHeader(&_filterSpec.header, RSVP_CLASS_FILTER_SPEC, 2);
 		initRSVPFlowspec(&_flowspec, senderTSpec);
+		click_chatter("_filterSpec class num: %d", _filterSpec.header.class_num);
+		click_chatter("_flowspec class num: %d", _flowspec.header.class_num);
 	}
 
 	WritablePacket* resvMessage = createResvMessage();
@@ -125,7 +129,7 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 	updateReservation(_session, _filterSpec, _flowspec, refresh_period);
 
 	pathMessage->kill();
-
+click_chatter("::replyToPathMessage: data pointer: %p, packet pointer %p", (void*) resvMessage->data(), (void*) resvMessage);
 	return resvMessage;
 }
 
@@ -167,7 +171,7 @@ void RSVPElement::run_timer(Timer* timer) {
 	
 	unsigned refresh_period; // TODO
 	
-	if (session = (RSVPNodeSession *) sessionForSenderTimer(timer)) {
+	if ((session = (RSVPNodeSession *) sessionForSenderTimer(timer))) {
 		sendPeriodicPathMessage(session);
 		timer->reschedule_after_msec(1000);
 	} else RSVPNode::run_timer(timer);
