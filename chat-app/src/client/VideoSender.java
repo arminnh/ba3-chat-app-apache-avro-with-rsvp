@@ -57,14 +57,15 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
     
     //====================================================================================================================
 
-    public VideoSender(File Input, JFrame frame, AppClientInterface proxy) {
+    public VideoSender(File Input, JFrame frame, Graphics g, AppClientInterface proxy) {
     	this.input = Input;
         this.frame = frame;
-        this.g = frame.getGraphics();
+        this.g = g;
         this.proxy = proxy;
-    	bos = new ByteArrayOutputStream();
+        
+    	this.bos = new ByteArrayOutputStream();
     	try {
-			out = new ObjectOutputStream(bos);
+			this.out = new ObjectOutputStream(this.bos);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -87,11 +88,11 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
             do { } while (false);
         }
 
-        System.out.println("Seconds between frames: " + SECONDS_BETWEEN_FRAMES);
+        /*System.out.println("Seconds between frames: " + SECONDS_BETWEEN_FRAMES);
         System.out.println("Microseconds between frames: " + MICRO_SECONDS_BETWEEN_FRAMES);
         System.out.println("Time of last frame write: " + mLastPtsWrite);
         System.out.println("DEFAULT_PTS_PER_SECOND: " + Global.DEFAULT_PTS_PER_SECOND);
-        System.out.println("Video stream index: " + mVideoStreamIndex);
+        System.out.println("Video stream index: " + mVideoStreamIndex);*/
     }
     
 
@@ -100,7 +101,7 @@ public class VideoSender extends MediaListenerAdapter implements Runnable {
      * if the calling IMediaReader instance was configured to create BufferedImages. This method blocks, so return quickly.
      */
     public void onVideoPicture(IVideoPictureEvent event) {
-    	System.out.println("Frame nr: " + CAPTURED_FRAMES);
+    	//System.out.println("Frame nr: " + CAPTURED_FRAMES);
     	
     	/*try {
     		Thread.sleep((long) reader.getContainer().getStream(mVideoStreamIndex).getFrameRate().getValue());

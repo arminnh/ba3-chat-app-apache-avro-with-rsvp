@@ -2,7 +2,6 @@ package server;
 
 import java.io.IOException;
 import java.net.*;
-import org.apache.avro.AvroRemoteException;
 import org.apache.avro.ipc.*;
 import org.apache.avro.ipc.specific.SpecificRequestor;
 
@@ -25,14 +24,11 @@ public class ClientInfo {
 			addr = InetAddress.getByName(ipaddress.toString());
 			this.address = new InetSocketAddress(addr, port);
 			this.transceiver = new SaslSocketTransceiver(this.address);
-			
-			System.out.println("Transceiver isConnected: " + this.transceiver.isConnected());
 			this.proxy = (AppClientInterface) SpecificRequestor.getClient(AppClientInterface.class, this.transceiver);
-			
-			System.out.println("Transceiver isConnected: " + this.transceiver.isConnected());
-		} catch (UnknownHostException e) {	//InetAddress.getByName
+
+		} catch (UnknownHostException e) { // InetAddress.getByName
 			e.printStackTrace();
-		}catch (IOException e) {			//SaslSocketTransceiver and SpecificRequestor
+		} catch (IOException e) { // SaslSocketTransceiver and SpecificRequestor
 			e.printStackTrace();
 		}
 	}
