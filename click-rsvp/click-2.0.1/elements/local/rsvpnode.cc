@@ -496,6 +496,8 @@ void RSVPNode::push(int port, Packet* packet) {
 	srcIP = ip_header->ip_src;
 	dstIP = ip_header->ip_dst;
 	
+	packet->pull(sizeof(click_ip));
+	
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
 	WritablePacket* forward;
@@ -506,6 +508,14 @@ void RSVPNode::push(int port, Packet* packet) {
 	
 	if (msg_type == RSVP_MSG_PATH) {
 		forward = updatePathState(packet->clone());
+		if (!forward) {
+			click_chatter("forward is not");
+		} else {
+			click_chatter("forward is");
+			click_chatter("data pointer forward: %p", (void*) forward->data());
+			click_chatter("data pointer incoming packet: %p", (void*) packet->data());
+		}
+		
 		addIPHeader(forward, dstIP, srcIP, _tos);
 		
 		packet->kill();
@@ -517,8 +527,9 @@ void RSVPNode::push(int port, Packet* packet) {
 		readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
 		
 		updateReservation(*session, *filterSpec, *flowspec, refresh_period_r);
-
+		
 		forward = packet->uniqueify();
+		
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		addIPHeader(forward, hop->IPv4_next_previous_hop_address, IPAddress("0.0.0.0"), _tos);
 		hop->IPv4_next_previous_hop_address = _myIP;
@@ -533,6 +544,7 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	//click_chatter("packet %p entering updatePathState", (void *) packet);
 	//click_chatter("updatePathState: start");
 	WritablePacket* wp = packet->uniqueify();
+	click_chatter("::updatePathState: wp data: %p", wp->data());
 
 	//click_chatter("packet, after uniquefying: %p", (void *) packet);
 	const void* p = packet->data();
@@ -691,7 +703,7 @@ int RSVPNode::nameHandle(const String &conf, Element *e, void *thunk, ErrorHandl
 
 int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {
 	if (cp_va_kparse(conf, this, errh, 
-		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
+		"IP", cpkP, cpIPAddress, &_myIP,
 		cpEnd) < 0) return -1;
 	return 0;
 }
@@ -709,6 +721,7 @@ void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, ui
 	int transportSize = p->transport_header() ? p->end_data() - p->transport_header() : p->length();
 
 	if (p->data() != p->network_header() || p->network_header() == 0) {
+		click_chatter("data pointer: %p, network_header pointer: %p", (void*) p->data(), (void*)p->network_header());
 		p = p->push(sizeof(click_ip));
 	}
 	//p->set_network_header(p->data(), sizeof(click_ip));
