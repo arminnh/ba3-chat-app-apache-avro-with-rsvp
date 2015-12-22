@@ -15,12 +15,17 @@ elementclass Router {
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
+		-> rsvp_cl::IPClassifier(proto 46, -)[1]
 		-> rt :: StaticIPLookup(
 			$lan_address/32 0,
 			$wan_address/32 0,
 			$lan_address:ipnet 1,
 			$wan_address:ipnet 2,
 			0.0.0.0/0 $default_gw 2);
+
+	rsvp_cl[0]
+		-> rsvp::RSVPNode()
+		-> rt;
 
 	// ARP responses are copied to each ARPQuerier.
 	arpt :: Tee(2);

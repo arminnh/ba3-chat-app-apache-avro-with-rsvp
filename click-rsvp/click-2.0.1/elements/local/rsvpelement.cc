@@ -118,7 +118,7 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 
 	WritablePacket* resvMessage = createResvMessage();
 	click_chatter("replyToPathMessage: resvDestinationAddress: %s", IPAddress(resvDestinationAddress).unparse().c_str());
-	addIPHeader(resvMessage, resvDestinationAddress, _tos);
+	addIPHeader(resvMessage, resvDestinationAddress, _myIP, _tos);
 
 	uint32_t refresh_period;
 	readRSVPTimeValues(&_timeValues, &refresh_period);
@@ -192,7 +192,7 @@ void RSVPElement::sendPeriodicPathMessage(const RSVPNodeSession* session) {
 
 	WritablePacket* message = createPathMessage(&packetSession,
 		&hop, &timeValues, &pathState.senderTemplate, &pathState.senderTSpec);
-	addIPHeader(message, session->_dst_ip_address, (uint8_t) _tos);
+	addIPHeader(message, session->_dst_ip_address, _myIP, (uint8_t) _tos);
 	output(0).push(message);
 }
 
@@ -204,7 +204,7 @@ const RSVPNodeSession* RSVPElement::sessionForSenderTimer(const Timer* timer) co
 			return &it->first;
 		}
 	}
-	click_chatter("%s: returning null", _name.c_str());
+
 	return NULL;
 }
 
@@ -345,7 +345,7 @@ int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorH
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvMessage();
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -361,7 +361,7 @@ int RSVPElement::pathErrHandle(const String &conf, Element *e, void * thunk, Err
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createPathErrMessage();
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -378,7 +378,7 @@ int RSVPElement::resvErrHandle(const String &conf, Element *e, void * thunk, Err
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvErrMessage();
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -395,7 +395,7 @@ int RSVPElement::pathTearHandle(const String &conf, Element *e, void * thunk, Er
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createPathTearMessage();
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -412,7 +412,7 @@ int RSVPElement::resvTearHandle(const String &conf, Element *e, void * thunk, Er
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvTearMessage();
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -429,7 +429,7 @@ int RSVPElement::resvConfHandle(const String &conf, Element *e, void * thunk, Er
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvConfMessage();
-	me->addIPHeader(message, destinationIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();

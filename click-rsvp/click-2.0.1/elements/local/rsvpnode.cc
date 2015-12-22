@@ -491,16 +491,32 @@ void RSVPNode::push(int port, Packet* packet) {
 	click_chatter("RSVPNode: Got a packet of size %d", packet->length());
 	// packet analysis
 	
+	in_addr srcIP, dstIP;
+	click_ip* ip_header = (click_ip *) (packet->network_header());
+	srcIP = ip_header->ip_src;
+	dstIP = ip_header->ip_dst;
+	
+	packet->pull(sizeof(click_ip));
+	
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
 	WritablePacket* forward;
 	
-	readRSVPCommonHeader((RSVPCommonHeader*) packet->data(), &msg_type, &send_TTL, &length);
+	readRSVPCommonHeader((RSVPCommonHeader*) packet->transport_header(), &msg_type, &send_TTL, &length);
 
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 	
 	if (msg_type == RSVP_MSG_PATH) {
 		forward = updatePathState(packet->clone());
+		if (!forward) {
+			click_chatter("forward is not");
+		} else {
+			click_chatter("forward is");
+			click_chatter("data pointer forward: %p", (void*) forward->data());
+			click_chatter("data pointer incoming packet: %p", (void*) packet->data());
+		}
+		
+		addIPHeader(forward, dstIP, srcIP, _tos);
 		
 		packet->kill();
 		output(0).push(forward);
@@ -511,10 +527,11 @@ void RSVPNode::push(int port, Packet* packet) {
 		readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
 		
 		updateReservation(*session, *filterSpec, *flowspec, refresh_period_r);
-
+		
 		forward = packet->uniqueify();
+		
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
-		addIPHeader(forward, hop->IPv4_next_previous_hop_address, _tos);
+		addIPHeader(forward, hop->IPv4_next_previous_hop_address, IPAddress("0.0.0.0"), _tos);
 		hop->IPv4_next_previous_hop_address = _myIP;
 
 		packet->kill();
@@ -527,6 +544,7 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	//click_chatter("packet %p entering updatePathState", (void *) packet);
 	//click_chatter("updatePathState: start");
 	WritablePacket* wp = packet->uniqueify();
+	click_chatter("::updatePathState: wp data: %p", wp->data());
 
 	//click_chatter("packet, after uniquefying: %p", (void *) packet);
 	const void* p = packet->data();
@@ -572,7 +590,7 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	// schedule new timer
 	pathState.timer = new Timer(this);
 	pathState.timer->initialize(this);
-	pathState.timer->schedule_after_sec(refresh_period_r); // TODO: change !!!11
+	pathState.timer->schedule_after_sec(refresh_period_r); //updatereser TODO: change !!!11
 	
 	// add new / updated path state to path state table
 	_pathStates.set(nodeSession, pathState);
@@ -685,7 +703,7 @@ int RSVPNode::nameHandle(const String &conf, Element *e, void *thunk, ErrorHandl
 
 int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {
 	if (cp_va_kparse(conf, this, errh, 
-		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
+		"IP", cpkP, cpIPAddress, &_myIP,
 		cpEnd) < 0) return -1;
 	return 0;
 }
@@ -694,10 +712,18 @@ void RSVPNode::add_handlers() {
 	add_write_handler("name", &nameHandle, (void *) 0);
 }
 
-void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, uint8_t tos) {
-	int transportSize = p->length();
+void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, uint8_t tos) {
+	if (IPAddress(src_ip) == IPAddress("0.0.0.0")) {
+		p->set_user_anno_i(3, 1);
+		src_ip = _myIP;
+	}
 
-	p = p->push(sizeof(click_ip));
+	int transportSize = p->transport_header() ? p->end_data() - p->transport_header() : p->length();
+
+	if (p->data() != p->network_header() || p->network_header() == 0) {
+		click_chatter("data pointer: %p, network_header pointer: %p", (void*) p->data(), (void*)p->network_header());
+		p = p->push(sizeof(click_ip));
+	}
 	//p->set_network_header(p->data(), sizeof(click_ip));
 
 	struct click_ip* ip = (click_ip *) p->data();
@@ -712,7 +738,7 @@ void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, uint8_t tos) {
 	ip->ip_off = 0;
 	ip->ip_ttl = 200;
 	ip->ip_p = 46; // RSVP
-	ip->ip_src = _myIP;
+	ip->ip_src = src_ip;
 	ip->ip_dst = dst_ip;
 	p->set_dst_ip_anno(dst_ip);
 
