@@ -9,8 +9,6 @@ import org.apache.avro.ipc.*;
 import org.apache.avro.ipc.specific.*;
 import org.apache.avro.AvroRemoteException;
 
-import client.AppClientInterface;
-
 public class AppServer extends TimerTask implements AppServerInterface {
 	private Map<String, ClientInfo> clients = new HashMap<String, ClientInfo>();
 	private List<Request> requests = new ArrayList<Request>();
@@ -142,7 +140,6 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	}
 
 	@Override
-	//TODO: TESTEN OF JUIST IS
 	public int requestResponse(CharSequence from, CharSequence to, boolean responseBool) throws AvroRemoteException {
 		System.out.println("Entered requestResponse");
 		Request r = this.getRequest(from, to);
@@ -161,7 +158,6 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			if (requester.status != ClientStatus.PRIVATE) {
 				System.out.println("Accepter: " + to.toString() + " Requester: " + from.toString());
 
-				//TODO: remove the request somewhere, see appClient.respondRequest
 				r.setStatus(RequestStatus.accepted);
 				requester.proxy.receiveMessage(to.toString() + " has accepted your request.");
 
@@ -204,6 +200,17 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		}
 
 		return requests;
+	}
+
+	@Override
+	public boolean isRequestPending(CharSequence username) throws AvroRemoteException {
+		for (Request r : this.requests) {
+			if (r.getTo().equals(username.toString())) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
 	/*

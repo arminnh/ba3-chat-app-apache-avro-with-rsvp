@@ -55,8 +55,12 @@
 	        "response": "int"
         },
         "getMyRequests": {
-	        "request": [{"name":"username", "type": "string"}],
+	        "request": [{"name": "username", "type": "string"}],
 	        "response": {"name": "list", "type": "string"}
-        }
+        },
+        "isRequestPending": {
+        	"request": [{"name": "username", "type": "string"}],
+        	"response": "boolean"
+    	}
     }
 }

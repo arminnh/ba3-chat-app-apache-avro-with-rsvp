@@ -1,6 +1,8 @@
+join private chat kan niet als er geen inv is
 video file kunnen kiezen
 verbinding met server nakijken
 verbinding met chat buddy nakijken
+"x" has stopped the video bericht
 
 server offline -> boodschap in terminal
 	prive gesprek gaat voort
