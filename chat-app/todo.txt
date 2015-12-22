@@ -1,4 +1,3 @@
-video file kunnen kiezen
 verbinding met server nakijken
 verbinding met chat buddy nakijken
 "x" has stopped the video bericht
