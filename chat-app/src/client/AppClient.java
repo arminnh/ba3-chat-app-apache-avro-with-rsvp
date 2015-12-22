@@ -398,7 +398,7 @@ public class AppClient implements AppClientInterface, Runnable {
 
 	// function that will be ran periodically by a Timer
 	public void run() {
-		
+		//if video is playing and user dc -> frame invisible
 	}
 
 	public static void main(String[] argv) {
