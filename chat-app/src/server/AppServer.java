@@ -108,10 +108,14 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			return 1;
 		}
 		
-		this.requests.add(new Request(username1.toString(), username2.toString(), RequestStatus.pending));
-		this.clients.get(username2.toString()).proxy.receiveMessage("You have received a private chat request from " + username1.toString() + ".");
-		
-		return 0;
+		if (this.clients.containsKey(username2.toString())) {
+			this.requests.add(new Request(username1.toString(), username2.toString(), RequestStatus.pending));
+			this.clients.get(username2.toString()).proxy.receiveMessage("You have received a private chat request from " + username1.toString() + ".");
+			return 0;
+		}
+
+		// if user does not exist, return error value
+		return 2;
 	}
 
 	@Override
@@ -161,11 +165,9 @@ public class AppServer extends TimerTask implements AppServerInterface {
 				r.setStatus(RequestStatus.accepted);
 				requester.proxy.receiveMessage(to.toString() + " has accepted your request.");
 
-				String[] ipAndPort = requester.address.toString().split(":");
-				accepter.proxy.setPrivateChatClient(from, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
-				
-				ipAndPort = accepter.address.toString().split(":");
-				requester.proxy.setPrivateChatClient(to, (CharSequence) ipAndPort[0], Integer.parseInt(ipAndPort[1]));
+				System.out.println(requester.clientIP);
+				accepter.proxy.setPrivateChatClient(from, requester.clientIP, requester.clientPort);
+				requester.proxy.setPrivateChatClient(to, accepter.clientIP, accepter.clientPort);
 				
 				return 0;
 			} else {
@@ -230,6 +232,15 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		
 		return removed;
 	}
+	
+	public Request getRequest(CharSequence from, CharSequence to) {
+		for (Request r : this.requests) {
+			if (r.getFrom().equals(from.toString()) && r.getTo().equals(to.toString())) {
+				return r;
+			}
+		}
+		return null;
+	}
 
 	public void printClientList() {
 		System.out.println("List of registered clients:");
@@ -259,16 +270,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	public void run() {
 		this.checkConnectedList();
 	}
-
-	public Request getRequest(CharSequence from, CharSequence to) {
-		for (Request r : this.requests) {
-			if (r.getFrom().equals(from.toString()) && r.getTo().equals(to.toString())) {
-				return r;
-			}
-		}
-		return null;
-	}
-
+	
 	public static void main(String[] argv) { 
 		Server server = null;
 		AppServer appServer = new AppServer();

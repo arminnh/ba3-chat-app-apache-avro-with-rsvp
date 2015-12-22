@@ -20,7 +20,7 @@ import org.apache.avro.ipc.specific.*;
 
 import server.*;
 
-public class AppClient implements AppClientInterface {
+public class AppClient implements AppClientInterface, Runnable {
 	private CharSequence username;
 	private ClientStatus status;
 	private String clientIP, serverIP;
@@ -64,7 +64,7 @@ public class AppClient implements AppClientInterface {
 
 	@Override
 	public int setPrivateChatClient(CharSequence username, CharSequence ipaddress, int port) {
-		ipaddress = ipaddress.toString().subSequence(1, ipaddress.length());
+		//ipaddress = ipaddress.toString().subSequence(1, ipaddress.length());
 		System.out.println("SetPrivateChatClient: ip address for " + username.toString() + " = " + ipaddress.toString() + ":" + port);
 		ClientInfo client = new ClientInfo(username, ipaddress, port);
 
@@ -167,7 +167,13 @@ public class AppClient implements AppClientInterface {
 
 	@Command
 	public void sendRequest(String username) throws AvroRemoteException {
-		this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
+		int response = this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
+		
+		if (response == 1) {
+			
+		} else if (response == 2) {
+			
+		}
 	}
 
 	@Command
@@ -326,11 +332,11 @@ public class AppClient implements AppClientInterface {
 	private void sendVideo() throws AvroRemoteException {
 		this.setFrameAndGraphics(25, 25, 400, 300);
 
-		//		VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, this.privateChatClient.proxy);
+		VideoSender videoSender = new VideoSender(new File("SampleVideo_1080x720_20mb.mkv"), frame, g, this.privateChatClient.proxy);
 		//		VideoSender videoSender = new VideoSender(new File("small.ogv"), frame, this.privateChatClient.proxy);
 		//		VideoSender videoSender = new VideoSender(new File("sample_mpeg4.mp4"), frame, this.privateChatClient.proxy);
 		//		VideoSender videoSender = new VideoSender(new File("ArchitectVideo_512kb.mp4"), frame, this.privateChatClient.proxy);
-		VideoSender videoSender = new VideoSender(new File("ArchitectVideo_dvd.mpg"), this.frame, this.g,  this.privateChatClient.proxy);
+		//VideoSender videoSender = new VideoSender(new File("ArchitectVideo_dvd.mpg"), this.frame, this.g,  this.privateChatClient.proxy);
 		//		VideoSender videoSender = new VideoSender(new File(""), frame, this.privateChatClient.proxy);
 		Thread sender = new Thread(videoSender);
 		sender.start();
@@ -347,6 +353,11 @@ public class AppClient implements AppClientInterface {
 		g = frame.getGraphics();
 	}
 
+	// function that will be ran periodically by a Timer
+	public void run() {
+		
+	}
+
 	public static void main(String[] argv) {
 		String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
 		int serverPort = 6789, clientPort = 2345;
@@ -358,10 +369,10 @@ public class AppClient implements AppClientInterface {
 			serverIP = argv[1];
 			System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP + " from command line argumets");
 		} else {
-			/*System.out.println("Enter the IP address of the server.");
-			InetSocketAddress serverIP = new InetSocketAddress(in.nextLine(), serverPort);*/
-			/*System.out.println("Enter the IP address the server will need to connect to.");
-			clientIP = in.nextLine();*/
+			System.out.println("Enter the IP address of the server.");
+			serverIP = in.nextLine();
+			System.out.println("Enter the IP address the server will need to connect to.");
+			clientIP = in.nextLine();
 			System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP);
 		}
 
