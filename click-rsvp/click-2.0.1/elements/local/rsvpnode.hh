@@ -160,6 +160,7 @@ struct RSVPNodeSession {
 	typedef const key_type& key_const_reference;
 	const key_type& hashcode() const;
 	key_type key;
+	void setKey();
 	bool operator==(const RSVPNodeSession& other) const;
 	in_addr _dst_ip_address;
 	uint8_t _protocol_id;
@@ -178,7 +179,8 @@ struct RSVPPathState {
 struct RSVPResvState {
 	RSVPFilterSpec filterSpec;
 	RSVPFlowspec flowspec;
-	
+	uint32_t refresh_period_r;
+	Timer* timer;
 };
 
 uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type);
@@ -236,6 +238,26 @@ void* readRSVPSenderTSpec(RSVPSenderTSpec*,
 	uint32_t* minimum_policed_unit,
 	uint32_t* maximum_packet_size);
 
+template<typename K, typename T>
+typename HashTable<K, T>::const_iterator find(const HashTable<K, T>& table, const K& k) {
+	for (typename HashTable<K, T>::const_iterator it = table.begin(); it != table.end(); it++) {
+		if (k == it->first) {
+			return it;
+		}
+	}
+	return table.end();
+}
+
+template<typename K, typename T>
+typename HashTable<K, T>::iterator find(HashTable<K, T>& table, const K& k) {
+	for (typename HashTable<K, T>::iterator it = table.begin(); it != table.end(); it++) {
+		if (k == it->first) {
+			return it;
+		}
+	}
+	return table.end();
+}
+
 class RSVPNode: public Element { 
 public:
 	RSVPNode();
@@ -243,7 +265,9 @@ public:
 	
 	virtual void push(int port, Packet* packet);
 	WritablePacket* updatePathState(Packet*);
-	WritablePacket* updateReservation(Packet*);
+	WritablePacket* updateReservation(const RSVPNodeSession&, const RSVPFilterSpec&, const RSVPFlowspec&, uint32_t refresh_period_r);
+
+	int initialize(ErrorHandler* errh);
 
 	void run_timer(Timer*);
 	const RSVPNodeSession* sessionForPathStateTimer(const Timer*);

@@ -38,9 +38,9 @@ void RSVPElement::push(int, Packet *packet) {
 	
 	RSVPSession session;
 	RSVPNodeSession nodeSession;
-	HashTable<RSVPNodeSession, RSVPPathState>::iterator it;
+	// HashTable<RSVPNodeSession, RSVPPathState>::iterator it;
 	RSVPPathState pathState; bool pathStateFound = false;
-	// int i;
+	int i;
 	WritablePacket* reply;
 	switch (msg_type) {
 		case RSVP_MSG_PATH:
@@ -49,32 +49,14 @@ void RSVPElement::push(int, Packet *packet) {
 			session = * (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 			nodeSession = RSVPNodeSession(session);
 			
-			click_chatter("Looking for session with hashcode %d", nodeSession.hashcode());
-			// i = 0;
-			// workaround finding the path state because HashTable's find function doesn't work for an entirely unknown reason
-			/*for (HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.begin(); it != _pathStates.end(); it++) {
-				click_chatter("loop %d", i);
-				if (nodeSession == it->first) {
-					pathStateFound = true;
-					click_chatter("%s: path state found!!!", _name.c_str());
-					pathState = it->second;
-					break;
-				}
-				++i;
-			}
-			if (_pathStates.begin() != _pathStates.end()) {
-				click_chatter("hashcode #1 == hashcode # 2: %d", _pathStates.begin()->first.hashcode() == nodeSession.hashcode());
-				click_chatter("_pathStates.find(nodeSession) == _pathStates.end(): %d", _pathStates.find(nodeSession) == _pathStates.end());
-			}*/
-
-			
-			if (_pathStates.find(nodeSession) == _pathStates.end()) {
+			if (find(_pathStates, nodeSession) == _pathStates.end()) {
 				click_chatter("didn't find nodeSession in _pathStates");
 				reply = replyToPathMessage(packet->clone());
 				output(0).push(reply);
 			}
-			_pathStates.set(nodeSession, pathState);
+			//_pathStates.set(nodeSession, pathState);
 			updatePathState(packet->clone());
+			
 			packet->kill();
 
 			break;
@@ -172,16 +154,13 @@ void RSVPElement::run_timer(Timer* timer) {
 	clean();
 	click_chatter("timer went off");
 	// figure out which session the timer belongs to
-	RSVPNodeSession* session = (RSVPNodeSession *) sessionForSenderTimer(timer);
-	if (session) {
+	RSVPNodeSession* session;
+	
+	if (session = (RSVPNodeSession *) sessionForSenderTimer(timer)) {
 		sendPeriodicPathMessage(session);
-	} else {
-		click_chatter("RSVPElement::run_timer: didn't find session for timer %p", (void*) timer);
-		throw std::runtime_error("");
-	}
+	} else RSVPNode::run_timer(timer);
 	
-	
-	timer->reschedule_after_msec(1000);
+	//timer->reschedule_after_msec(1000);
 	
 	return;
 }

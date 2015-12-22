@@ -451,18 +451,27 @@ const void* readRSVPSenderTSpec(const RSVPSenderTSpec* senderTSpec,
 	return senderTSpec + 1;
 }
 
-RSVPNodeSession::RSVPNodeSession() : _own(false) {}
+RSVPNodeSession::RSVPNodeSession() : _own(false) {
+	setKey();
+}
 
 RSVPNodeSession::RSVPNodeSession(in_addr dst_addr, uint8_t protocol_id, uint8_t dst_port) : _own(false), _dst_ip_address(dst_addr), _protocol_id(protocol_id), _dst_port(dst_port) {
+	setKey();
 	// key = IPAddress(_dst_ip_address).unparse() + String(_protocol_id) + String(_dst_port);
 }
 
 RSVPNodeSession::RSVPNodeSession(const RSVPSession& session) : _own(false) {
 	readRSVPSession(const_cast<RSVPSession*>(&session), &_dst_ip_address, &_protocol_id, NULL, &_dst_port);
+	setKey();
 }
 
 RSVPNodeSession::key_const_reference RSVPNodeSession::hashcode() const {
-	return *reinterpret_cast<const long unsigned int*>(&_dst_ip_address);
+	return key;
+	//return *reinterpret_cast<const long unsigned int*>(&_dst_ip_address);
+}
+
+void RSVPNodeSession::setKey() {
+	key = *reinterpret_cast<const long unsigned int*>(&_dst_ip_address);
 }
 
 bool RSVPNodeSession::operator==(const RSVPNodeSession& other) const {
@@ -488,13 +497,20 @@ void RSVPNode::push(int port, Packet* packet) {
 	
 	readRSVPCommonHeader((RSVPCommonHeader*) packet->data(), &msg_type, &send_TTL, &length);
 
+	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
+	
 	if (msg_type == RSVP_MSG_PATH) {
 		forward = updatePathState(packet->clone());
 		
 		packet->kill();
 		output(0).push(forward);
 	} else if (msg_type == RSVP_MSG_RESV) {
-		updateReservation(packet->clone());
+		RSVPFilterSpec* filterSpec = (RSVPFilterSpec *) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
+		RSVPFlowspec* flowspec = (RSVPFlowspec *) RSVPObjectOfType(packet, RSVP_CLASS_FLOWSPEC);
+		uint32_t refresh_period_r;
+		readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
+		
+		updateReservation(*session, *filterSpec, *flowspec, refresh_period_r);
 
 		forward = packet->uniqueify();
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
@@ -529,9 +545,10 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	// create the key to look for in the hash table
 	RSVPNodeSession nodeSession(*session);
 	HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.find(nodeSession);
-	if (it != _pathStates.end()) {
+	if (it != _pathStates.end() && it->second.timer) {
 		click_chatter("updatePathState: found table entry");
-
+		Timer* t = it->second.timer;
+		click_chatter("%s t: %p", _name.c_str(), (void *) t);
 		// unschedule running timer so it won't run out
 		it->second.timer->unschedule();
 		delete it->second.timer;
@@ -584,13 +601,57 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	return wp;
 }
 
-WritablePacket* RSVPNode::updateReservation(Packet* packet) {
-	packet->kill();
+WritablePacket* RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilterSpec& filterSpec, const RSVPFlowspec& flowspec, uint32_t refresh_period_r) {
+	
+	HashTable<RSVPNodeSession, RSVPResvState>::iterator it = find(_resvStates, session);
+	if (it != _resvStates.end() && it->second.timer) {
+		it->second.timer->unschedule();
+		delete it->second.timer;
+		it->second.timer = NULL;
+	}
+
+	RSVPResvState resvState;
+	resvState.filterSpec = filterSpec;
+	resvState.flowspec = flowspec;
+	resvState.refresh_period_r = refresh_period_r;
+	resvState.timer = new Timer(this);
+	resvState.timer->initialize(this);
+	resvState.timer->schedule_after_sec(refresh_period_r); // TODO
+	
+	_resvStates.set(session, resvState);
+
 	return NULL;
 }
 
+int RSVPNode::initialize(ErrorHandler* errh) {
+	// find all qos classifiers
+	/*Vector<RSVPQoSClassifier> classifiers;
+	
+	StringAccum name;
+	Element* e;
+	int i = 0;
+	do {
+		name << "qos_cl" << i;
+		click_chatter("looking for %s", name.c_str());
+		e = this->router()->find(name.c_str(), this);
+		classifiers.push_back((RSVPQoSClassifier *) e);
+		name.clear();
+	 } while (e != NULL);
+	 
+	 // last element is NULL, so remove it
+	 classifiers.pop_back();*/
+	 return 0;
+}
+
 void RSVPNode::run_timer(Timer* timer) {
-	click_chatter("timer ran out");
+	RSVPNodeSession* session;
+	if (session = (RSVPNodeSession *) sessionForPathStateTimer(timer)) {
+		_pathStates.erase(find(_pathStates, *session));
+		click_chatter("Deleted path state from %s", _name.c_str());
+	}/*else if (session = (RSVPNodeSession *) sessionForResvStateTimer(timer)) {
+		_resvStates.erase(find(_resvStates, *session));
+		click_chatter("Deleted resv state from %s", _name.c_str());
+	} */ // TODO
 }
 
 const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer) {	
