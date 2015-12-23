@@ -515,7 +515,7 @@ void RSVPNode::push(int port, Packet* packet) {
 		
 		gwPort = _ipLookup->lookup_route(dstIP, gateway);
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
-		hop->IPv4_next_previous_hop_address = gateway;
+		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 		
 		click_chatter("%s forwarding path message: PORT %d GATEWAY %s routing for %s", _name.c_str(), gwPort, gateway.unparse().c_str(), IPAddress(dstIP).unparse().c_str());
 		
@@ -548,10 +548,10 @@ void RSVPNode::push(int port, Packet* packet) {
 		forward = packet->uniqueify();
 		
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
-		_ipLookup->lookup_route(pathState.previous_hop_node, gateway);
+		gwPort = _ipLookup->lookup_route(pathState.previous_hop_node, gateway);
 		click_chatter("%s forwarding resv message: PORT %d GATEWAY %s routing for %s", _name.c_str(), gwPort, gateway.unparse().c_str(), IPAddress(pathState.previous_hop_node).unparse().c_str());
 		addIPHeader(forward, pathState.previous_hop_node, gateway, _tos);
-		hop->IPv4_next_previous_hop_address = gateway;
+		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 
 		click_chatter("%s forwarding resv message with destination %s", _name.c_str(), IPAddress(forward->dst_ip_anno()).unparse().c_str());
 		output(0).push(forward);
@@ -757,6 +757,10 @@ void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, ui
 
 	ip->ip_sum = click_in_cksum((const unsigned char*) ip, sizeof(click_ip));
 
+}
+
+IPAddress RSVPNode::ipForInterface(int port) const {
+	return _ips.at(port);
 }
 
 CLICK_ENDDECLS

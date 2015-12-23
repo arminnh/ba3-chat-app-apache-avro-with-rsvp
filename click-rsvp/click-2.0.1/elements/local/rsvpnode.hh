@@ -288,6 +288,8 @@ public:
 	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip=IPAddress("0.0.0.0"), uint8_t tos=0) const;
 protected:
 	//IPAddress ipForInterface(int 
+	
+	IPAddress ipForInterface(int port) const;
 
 	Vector<IPAddress> _ips;
 	LinearIPLookup* _ipLookup;
