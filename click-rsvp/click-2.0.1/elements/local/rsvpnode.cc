@@ -4,7 +4,6 @@
 #include "rsvpnode.hh"
 #include "rsvpelement.hh"
 #include <clicknet/ether.h>
-#include <clicknet/ip.h>
 #include <clicknet/udp.h>
 #include <stdexcept>
 #include <cassert>
@@ -499,7 +498,6 @@ void RSVPNode::push(int port, Packet* packet) {
 	dstIP = ip_header->ip_dst;
 	
 	packet->pull(sizeof(click_ip));
-	click_chatter("packet size after pulling: %d", packet->length());
 	uint8_t msg_type, send_TTL;
 	uint16_t length;
 	WritablePacket* forward;
@@ -508,15 +506,22 @@ void RSVPNode::push(int port, Packet* packet) {
 
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 	
+	IPAddress gateway;
+	int gwPort;
+	
 	if (msg_type == RSVP_MSG_PATH) {
-		forward = updatePathState(packet->clone());
-		if (!forward) {
-			click_chatter("forward is not");
-		} else {
-			click_chatter("forward is");
-			click_chatter("data pointer forward: %p", (void*) forward->data());
-			click_chatter("data pointer incoming packet: %p", (void*) packet->data());
-		}
+		updatePathState(packet->clone());
+		WritablePacket* forward = packet->uniqueify();
+		
+		gwPort = _ipLookup->lookup_route(dstIP, gateway);
+		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
+		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
+		
+		click_chatter("%s forwarding path message: PORT %d GATEWAY %s routing for %s", _name.c_str(), gwPort, gateway.unparse().c_str(), IPAddress(dstIP).unparse().c_str());
+		
+		// recalculate RSVP checksum
+		RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) forward->data();
+		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) packet->data(), packet->length());
 		
 		addIPHeader(forward, dstIP, srcIP, _tos);
 		
@@ -530,38 +535,38 @@ void RSVPNode::push(int port, Packet* packet) {
 		uint32_t refresh_period_r;
 		readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
 		
+		HashTable<RSVPNodeSession, RSVPPathState>::const_iterator it = find(_pathStates, RSVPNodeSession(*session));
+		if (it == _pathStates.end()) {
+			click_chatter("No path state found for session.");
+			forward->kill();
+			return;
+		}
+		RSVPPathState pathState = it->second;
+		
 		updateReservation(*session, *filterSpec, *flowspec, refresh_period_r);
 		
 		forward = packet->uniqueify();
 		
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
-		addIPHeader(forward, hop->IPv4_next_previous_hop_address, IPAddress("0.0.0.0"), _tos);
-		hop->IPv4_next_previous_hop_address = _myIP;
+		gwPort = _ipLookup->lookup_route(pathState.previous_hop_node, gateway);
+		click_chatter("%s forwarding resv message: PORT %d GATEWAY %s routing for %s", _name.c_str(), gwPort, gateway.unparse().c_str(), IPAddress(pathState.previous_hop_node).unparse().c_str());
+		addIPHeader(forward, pathState.previous_hop_node, gateway, _tos);
+		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 
-		click_chatter("%s forwarding resv message %p", _name.c_str(), (void *) forward);
+		click_chatter("%s forwarding resv message with destination %s", _name.c_str(), IPAddress(forward->dst_ip_anno()).unparse().c_str());
 		output(0).push(forward);
 	}
 }
 
 WritablePacket* RSVPNode::updatePathState(Packet* packet) {
-	//click_chatter("packet %p entering updatePathState", (void *) packet);
-	//click_chatter("updatePathState: start");
-	WritablePacket* wp = packet->uniqueify();
-	click_chatter("::updatePathState: wp data: %p", wp->data());
-
-	//click_chatter("packet, after uniquefying: %p", (void *) packet);
-	const void* p = packet->data();
-	RSVPCommonHeader* commonHeader = (RSVPCommonHeader*) p;
-	p = (void*) (commonHeader + 1);
 	RSVPObjectHeader* header;
-	uint8_t class_num;
 	
 	// get the necessary objects from the packet
-	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) RSVPObjectOfType(wp, RSVP_CLASS_SENDER_TEMPLATE);
-	RSVPSenderTSpec* senderTSpec =  (RSVPSenderTSpec *) RSVPObjectOfType(wp, RSVP_CLASS_SENDER_TSPEC);
-	RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(wp, RSVP_CLASS_RSVP_HOP);
-	RSVPTimeValues* timeValues = (RSVPTimeValues *) RSVPObjectOfType(wp, RSVP_CLASS_TIME_VALUES);
-	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(wp, RSVP_CLASS_SESSION);
+	RSVPSenderTemplate* senderTemplate = (RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TEMPLATE);
+	RSVPSenderTSpec* senderTSpec =  (RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
+	RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
+	RSVPTimeValues* timeValues = (RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES);
+	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 
 	// create the key to look for in the hash table
 	RSVPNodeSession nodeSession(*session);
@@ -599,11 +604,6 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 	_pathStates.set(nodeSession, pathState);
 	//click_chatter("updatePathState: set new refresh period");
 	//click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
-	hop->IPv4_next_previous_hop_address = _myIP;
-	//click_chatter("Address: %s", IPAddress(hop->IPv4_next_previous_hop_address).unparse().c_str());
-	//click_chatter("updatePathState: end");
-	
-	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) packet->data(), packet->length());
 	
 	click_chatter("Table contents at %s:", _name.c_str());
 	for (HashTable<RSVPNodeSession, RSVPPathState>::iterator it = _pathStates.begin();
@@ -617,9 +617,8 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 		click_chatter("\tprevious node address: %s", IPAddress(pathState.previous_hop_node).s().c_str());
 	}
 	
-	// packet->kill();
-
-	return wp;
+	
+	return NULL;
 }
 
 WritablePacket* RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilterSpec& filterSpec, const RSVPFlowspec& flowspec, uint32_t refresh_period_r) {
@@ -705,9 +704,20 @@ int RSVPNode::nameHandle(const String &conf, Element *e, void *thunk, ErrorHandl
 }
 
 int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {
+	String ipLookupElementName;
+
 	if (cp_va_kparse(conf, this, errh, 
-		"IP", cpkP, cpIPAddress, &_myIP,
+		"INTERFACEIPS", cpkP, cpIPAddressList, &_ips,
+		"IPLOOKUPELEMENTNAME", cpkP, cpString, &ipLookupElementName,
 		cpEnd) < 0) return -1;
+	
+	_ipLookup = (LinearIPLookup *) router()->find(ipLookupElementName, this);
+	
+	if (!_ipLookup) {
+		errh->error("RSVPNode did not find LinearIPLookup element named %s", ipLookupElementName.c_str());
+		return -1;
+	}
+	
 	return 0;
 }
 
@@ -715,9 +725,9 @@ void RSVPNode::add_handlers() {
 	add_write_handler("name", &nameHandle, (void *) 0);
 }
 
-void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, uint8_t tos) {
+void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, uint8_t tos) const {
 	if (IPAddress(src_ip) == IPAddress("0.0.0.0")) {
-		p->set_user_anno_i(3, 1);
+		// p->set_user_anno_i(3, 1);
 		src_ip = _myIP;
 	}
 
@@ -747,6 +757,10 @@ void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, ui
 
 	ip->ip_sum = click_in_cksum((const unsigned char*) ip, sizeof(click_ip));
 
+}
+
+IPAddress RSVPNode::ipForInterface(int port) const {
+	return _ips.at(port);
 }
 
 CLICK_ENDDECLS

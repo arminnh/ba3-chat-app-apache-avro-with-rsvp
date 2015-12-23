@@ -75,7 +75,6 @@ private:
 	bool _application;
 	void clean();
 
-	Timer _timer;
 	uint8_t _TTL;
 	
 	RSVPSession _session;

@@ -12,6 +12,16 @@
 elementclass Router {
 	$lan_address, $wan_address, $default_gw |
 
+	RatedSource(RATE 0)
+		-> rt2 :: StaticIPLookup(
+			$lan_address/32 0,
+			$wan_address/32 0,
+			$lan_address:ipnet $lan_address:ip 1,
+			$wan_address:ipnet $wan_address:ip 2,
+			0.0.0.0/0 $default_gw 2) -> Discard;
+		rt2[1] -> Discard;
+		rt2[2] -> Discard;
+
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
@@ -24,7 +34,7 @@ elementclass Router {
 			0.0.0.0/0 $default_gw 2);
 
 	rsvp_cl[0]
-		-> rsvp::RSVPNode()
+		-> rsvp::RSVPNode(0.0.0.0 $lan_address:ip $wan_address:ip, rt2)
 		-> rt;
 
 	// ARP responses are copied to each ARPQuerier.

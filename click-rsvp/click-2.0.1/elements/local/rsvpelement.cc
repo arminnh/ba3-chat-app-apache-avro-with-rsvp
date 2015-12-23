@@ -54,7 +54,7 @@ void RSVPElement::push(int, Packet *packet) {
 			if (find(_pathStates, nodeSession) == _pathStates.end() && _autoResv) {
 				click_chatter("didn't find nodeSession in _pathStates");
 				reply = replyToPathMessage(packet->clone());
-				click_chatter("%s: sending reply to path message of size %d, data pointer %p, packet pointer %p", _name.c_str(), reply->length(), (void*) reply->data(), (void*) reply);
+				click_chatter("%s: sending reply to path message of size %d to %s", _name.c_str(), reply->length(), IPAddress(reply->dst_ip_anno()).unparse().c_str());
 				output(0).push(reply);
 			}
 			//_pathStates.set(nodeSession, pathState);
@@ -64,7 +64,7 @@ void RSVPElement::push(int, Packet *packet) {
 
 			break;
 		case RSVP_MSG_RESV:
-			click_chatter("RSVP host %s received resv message.", _name.c_str());
+			click_chatter("%s received resv message.", _name.c_str());
 			// update state table
 			break;
 		case RSVP_MSG_PATHERR:
@@ -101,7 +101,6 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 	RSVPHop* pathHop = (RSVPHop *) RSVPObjectOfType(pathMessage, RSVP_CLASS_RSVP_HOP);
 	in_addr resvDestinationAddress; uint32_t lih;
 	readRSVPHop(pathHop, &resvDestinationAddress, &lih);
-	click_chatter("replyToPathMessage: resvDestinationAddress: %s", IPAddress(resvDestinationAddress).unparse().c_str());
 
 	// resv's hop address is the host's own IP
 	initRSVPHop(&_hop, _myIP, lih);
@@ -133,7 +132,7 @@ click_chatter("::replyToPathMessage: data pointer: %p, packet pointer %p", (void
 	return resvMessage;
 }
 
-RSVPElement::RSVPElement() : _timer(this)
+RSVPElement::RSVPElement()
 {}
 
 RSVPElement::~ RSVPElement()
