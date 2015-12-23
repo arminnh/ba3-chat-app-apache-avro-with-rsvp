@@ -48,8 +48,7 @@ elementclass Host {
 
 	rsvp_cl[0]
 		-> rsvp::RSVPElement($address)
-		-> EtherEncap(0x0800, $address, $gateway)
-		-> output;
+		-> rt;
 
 	in_cl[1]
 		-> [1]arpq;
