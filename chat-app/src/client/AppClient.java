@@ -184,6 +184,12 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			System.err.println("\n > " + "You cannot send a request to yourself.");
 			return;
 		}
+		
+		if (this.appServer.isRequestStatus((CharSequence) username, this.username, RequestStatus.PENDING)) {
+			this.acceptRequest(username);
+			return;
+		}
+		
 		int response = this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
 
 		if (response != 0)
@@ -239,7 +245,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		if (!this.isConnectedToServer())
 			return;
 
-		if (!this.appServer.isRequestStatus(this.username, RequestStatus.ACCEPTED)) {
+		if (!this.appServer.isRequestStatusFrom(this.username, RequestStatus.ACCEPTED)) {
 			ErrorWriter.printError(11);
 			return;
 		}
@@ -306,7 +312,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			while (!input.matches("(\\?)(leave|q)")) {
 				chatCommands(input);
 
-				input = br.readLine();
+				input = br.readLine().toLowerCase();
 			}
 		} catch (IOException e) {
 			this.setStatus(ClientStatus.LOBBY);
@@ -325,28 +331,36 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private void chatCommands(String input) throws IOException {
 		// check for all the global commands first, then public/private chat
 		if (input.matches("(\\?)(list|l)")) {
+			System.out.println("list");
 			chatCommandsList();
 
 		} else if (input.matches("(\\?)(getlistofusers|glou)")) {
+			System.out.println("glou");
 			getListOfUsers();
 
 		} else if (input.matches("(\\?)(listmyrequests|lmr)")) {
+			System.out.println("lmr");
 			listMyRequests();
 
-		} else if (input.matches("(\\?)(sendrequest|sr)")) {
+		} else if (input.matches("(\\?)(sendrequest|sr)\\s+[^\\s]+")) {
+			System.out.println("sr");
 			// TODO: check array bounds
 			sendRequest(input.split("\\s+")[1]);
 
-		} else if (input.matches("(\\?)(cancelrequest|cr)")) {
+		} else if (input.matches("(\\?)(cancelrequest|cr)\\s+[^\\s]+")) {
+			System.out.println("cr");
 			cancelRequest(input.split("\\s+")[1]);
 
-		} else if (input.matches("(\\?)(declinerequest|dr)")) {
+		} else if (input.matches("(\\?)(declinerequest|dr)\\s+[^\\s]+")) {
+			System.out.println("dr");
 			declineRequest(input.split("\\s+")[1]);
 
 		} else if (status == ClientStatus.PUBLIC) {
+			System.out.println("public");
 			publicChatCommands(input);
 
 		} else if (status == ClientStatus.PRIVATE) {
+			System.out.println("private");
 			privateChatCommands(input);
 		}
 	}
@@ -354,22 +368,24 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private void chatCommandsList() throws AvroRemoteException {
 		// global commands
 		System.out.println("=================             GLOBAL COMMANDS             ==================\n"
-					     + "Print this list:                 ?list, ?l\n"
+					     + "Print this list:                 ?list,  ?l\n"
 					     + "Leave the chatroom:              ?leave, ?q\n");
 
 		if (this.connectedToServer) {
-			System.out.println("Get the list of connected users: ?getListOfUsers, ?glou\n"
-						     + "List your requests:              ?listMyRequests, ?lmr\n"
-						     + "Send a request to X:             ?sendRequest X, ?sr X\n"
-						     + "Cancel a request to X:           ?cancelRequest X, ?cr X\n"
+			System.out.println("Get the list of connected users: ?getListOfUsers,   ?glou\n"
+						     + "List your requests:              ?listMyRequests,   ?lmr\n"
+						     + "Send a request to X:             ?sendRequest X,    ?sr X\n"
+						     + "Cancel a request to X:           ?cancelRequest X,  ?cr X\n"
 						     + "Decline a request from X:        ?declineRequest X, ?dc X\n");
 
 			// only public chat commands
 			if (status == ClientStatus.PUBLIC) {
-				System.out.println("\n=================          PUBLIC CHAT COMMANDS          ===================\n"
-							     + "Accept a request from X:         ?acceptRequest X, ?ar X");
+				System.out.println("\n=================          PUBLIC CHAT COMMANDS          ===================\n");
+				
+				if (appServer.isRequestStatusTo(this.username, RequestStatus.PENDING))
+					System.out.println("Accept a request from X:         ?acceptRequest X,  ?ar X");
 
-				if (appServer.isRequestStatus(username, RequestStatus.ACCEPTED))
+				if (appServer.isRequestStatusFrom(username, RequestStatus.ACCEPTED))
 					System.out.println("To start the private chat:       ?joinPrivateChat, ?jpc, ?startPrivateChat, ?spc");
 			}
 		}
@@ -377,31 +393,34 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		// only private chat commands
 		if (status == ClientStatus.PRIVATE) {
 			System.out.println("\n=================          PRIVATE CHAT COMMANDS          ==================\n"
-						     + "Go to the the public chatroom:   ?joinPublicChat or ?jpc\n"
-						     + "Send a video request:            ?videoRequest, ?vr, ?sendVideoRequest, ?svr");
+						     + "Go to the the public chatroom:   ?joinPublicChat, ?jpc\n"
+						     + "Send a video request:            ?videoRequest,    ?vr, ?sendVideoRequest, ?svr");
 
 			if (videoRequestAccepted)
-				System.out.println("Send a video:                    ?sendVideo, ?sv");
+				System.out.println("Send a video:                    ?sendVideo,    ?sv");
 
 			if (videoRequestPending) {
-				System.out.println("Accept a video request:          ?acceptVideo, ?av\n"
+				System.out.println("Accept a video request:          ?acceptVideo,  ?av\n"
 							     + "Decline a video request:         ?declineVideo, ?dv");
 			}
 		}
 	}
 
 	private void publicChatCommands(String input) throws IOException {
-		if (input.matches("(\\?)(acceptrequest|ar)")) {
+		if (input.matches("(\\?)(acceptrequest|ar)\\s+[^\\s]+")) {
+			System.out.println("ar");
 			acceptRequest(input.split("\\s+")[1]);
 
 			// go to the private chat if you have an open request that was accepted
-		} else if (input.matches("(\\?)(joinprivatechat|jpc|startprivatechat|spc)") && appServer.isRequestStatus(username, RequestStatus.ACCEPTED)) {
+		} else if (input.matches("(\\?)(joinprivatechat|jpc|startprivatechat|spc)") && appServer.isRequestStatusFrom(username, RequestStatus.ACCEPTED)) {
+			System.out.println("join private chat");
 			System.out.println("\n > Left the public chatroom.\n > Joined private chat with " + privateChatClient.username + ".");
 			setStatus(ClientStatus.PRIVATE);
 			// TODO: handle private chat stuff
 
 			// if no command was detected, send input to everyone in public chat mode
-		} else if (!this.isConnectedToServer()) {
+		} else if (this.isConnectedToServer()) {
+			System.out.println("send public");
 			appServer.sendMessage(username, input);
 		}
 	}
@@ -422,13 +441,18 @@ public class AppClient extends TimerTask implements AppClientInterface {
 				sendVideo();
 
 			} else if (videoRequestPending) {
-				if (input.matches("(\\?)(acceptvideo|av)"))
+				if (input.matches("(\\?)(acceptvideo|av)")) {
+					System.out.println("av");
 					acceptVideoRequest();
-				else if (input.matches("(\\?)(declinevideo|dv)"))
+				}
+				else if (input.matches("(\\?)(declinevideo|dv)")) {
+					System.out.println("dv");
 					declineVideoRequest();
+				}
 
 				// if no command was detected, send input to the private chat partner
 			} else {
+				System.out.println("send private");
 				Date dNow = new Date( );
 				SimpleDateFormat dFormat = new SimpleDateFormat ("hh:mm");
 				String time = dFormat.format(dNow);
@@ -633,6 +657,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			Timer timer = new Timer();
 			timer.schedule(clientRequester, 0, 2000);
 			ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
+			timer.cancel();
 			System.out.println("Quit program.");
 
 			appServer.unregisterClient(username);

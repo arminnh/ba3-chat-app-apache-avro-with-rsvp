@@ -122,7 +122,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	@Override
 	public int cancelRequest(CharSequence from, CharSequence to) throws AvroRemoteException {
 		if (this.removeRequest(from, to) == 0) {
-			this.clients.get("\n > " + to.toString()).proxy.receiveMessage(from.toString() + " has cancelled their request.");
+			this.clients.get(to.toString()).proxy.receiveMessage("\n > " + from.toString() + " has cancelled their request.");
 			return 0;
 		}
 		
@@ -208,10 +208,31 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	}
 
 	@Override
-	public boolean isRequestStatus(CharSequence username, RequestStatus status) throws AvroRemoteException {
+	public boolean isRequestStatus(CharSequence username1, CharSequence username2, RequestStatus status) throws AvroRemoteException {
 		for (Request r : this.requests) {
-			System.out.println(r.getStatus() + ", " + status);
+			if (r.getFrom().equals(username1.toString()) && r.getTo().equals(username2.toString()) && r.getStatus() == status) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+	@Override
+	public boolean isRequestStatusFrom(CharSequence username, RequestStatus status) throws AvroRemoteException {
+		for (Request r : this.requests) {
 			if (r.getFrom().equals(username.toString()) && r.getStatus() == status) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+	@Override
+	public boolean isRequestStatusTo(CharSequence username, RequestStatus status) throws AvroRemoteException {
+		for (Request r : this.requests) {
+			if (r.getTo().equals(username.toString()) && r.getStatus() == status) {
 				return true;
 			}
 		}
