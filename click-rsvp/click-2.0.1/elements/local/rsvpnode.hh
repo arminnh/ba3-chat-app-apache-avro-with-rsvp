@@ -5,6 +5,9 @@
 #include <clicknet/ether.h>
 #include <click/timer.hh>
 #include <click/hashtable.hh>
+#include <elements/ip/lookupiproute.hh>
+#include <click/router.hh>
+
 CLICK_DECLS
 
 #define RSVP_MSG_PATH		    1
@@ -282,9 +285,13 @@ public:
 	int configure(Vector<String>&, ErrorHandler*);
 	void add_handlers();
 
-	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip=IPAddress("0.0.0.0"), uint8_t tos=0);
+	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip=IPAddress("0.0.0.0"), uint8_t tos=0) const;
 protected:
+	//IPAddress ipForInterface(int 
 
+	Vector<IPAddress> _ips;
+	LinearIPLookup* _ipLookup;
+	
 	int _tos;
 	String _name;
 	in_addr _myIP;
