@@ -726,8 +726,8 @@ void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, ui
 
 	if (p->data() != p->network_header() || p->network_header() == 0) {
 		p = p->push(sizeof(click_ip));
-		p->set_network_header(p->data(), sizeof(click_ip));
 	}
+	p->set_network_header(p->data(), sizeof(click_ip));
 
 	struct click_ip* ip = (click_ip *) p->data();
 	memset(ip, 0, sizeof(click_ip));
