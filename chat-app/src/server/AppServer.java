@@ -87,7 +87,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	@Override
 	public int sendMessage(CharSequence username, CharSequence message) throws AvroRemoteException {
 		Date dNow = new Date( );
-		SimpleDateFormat dFormat = new SimpleDateFormat ("hh:mm:ss");
+		SimpleDateFormat dFormat = new SimpleDateFormat ("hh:mm");
 		String time = dFormat.format(dNow);
 
 		for (Map.Entry<String, ClientInfo> client : this.clients.entrySet()){
@@ -163,9 +163,6 @@ public class AppServer extends TimerTask implements AppServerInterface {
 				System.out.println("Accepter: " + to.toString() + " Requester: " + from.toString());
 
 				r.setStatus(RequestStatus.ACCEPTED);
-				requester.proxy.receiveMessage("\n > " + to.toString() + " has accepted your request.");
-
-				System.out.println(requester.clientIP);
 				accepter.proxy.setPrivateChatClient(from, requester.clientIP, requester.clientPort);
 				requester.proxy.setPrivateChatClient(to, accepter.clientIP, accepter.clientPort);
 				
