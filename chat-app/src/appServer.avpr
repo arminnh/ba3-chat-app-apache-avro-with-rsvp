@@ -64,6 +64,14 @@
 	        "response": {"name": "list", "type": "string"}
         },
         "isRequestStatus": {
+        	"request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}, {"name": "state", "type": "server.RequestStatus"}],
+        	"response": "boolean"
+    	},
+        "isRequestStatusFrom": {
+        	"request": [{"name": "username", "type": "string"}, {"name": "state", "type": "server.RequestStatus"}],
+        	"response": "boolean"
+    	},
+        "isRequestStatusTo": {
         	"request": [{"name": "username", "type": "string"}, {"name": "state", "type": "server.RequestStatus"}],
         	"response": "boolean"
     	}

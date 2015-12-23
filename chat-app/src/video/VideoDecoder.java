@@ -81,8 +81,19 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
         if (event.getStreamIndex() != videoStreamIndex) {
             return;
         }
+
+        while (s.imgBuffer.size() > 10*this.fps) {
+        	try {
+				Thread.sleep(5*s.MICRO_SECONDS_PER_FRAME/1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+        }
         
-        while (s.imgBuffer.size() > 5.0 * this.fps) {  }
-        s.imgBuffer.add(event.getImage());
+        try {
+			s.imgBuffer.put(event.getImage());
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
     }
 }
