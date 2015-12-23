@@ -6,8 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -20,9 +19,9 @@ public class VideoSender implements Runnable {
 	public AppClientInterface proxy;
 	
 	public File video;
-	public boolean videoDecoded;
+	public boolean videoDecoded = false;
 	public long MICRO_SECONDS_PER_FRAME = -1;
-	public Queue<BufferedImage> imgBuffer = new LinkedList<BufferedImage>();
+	public LinkedBlockingQueue<BufferedImage> imgBuffer = new LinkedBlockingQueue<BufferedImage>();
 	
 	
     public VideoSender(File input, JFrame frame, AppClientInterface proxy) {
@@ -37,14 +36,14 @@ public class VideoSender implements Runnable {
 		Thread videoDecoder = new Thread(new VideoDecoder(this));
 		videoDecoder.start();
     	long lastFrameWrite = System.nanoTime()/1000 - MICRO_SECONDS_PER_FRAME;
-    	long time_passed = 0;
+    	long timeNow = 0;
     	
     	try {
     		while ((!videoDecoded || !imgBuffer.isEmpty()) && frame.isVisible()) {
-    			time_passed = System.nanoTime()/1000 - lastFrameWrite;
-    			if (!imgBuffer.isEmpty() && time_passed >= MICRO_SECONDS_PER_FRAME) {
-    				lastFrameWrite = System.nanoTime()/1000;
-    				BufferedImage img = imgBuffer.remove();
+    			timeNow = System.nanoTime()/1000;
+    			if (timeNow - lastFrameWrite >= MICRO_SECONDS_PER_FRAME) {
+    				lastFrameWrite = timeNow;
+    				BufferedImage img = imgBuffer.take();
     				g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);
 
     				ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -52,10 +51,11 @@ public class VideoSender implements Runnable {
     				proxy.receiveImage(ByteBuffer.wrap(bos.toByteArray()));
     			}
     		}
-    	} catch (IOException e) {
+    	} catch (IOException | InterruptedException e) {
 			// other user has disconnected, stop sending video
         }
 
+    	imgBuffer.clear();
 		frame.setVisible(false);
 		try {
 			proxy.setFrameVisible(false);

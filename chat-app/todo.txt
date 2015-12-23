@@ -1,2 +1,3 @@
-interrupt input
-video framerate
+graceful private chat shutdown
+switching chat modes
+video streaming RAM usage

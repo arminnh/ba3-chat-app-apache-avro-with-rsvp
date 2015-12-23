@@ -6,6 +6,7 @@ import javax.swing.filechooser.FileFilter;
 
 public class VideoFileChooser extends JFrame {
 	
+	private static final long serialVersionUID = -315195984033206096L;
 	private File file = null;
 
 	public VideoFileChooser() {
