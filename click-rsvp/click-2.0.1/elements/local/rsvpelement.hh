@@ -19,7 +19,9 @@ public:
 	int initialize(ErrorHandler *);
 	void run_timer(Timer *);
 	const RSVPNodeSession* sessionForSenderTimer(const Timer *) const;
-	void sendPeriodicPathMessage(const RSVPNodeSession* session);
+	const RSVPNodeSession* sessionForReservationTimer(const Timer *) const;
+	void sendPeriodicPathMessage(const RSVPNodeSession*, const RSVPPathState*);
+	void sendPeriodicResvMessage(const RSVPNodeSession*, const RSVPResvState*);
 
 	virtual void push(int, Packet *);
 	Packet* pull(int);
@@ -71,6 +73,7 @@ public:
 private:
 	bool _autoResv;
 	HashTable<RSVPNodeSession, RSVPPathState> _senders;
+	HashTable<RSVPNodeSession, RSVPResvState> _reservations;
 
 	bool _application;
 	void clean();

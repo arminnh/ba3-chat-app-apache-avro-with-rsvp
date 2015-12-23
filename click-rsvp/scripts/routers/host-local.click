@@ -8,28 +8,24 @@ elementclass Host {
 	// Shared IP input path
 	ip :: Strip(14)
 		-> CheckIPHeader
+		-> rsvp_cl::IPClassifier(proto 46, -)[1]
 		-> rt :: StaticIPLookup(
 			$address:ip/32 0,
 			$address:ipnet 1,
 			0.0.0.0/0 $gateway 1)
-		-> rsvp_cl::IPClassifier(proto 46, -)[1]
 		-> [1]output;
 
-	rt[1]	-> ipgw :: IPGWOptions($address)
+	rt[1]
+		-> ipgw :: IPGWOptions($address)
 		-> FixIPSrc($address)
 		-> ttl :: DecIPTTL
 		-> frag :: IPFragmenter(1500)
 		-> arpq :: ARPQuerier($address)
 		-> output;
-
-	rsvp::RSVPElement($address)
-		//-> rsvpipencap::MyIPEncap(46, $address, 0.0.0.0)
-		-> EtherEncap(0x0800, $address, $gateway)
-		-> output;
 		
 	rsvp_cl[0]
-		//-> Strip(20)
-		-> rsvp;
+		-> rsvp::RSVPElement($address)
+		-> rt;
 		
 	ipgw[1]	-> ICMPError($address, parameterproblem)
 		-> output;

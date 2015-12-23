@@ -595,9 +595,12 @@ void RSVPNode::updatePathState(Packet* packet) {
 	//click_chatter("updatePathState: read refresh period");
 	
 	// schedule new timer
+	unsigned k = 3;
+	unsigned state_lifetime = (k + 0.5) * 1.5 * refresh_period_r;
+
 	pathState.timer = new Timer(this);
 	pathState.timer->initialize(this);
-	pathState.timer->schedule_after_sec(refresh_period_r); //updatereser TODO: change !!!11
+	pathState.timer->schedule_after_sec(state_lifetime);
 	
 	// add new / updated path state to path state table
 	_pathStates.set(nodeSession, pathState);
@@ -631,9 +634,13 @@ void RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilte
 	resvState.filterSpec = filterSpec;
 	resvState.flowspec = flowspec;
 	resvState.refresh_period_r = refresh_period_r;
+
+	unsigned k = 3;
+	unsigned state_lifetime = (k + 0.5) * 1.5 * refresh_period_r;
+
 	resvState.timer = new Timer(this);
 	resvState.timer->initialize(this);
-	resvState.timer->schedule_after_sec(refresh_period_r); // TODO
+	resvState.timer->schedule_after_sec(state_lifetime);
 	
 	_resvStates.set(session, resvState);
 
@@ -661,15 +668,17 @@ int RSVPNode::initialize(ErrorHandler* errh) {
 }
 
 void RSVPNode::run_timer(Timer* timer) {
+	timer->unschedule();
 	RSVPNodeSession* session;
 	if ((session = (RSVPNodeSession *) sessionForPathStateTimer(timer))) {
 		_pathStates.erase(find(_pathStates, *session));
 		click_chatter("Deleted path state from %s", _name.c_str());
-		delete timer;
 	} else if ((session = (RSVPNodeSession *) sessionForResvStateTimer(timer))) {
 		_resvStates.erase(find(_resvStates, *session));
 		click_chatter("Deleted resv state from %s", _name.c_str());
 	} // TODO
+
+	delete timer;
 }
 
 const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer) const {	
