@@ -340,7 +340,7 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 		me->sendPeriodicPathMessage(&nodeSession);
 		me->_senders.erase(find(me->_senders, nodeSession));
 	}
-	
+	click_chatter("pathHandle: ok");
 	
 	//Element* classifier = me->router()->find("in_cl", me);
 	//click_chatter("find returned %p", (void*) classifier);

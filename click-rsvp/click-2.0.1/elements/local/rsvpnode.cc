@@ -714,7 +714,6 @@ int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {
 		errh->error("RSVPNode did not find LinearIPLookup element named %s", ipLookupElementName.c_str());
 		return -1;
 	}
-	
 	return 0;
 }
 
