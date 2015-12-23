@@ -31,41 +31,51 @@ const void* RSVPObjectOfType(Packet* packet, uint8_t wanted_class_num) {
 void RSVPElement::push(int, Packet *packet) {
 	click_chatter("Received RSVP packet at RSVPElement %s", _name.c_str());
 
-	const void* p = (const void *) (packet->transport_header() ? packet->transport_header() : ((const unsigned char*) packet->data()) + sizeof(click_ip));
+	packet->pull(sizeof(click_ip));
+
 	const void* end_data = packet->end_data();
 	
 	uint8_t msg_type;
-	p = readRSVPCommonHeader((RSVPCommonHeader*) p, &msg_type, NULL, NULL);
+	readRSVPCommonHeader((RSVPCommonHeader*) packet->data(), &msg_type, NULL, NULL);
 	
-	RSVPSession session;
+	RSVPSession* session;
+	session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 	RSVPNodeSession nodeSession;
-	// HashTable<RSVPNodeSession, RSVPPathState>::iterator it;
-	RSVPPathState pathState; bool pathStateFound = false;
-	int i;
+	RSVPFilterSpec* filterSpec;
+	RSVPFlowspec* flowspec;
+	
+	RSVPPathState pathState;
+
 	WritablePacket* reply;
+
 	switch (msg_type) {
 		case RSVP_MSG_PATH:
 			clean();
 			
-			session = * (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
-			nodeSession = RSVPNodeSession(session);
+			nodeSession = RSVPNodeSession(*session);
 			
 			// if auto reservation is on, respond to the path message with a reservation message
 			if (find(_pathStates, nodeSession) == _pathStates.end() && _autoResv) {
 				click_chatter("didn't find nodeSession in _pathStates");
 				reply = replyToPathMessage(packet->clone());
-				click_chatter("%s: sending reply to path message of size %d to %s", _name.c_str(), reply->length(), IPAddress(reply->dst_ip_anno()).unparse().c_str());
+				
 				output(0).push(reply);
 			}
-			//_pathStates.set(nodeSession, pathState);
+
 			updatePathState(packet->clone());
-			
-			packet->kill();
 
 			break;
 		case RSVP_MSG_RESV:
 			click_chatter("%s received resv message.", _name.c_str());
-			// update state table
+			
+			// get the necessary information in order to update the reservation
+			filterSpec = (RSVPFilterSpec *) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
+			flowspec = (RSVPFlowspec *) RSVPObjectOfType(packet, RSVP_CLASS_FLOWSPEC);
+			uint32_t refresh_period_r;
+			readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
+			
+			updateReservation(*session, *filterSpec, *flowspec, refresh_period_r);
+			
 			break;
 		case RSVP_MSG_PATHERR:
 			// read rfc
@@ -113,7 +123,7 @@ WritablePacket* RSVPElement::replyToPathMessage(Packet* pathMessage) {
 
 		// reserve the capacity the sender provides
 		_filterSpec = *senderTemplate;
-		initRSVPObjectHeader(&_filterSpec.header, RSVP_CLASS_FILTER_SPEC, 2);
+		initRSVPObjectHeader(&_filterSpec.header, RSVP_CLASS_FILTER_SPEC, 1);
 		initRSVPFlowspec(&_flowspec, senderTSpec);
 		click_chatter("_filterSpec class num: %d", _filterSpec.header.class_num);
 		click_chatter("_flowspec class num: %d", _flowspec.header.class_num);
@@ -517,10 +527,10 @@ int RSVPElement::flowDescriptorHandle(const String& conf, Element *e, void *thun
 	int flowspec_maximum_packet_size;
 
 	if (!cp_va_kparse(conf, me, errh,
-		// sender template
+		// filter spec
 		"SRC_ADDRESS", cpkM, cpIPAddress, &filterSpec_src_address,
 		"SRC_PORT", cpkM, cpUnsigned, &filterSpec_src_port,
-		// sender tspec
+		// flowspec
 		"TOKEN_BUCKET_RATE", cpkM, cpDouble, &tbr,
 		"TOKEN_BUCKET_SIZE", cpkM, cpDouble, &tbs,
 		"PEAK_DATA_RATE", cpkM, cpDouble, &pdr,
@@ -860,9 +870,10 @@ void RSVPElement::clean() {
 	memset(&_session, 0, sizeof(RSVPSession));
 	memset(&_errorSpec, 0, sizeof(RSVPErrorSpec));
 	initRSVPHop(&_hop, _myIP, sizeof(RSVPHop));
-	memset(&_timeValues, 0, sizeof(RSVPTimeValues));
+	initRSVPTimeValues(&_timeValues, 5);
 	
-	_senderDescriptor = false;memset(&_senderTemplate, 0, sizeof(RSVPSenderTemplate));
+	_senderDescriptor = false;
+	memset(&_senderTemplate, 0, sizeof(RSVPSenderTemplate));
 	memset(&_senderTSpec, 0, sizeof(RSVPSenderTSpec));
 
 	_flowDescriptor = false;

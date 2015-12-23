@@ -620,7 +620,6 @@ void RSVPNode::updatePathState(Packet* packet) {
 }
 
 void RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilterSpec& filterSpec, const RSVPFlowspec& flowspec, uint32_t refresh_period_r) {
-	
 	HashTable<RSVPNodeSession, RSVPResvState>::iterator it = find(_resvStates, session);
 	if (it != _resvStates.end() && it->second.timer) {
 		it->second.timer->unschedule();
