@@ -455,15 +455,16 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		try {
 			video.canRead();
-			this.senderFrame.setVisible(true);
-			this.privateChatClient.proxy.setFrameVisible(true);
-			VideoSender videoSender = new VideoSender(video, this.senderFrame, this.privateChatClient.proxy);
-			Thread sender = new Thread(videoSender);
-			sender.start();
-		} catch (NullPointerException e) { // from fc.getFile()
+		} catch (NullPointerException e) { 
 			this.privateChatClient.proxy.receiveMessage(" > " + this.username.toString() + " has cancelled the video request.");
 			System.out.println(" > You cancelled the video request.");
+			e.printStackTrace();
 		}
+		this.senderFrame.setVisible(true);
+		this.privateChatClient.proxy.setFrameVisible(true);
+		VideoSender videoSender = new VideoSender(video, this.senderFrame, this.privateChatClient.proxy);
+		Thread sender = new Thread(videoSender);
+		sender.start();
 		
 		this.videoRequestAccepted = false;
 	}
@@ -571,7 +572,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 	public static void main(String[] argv) {
 		// String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
-		String clientIP = "143.129.81.7", serverIP = "143.129.81.7";
+		//String clientIP = "143.129.81.7", serverIP = "143.129.81.7";
+		String clientIP = "192.168.11.1", serverIP = "192.168.11.1";
 		int serverPort = 6789, clientPort = 2345;
 		Scanner in = new Scanner(System.in);
 
