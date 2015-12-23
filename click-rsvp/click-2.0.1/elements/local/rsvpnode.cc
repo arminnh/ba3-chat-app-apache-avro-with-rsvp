@@ -498,11 +498,10 @@ void RSVPNode::push(int port, Packet* packet) {
 	dstIP = ip_header->ip_dst;
 	
 	packet->pull(sizeof(click_ip));
-	uint8_t msg_type, send_TTL;
-	uint16_t length;
+	uint8_t msg_type;
 	WritablePacket* forward;
 	
-	readRSVPCommonHeader((RSVPCommonHeader*) packet->transport_header(), &msg_type, &send_TTL, &length);
+	readRSVPCommonHeader((RSVPCommonHeader*) packet->transport_header(), &msg_type, NULL, NULL);
 
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 	
@@ -511,30 +510,24 @@ void RSVPNode::push(int port, Packet* packet) {
 	
 	if (msg_type == RSVP_MSG_PATH) {
 		updatePathState(packet->clone());
-		WritablePacket* forward = packet->uniqueify();
+		forward = packet->uniqueify();
 		
+		// adjust next/previous hop address
 		gwPort = _ipLookup->lookup_route(dstIP, gateway);
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
-		
-		click_chatter("%s forwarding path message: PORT %d GATEWAY %s routing for %s", _name.c_str(), gwPort, gateway.unparse().c_str(), IPAddress(dstIP).unparse().c_str());
 		
 		// recalculate RSVP checksum
 		RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) forward->data();
 		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) packet->data(), packet->length());
 		
 		addIPHeader(forward, dstIP, srcIP, _tos);
-		
-		// packet->kill();
 
 		click_chatter("%s forwarding path message %p", _name.c_str(), (void *) packet);
 		output(0).push(forward);
 	} else if (msg_type == RSVP_MSG_RESV) {
-		RSVPFilterSpec* filterSpec = (RSVPFilterSpec *) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
-		RSVPFlowspec* flowspec = (RSVPFlowspec *) RSVPObjectOfType(packet, RSVP_CLASS_FLOWSPEC);
-		uint32_t refresh_period_r;
-		readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
-		
+	
+		// get path state associated with this resv message
 		HashTable<RSVPNodeSession, RSVPPathState>::const_iterator it = find(_pathStates, RSVPNodeSession(*session));
 		if (it == _pathStates.end()) {
 			click_chatter("No path state found for session.");
@@ -543,13 +536,19 @@ void RSVPNode::push(int port, Packet* packet) {
 		}
 		RSVPPathState pathState = it->second;
 		
+		// get the necessary information in order to update the reservation
+		RSVPFilterSpec* filterSpec = (RSVPFilterSpec *) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
+		RSVPFlowspec* flowspec = (RSVPFlowspec *) RSVPObjectOfType(packet, RSVP_CLASS_FLOWSPEC);
+		uint32_t refresh_period_r;
+		readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
+		
 		updateReservation(*session, *filterSpec, *flowspec, refresh_period_r);
 		
 		forward = packet->uniqueify();
 		
+		// set destination IP address to next hop
 		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(pathState.previous_hop_node, gateway);
-		click_chatter("%s forwarding resv message: PORT %d GATEWAY %s routing for %s", _name.c_str(), gwPort, gateway.unparse().c_str(), IPAddress(pathState.previous_hop_node).unparse().c_str());
 		addIPHeader(forward, pathState.previous_hop_node, gateway, _tos);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 
@@ -558,7 +557,7 @@ void RSVPNode::push(int port, Packet* packet) {
 	}
 }
 
-WritablePacket* RSVPNode::updatePathState(Packet* packet) {
+void RSVPNode::updatePathState(Packet* packet) {
 	RSVPObjectHeader* header;
 	
 	// get the necessary objects from the packet
@@ -617,11 +616,10 @@ WritablePacket* RSVPNode::updatePathState(Packet* packet) {
 		click_chatter("\tprevious node address: %s", IPAddress(pathState.previous_hop_node).s().c_str());
 	}
 	
-	
-	return NULL;
+	return;
 }
 
-WritablePacket* RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilterSpec& filterSpec, const RSVPFlowspec& flowspec, uint32_t refresh_period_r) {
+void RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilterSpec& filterSpec, const RSVPFlowspec& flowspec, uint32_t refresh_period_r) {
 	
 	HashTable<RSVPNodeSession, RSVPResvState>::iterator it = find(_resvStates, session);
 	if (it != _resvStates.end() && it->second.timer) {
@@ -640,7 +638,7 @@ WritablePacket* RSVPNode::updateReservation(const RSVPNodeSession& session, cons
 	
 	_resvStates.set(session, resvState);
 
-	return NULL;
+	return;
 }
 
 int RSVPNode::initialize(ErrorHandler* errh) {
@@ -726,18 +724,11 @@ void RSVPNode::add_handlers() {
 }
 
 void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, uint8_t tos) const {
-	if (IPAddress(src_ip) == IPAddress("0.0.0.0")) {
-		// p->set_user_anno_i(3, 1);
-		src_ip = _myIP;
-	}
-
 	int transportSize = p->transport_header() ? p->end_data() - p->transport_header() : p->length();
 
 	if (p->data() != p->network_header() || p->network_header() == 0) {
-		click_chatter("data pointer: %p, network_header pointer: %p", (void*) p->data(), (void*)p->network_header());
 		p = p->push(sizeof(click_ip));
 	}
-	//p->set_network_header(p->data(), sizeof(click_ip));
 
 	struct click_ip* ip = (click_ip *) p->data();
 	memset(ip, 0, sizeof(click_ip));

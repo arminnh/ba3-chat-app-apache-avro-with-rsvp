@@ -267,8 +267,8 @@ public:
 	~RSVPNode();
 	
 	virtual void push(int port, Packet* packet);
-	WritablePacket* updatePathState(Packet*);
-	WritablePacket* updateReservation(const RSVPNodeSession&, const RSVPFilterSpec&, const RSVPFlowspec&, uint32_t refresh_period_r);
+	void updatePathState(Packet*);
+	void updateReservation(const RSVPNodeSession&, const RSVPFilterSpec&, const RSVPFlowspec&, uint32_t refresh_period_r);
 
 	int initialize(ErrorHandler* errh);
 
