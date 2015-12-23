@@ -1,8 +1,6 @@
-verbinding met server nakijken
-verbinding met chat buddy nakijken
-"x" has stopped the video bericht
-geen request naar jezelf
 interrupt input prompt bij exceptions
+cancel video chat
+video framerate
 
 server offline -> boodschap in terminal
 	prive gesprek gaat voort

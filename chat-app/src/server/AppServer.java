@@ -111,7 +111,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		
 		if (this.clients.containsKey(username2.toString())) {
 			this.requests.add(new Request(username1.toString(), username2.toString(), RequestStatus.PENDING));
-			this.clients.get(username2.toString()).proxy.receiveMessage("You have received a private chat request from " + username1.toString() + ".");
+			this.clients.get(username2.toString()).proxy.receiveMessage("\n > You have received a private chat request from " + username1.toString() + ".");
 			return 0;
 		}
 
@@ -122,7 +122,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	@Override
 	public int cancelRequest(CharSequence from, CharSequence to) throws AvroRemoteException {
 		if (this.removeRequest(from, to) == 0) {
-			this.clients.get(to.toString()).proxy.receiveMessage(from.toString() + " has cancelled their request.");
+			this.clients.get("\n > " + to.toString()).proxy.receiveMessage(from.toString() + " has cancelled their request.");
 			return 0;
 		}
 		
@@ -146,7 +146,6 @@ public class AppServer extends TimerTask implements AppServerInterface {
 
 	@Override
 	public int requestResponse(CharSequence from, CharSequence to, boolean responseBool) throws AvroRemoteException {
-		System.out.println("Entered requestResponse");
 		Request r = this.getRequest(from, to);
 
 		// if request does not exist
@@ -164,7 +163,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 				System.out.println("Accepter: " + to.toString() + " Requester: " + from.toString());
 
 				r.setStatus(RequestStatus.ACCEPTED);
-				requester.proxy.receiveMessage(to.toString() + " has accepted your request.");
+				requester.proxy.receiveMessage("\n > " + to.toString() + " has accepted your request.");
 
 				System.out.println(requester.clientIP);
 				accepter.proxy.setPrivateChatClient(from, requester.clientIP, requester.clientPort);
@@ -172,15 +171,15 @@ public class AppServer extends TimerTask implements AppServerInterface {
 				
 				return 0;
 			} else {
-				requester.proxy.receiveMessage(to.toString() + " accepted your request, but you seem to be busy.\nYou received a request which you can accept when you're done.");
-				accepter.proxy.receiveMessage(from.toString() + " is already in a private chat right now. We sent them a new request.");
+				requester.proxy.receiveMessage("\n > " + to.toString() + " accepted your request, but you seem to be busy.\nYou received a request which you can accept when you're done.");
+				accepter.proxy.receiveMessage("\n > " + from.toString() + " is already in a private chat right now. We sent them a new request.");
 				this.removeRequest(from.toString(), to.toString());
 				this.sendRequest(to, from);
 				
 				return 7;
 			}
 		} else {
-			requester.proxy.receiveMessage(to.toString() + " has declined your request.");
+			requester.proxy.receiveMessage("\n > " + to.toString() + " has declined your request.");
 			r.setStatus(RequestStatus.DECLINED);
 			this.removeRequest(from.toString(), to.toString());
 			
@@ -205,7 +204,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 		}
 		
 		if (!hasRequests) {
-			requests = requests + "No requests";
+			requests = requests + "No requests\n";
 		}
 
 		return requests;
