@@ -64,12 +64,20 @@ public:
 		const RSVPSenderTemplate* senderTemplate,
 		const RSVPSenderTSpec* senderTSpec) const;
 	WritablePacket* createResvMessage() const;
+	WritablePacket* createResvMessage(const RSVPSession* p_session,
+		const RSVPHop* p_hop,
+		const RSVPTimeValues* p_timeValues,
+		const RSVPResvConf* p_resvConf,
+		const RSVPFlowspec* p_flowspec,
+		const RSVPFilterSpec* p_filterSpec) const;
 	WritablePacket* createPathErrMessage() const;
 	WritablePacket* createResvErrMessage() const;
 	WritablePacket* createPathTearMessage() const;
 	WritablePacket* createResvTearMessage() const;
 	WritablePacket* createResvConfMessage() const;
 	
+	void die();
+
 private:
 	bool _autoResv;
 	HashTable<RSVPNodeSession, RSVPPathState> _senders;

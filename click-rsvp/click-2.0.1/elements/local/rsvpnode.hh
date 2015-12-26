@@ -268,7 +268,7 @@ public:
 	
 	virtual void push(int port, Packet* packet);
 	void updatePathState(Packet*);
-	void updateReservation(const RSVPNodeSession&, const RSVPFilterSpec&, const RSVPFlowspec&, uint32_t refresh_period_r);
+	void updateReservation(const RSVPNodeSession&, const RSVPFilterSpec*, const RSVPFlowspec*, uint32_t refresh_period_r);
 
 	int initialize(ErrorHandler* errh);
 
@@ -280,7 +280,10 @@ public:
 	const char *port_count() const	{ return "1/1"; }
 	const char *processing() const	{ return PUSH; }
 	
+	static int dieHandle(const String& conf, Element *e, void *thunk, ErrorHandler *errh);
 	static int nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
+	virtual void die();
 
 	int configure(Vector<String>&, ErrorHandler*);
 	void add_handlers();
@@ -289,6 +292,8 @@ public:
 protected:
 	//IPAddress ipForInterface(int 
 	
+	bool _dead;
+
 	IPAddress ipForInterface(int port) const;
 
 	Vector<IPAddress> _ips;
