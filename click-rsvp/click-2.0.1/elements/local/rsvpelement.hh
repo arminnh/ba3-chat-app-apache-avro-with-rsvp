@@ -23,6 +23,8 @@ public:
 	void sendPeriodicPathMessage(const RSVPNodeSession*, const RSVPPathState*);
 	void sendPeriodicResvMessage(const RSVPNodeSession*, const RSVPResvState*);
 
+	virtual void erasePathState(const RSVPNodeSession&);
+
 	virtual void push(int, Packet *);
 	Packet* pull(int);
 

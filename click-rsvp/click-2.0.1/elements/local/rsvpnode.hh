@@ -270,6 +270,9 @@ public:
 	void updatePathState(Packet*);
 	void updateReservation(const RSVPNodeSession&, const RSVPFilterSpec*, const RSVPFlowspec*, uint32_t refresh_period_r);
 
+	virtual void erasePathState(const RSVPNodeSession&);
+	virtual void eraseResvState(const RSVPNodeSession&);
+
 	int initialize(ErrorHandler* errh);
 
 	void run_timer(Timer*);
@@ -288,7 +291,7 @@ public:
 	int configure(Vector<String>&, ErrorHandler*);
 	void add_handlers();
 
-	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip=IPAddress("0.0.0.0"), uint8_t tos=0) const;
+	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip, uint8_t tos) const;
 protected:
 	//IPAddress ipForInterface(int 
 	

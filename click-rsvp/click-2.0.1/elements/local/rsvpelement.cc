@@ -239,9 +239,24 @@ void RSVPElement::sendPeriodicPathMessage(const RSVPNodeSession* session, const 
 	output(0).push(message);
 }
 
+void RSVPElement::erasePathState(const RSVPNodeSession& session) {
+	RSVPNode::erasePathState(session);
+	_reservations.erase(find(_reservations, session));
+}
+
 void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const RSVPResvState* resvState) {
 	HashTable<RSVPNodeSession, RSVPResvState>::const_iterator it = find(_reservations, *session);
-	const RSVPPathState* pathState = &find(_pathStates, *session)->second;
+	HashTable<RSVPNodeSession, RSVPPathState>::const_iterator pathit = find(_pathStates, *session);
+
+	if (it == _reservations.end()) {
+		click_chatter("%s: Trying to send resv message for nonexistent reservation.");
+	}
+
+	if (pathit == _pathStates.end()) {
+		click_chatter("%s: Trying to send resv message for nonexitent path state.");
+	}
+
+	const RSVPPathState* pathState = &pathit->second;
 
 	RSVPSession packetSession; initRSVPSession(&packetSession, session);
 	RSVPHop hop; initRSVPHop(&hop, _myIP, 0);

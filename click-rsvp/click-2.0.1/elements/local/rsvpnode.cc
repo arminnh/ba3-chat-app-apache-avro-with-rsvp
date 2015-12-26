@@ -676,6 +676,24 @@ void RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilte
 	return;
 }
 
+void RSVPNode::erasePathState(const RSVPNodeSession& session) {
+	HashTable<RSVPNodeSession, RSVPPathState>::iterator pathit = find(_pathStates, session);
+	if (pathit != _pathStates.end() && pathit->second.timer) {
+		pathit->second.timer->unschedule();
+	}
+	_pathStates.erase(find(_pathStates, session));
+	
+	eraseResvState(session);
+}
+
+void RSVPNode::eraseResvState(const RSVPNodeSession& session) {
+	HashTable<RSVPNodeSession, RSVPResvState>::iterator resvit = find(_resvStates, session);
+	if (resvit != _resvStates.end() && resvit->second.timer) {
+		resvit->second.timer->unschedule();
+	}
+	_resvStates.erase(find(_resvStates, session));
+}
+
 int RSVPNode::initialize(ErrorHandler* errh) {
 	// find all qos classifiers
 	/*Vector<RSVPQoSClassifier> classifiers;
@@ -699,15 +717,11 @@ int RSVPNode::initialize(ErrorHandler* errh) {
 void RSVPNode::run_timer(Timer* timer) {
 	RSVPNodeSession* session;
 	if ((session = (RSVPNodeSession *) sessionForPathStateTimer(timer))) {
-		_pathStates.erase(find(_pathStates, *session));
-		HashTable<RSVPNodeSession, RSVPResvState>::iterator it = find(_resvStates, *session);
-		if (it != _resvStates.end() && it->second.timer) {
-			it->second.timer->unschedule();
-		}
-		_resvStates.erase(find(_resvStates, *session));
+		erasePathState(*session);
+
 		click_chatter("%s: timeout: path state for %s", _name.c_str(), IPAddress(session->_dst_ip_address).unparse().c_str());
 	} else if ((session = (RSVPNodeSession *) sessionForResvStateTimer(timer))) {
-		_resvStates.erase(find(_resvStates, *session));
+		eraseResvState(*session);
 		click_chatter("%s: timeout: resv state for %s", _name.c_str(), IPAddress(session->_dst_ip_address).unparse().c_str());
 	} // TODO
 }
