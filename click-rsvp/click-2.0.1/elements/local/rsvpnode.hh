@@ -283,14 +283,15 @@ public:
 	void updatePathState(Packet*);
 	void updateReservation(const RSVPNodeSession&, const RSVPFilterSpec*, const RSVPFlowspec*, uint32_t refresh_period_r);
 
-	virtual void erasePathState(const RSVPNodeSession&);
-	virtual void eraseResvState(const RSVPNodeSession&);
+	virtual void createSession(const RSVPNodeSession&);
+	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
+	virtual void eraseResvState(const RSVPNodeSession&, const RSVPSender&);
 
 	int initialize(ErrorHandler* errh);
 
 	void run_timer(Timer*);
-	const RSVPNodeSession* sessionForPathStateTimer(const Timer*) const;
-	const RSVPNodeSession* sessionForResvStateTimer(const Timer*) const;
+	const RSVPNodeSession* sessionForPathStateTimer(const Timer*, const RSVPSender** sender) const;
+	const RSVPNodeSession* sessionForResvStateTimer(const Timer*, const RSVPSender** sender) const;
 	
 	const char *class_name() const	{ return "RSVPNode"; }
 	const char *port_count() const	{ return "1/1"; }
@@ -318,8 +319,8 @@ protected:
 	int _tos;
 	String _name;
 	in_addr _myIP;
-	HashTable<RSVPNodeSession, RSVPPathState> _pathStates;
-	HashTable<RSVPNodeSession, RSVPResvState> _resvStates;
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> > _pathStates;
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> > _resvStates;
 };
 
 CLICK_ENDDECLS

@@ -18,12 +18,13 @@ public:
 	int configure(Vector<String>&, ErrorHandler*);
 	int initialize(ErrorHandler *);
 	void run_timer(Timer *);
-	const RSVPNodeSession* sessionForSenderTimer(const Timer *) const;
-	const RSVPNodeSession* sessionForReservationTimer(const Timer *) const;
-	void sendPeriodicPathMessage(const RSVPNodeSession*, const RSVPPathState*);
-	void sendPeriodicResvMessage(const RSVPNodeSession*, const RSVPResvState*);
+	const RSVPNodeSession* sessionForSenderTimer(const Timer *, const RSVPSender**) const;
+	const RSVPNodeSession* sessionForReservationTimer(const Timer *, const RSVPSender**) const;
+	void sendPeriodicPathMessage(const RSVPNodeSession*, const RSVPSender*);
+	void sendPeriodicResvMessage(const RSVPNodeSession*, const RSVPSender*);
 
-	virtual void erasePathState(const RSVPNodeSession&);
+	virtual void createSession(const RSVPNodeSession&);
+	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
 
 	virtual void push(int, Packet *);
 	Packet* pull(int);
@@ -82,8 +83,8 @@ public:
 
 private:
 	bool _autoResv;
-	HashTable<RSVPNodeSession, RSVPPathState> _senders;
-	HashTable<RSVPNodeSession, RSVPResvState> _reservations;
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> > _senders;
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> > _reservations;
 
 	bool _application;
 	void clean();
