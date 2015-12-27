@@ -265,6 +265,11 @@ void initRSVPSenderTemplate(RSVPSenderTemplate* senderTemplate, in_addr src_addr
 	senderTemplate->header.class_num = RSVP_CLASS_SENDER_TEMPLATE;
 }
 
+void initRSVPSenderTemplate(RSVPSenderTemplate* senderTemplate, const RSVPSender& sender)
+{
+	initRSVPSenderTemplate(senderTemplate, sender.src_address, sender.src_port);
+}
+
 void initRSVPSenderTSpec(RSVPSenderTSpec* senderTSpec,
 	float token_bucket_rate,
 	float token_bucket_size,
@@ -482,6 +487,24 @@ bool RSVPNodeSession::operator==(const RSVPNodeSession& other) const {
 		&& _protocol_id == other._protocol_id
 		&& _dst_port == other._dst_port;
 }
+
+RSVPSender::RSVPSender() : key(1), src_address(IPAddress("0.0.0.0")), src_port(0) {}
+
+RSVPSender::RSVPSender(const RSVPSenderTemplate& senderTemplate) : key(1) {
+	in_addr sa;
+	readRSVPSenderTemplate(&senderTemplate, &sa, &src_port);
+	src_address = IPAddress(sa);
+}
+
+RSVPSender::key_const_reference RSVPSender::hashcode() const {
+	return key;
+}
+
+bool RSVPSender::operator==(const RSVPSender& other) const {
+	return src_address == other.src_address
+		&& src_port == other.src_port;
+}
+
 
 RSVPNode::RSVPNode() : _dead(false), _tos(1)
 {}

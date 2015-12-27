@@ -186,6 +186,18 @@ struct RSVPResvState {
 	Timer* timer;
 };
 
+struct RSVPSender {
+	RSVPSender();
+	RSVPSender(const RSVPSenderTemplate&);
+	typedef long unsigned int key_type;
+	typedef const key_type& key_const_reference;
+	key_const_reference hashcode() const;
+	key_type key;
+	bool operator==(const RSVPSender& other) const;
+	IPAddress src_address;
+	uint16_t src_port;
+};
+
 uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type);
 uint16_t sizeofRSVPScopeObject(size_t num_addresses);
 const RSVPObjectHeader* nextRSVPObject(const RSVPObjectHeader*);
@@ -210,6 +222,7 @@ void initRSVPFlowspec(RSVPFlowspec*,
 void initRSVPFlowspec(RSVPFlowspec*, const RSVPSenderTSpec*);
 void initRSVPFilterSpec(RSVPFilterSpec*, in_addr src_address, uint16_t src_port);
 void initRSVPSenderTemplate(RSVPSenderTemplate*, in_addr src_address, uint16_t src_port);
+void initRSVPSenderTemplate(RSVPSenderTemplate*, const RSVPSender&);
 void initRSVPSenderTSpec(RSVPSenderTSpec*,
 	float token_bucket_rate,
 	float token_bucket_size,
