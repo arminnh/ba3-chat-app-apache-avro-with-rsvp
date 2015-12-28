@@ -203,21 +203,22 @@ void RSVPElement::run_timer(Timer* timer) {
 // static int i = 0;
 	if ((session = sessionForSenderTimer(timer, &sender))) {
 		sendPeriodicPathMessage(session, sender);
-
+// click_chatter("%s: timer %p is for sending a periocic path message", _name.c_str(), timer);
 		refresh_period_r = _senders.find(*session)->second.find(*sender)->second.refresh_period_r;
 	} else if ((session = (RSVPNodeSession *) sessionForReservationTimer(timer, &sender))) {
 		// click_chatter("%s: sending periodic resv message %d", _name.c_str(), ++i);
 		sendPeriodicResvMessage(session, sender);
-
+// click_chatter("%s: timer %p is for sending a periocic resv message", _name.c_str(), timer);
 		refresh_period_r = _reservations.find(*session)->second.find(*sender)->second.refresh_period_r;
 	} else {
+		click_chatter("%s: timer %p seems to be a timeout timer", _name.c_str(), timer);
 		RSVPNode::run_timer(timer);
 		return;
 	}
 	
 	double randomized_refresh = 1000 * ((double) rand() / RAND_MAX + 0.5) * refresh_period_r;
 	// click_chatter("%s: setting randomized refresh to %f with R = %d", _name.c_str(), randomized_refresh / 1000, refresh_period_r);
-	// click_chatter("rescheduling timer %p", (void*) timer);
+	// click_chatter("%s: rescheduling timer %p", _name.c_str(), (void*) timer);
 	timer->reschedule_after_msec(randomized_refresh);
 
 	return;
@@ -243,8 +244,12 @@ void RSVPElement::sendPeriodicPathMessage(const RSVPNodeSession* session, const 
 
 void RSVPElement::createSession(const RSVPNodeSession& session) {
 	RSVPNode::createSession(session);
-	_senders.set(session, HashTable<RSVPSender, RSVPPathState>());
-	_reservations.set(session, HashTable<RSVPSender, RSVPResvState>());
+	if (_senders.find(session) == _senders.end()) {
+		_senders.set(session, HashTable<RSVPSender, RSVPPathState>());
+	}
+	if (_reservations.find(session) == _reservations.end()) {
+		_reservations.set(session, HashTable<RSVPSender, RSVPResvState>());
+	}
 }
 
 void RSVPElement::erasePathState(const RSVPNodeSession& session, const RSVPSender& sender) {

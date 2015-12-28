@@ -561,12 +561,13 @@ void RSVPNode::push(int port, Packet* packet) {
 		const RSVPFilterSpec* filterSpec = (const RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
 
 		// get path state associated with this resv message
-		HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator it = find(_pathStates, RSVPNodeSession(*session));
-		if (it == _pathStates.end()) {
+		HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator pathit = find(_pathStates, RSVPNodeSession(*session));
+		HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator resvit = _resvStates.find(RSVPNodeSession(*session));
+		if (pathit == _pathStates.end() || resvit == _resvStates.end()) {
 			click_chatter("%s: received resv message for nonexistent session.");
 			packet->kill();
 			return;
-		} else if (find(_resvStates, RSVPNodeSession(*session)) == _resvStates.end()) {
+		} else if (resvit->second.find(*filterSpec) == resvit->second.end()) {
 			click_chatter("%s: creating new resv state for %s", _name.c_str(), IPAddress(session->IPv4_dest_address).unparse().c_str());
 		} else {
 			// click_chatter("%s: updating resv state for %s", _name.c_str(), IPAddress(session->IPv4_dest_address).unparse().c_str());
@@ -574,7 +575,7 @@ void RSVPNode::push(int port, Packet* packet) {
 
 		RSVPPathState pathState;
 		if (filterSpec) {
-			HashTable<RSVPSender, RSVPPathState>::const_iterator it2 = it->second.find(RSVPSender(*filterSpec));
+			HashTable<RSVPSender, RSVPPathState>::const_iterator it2 = pathit->second.find(RSVPSender(*filterSpec));
 			pathState = it2->second;
 		}
 		
