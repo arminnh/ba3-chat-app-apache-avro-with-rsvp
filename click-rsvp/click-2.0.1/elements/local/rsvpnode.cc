@@ -461,7 +461,7 @@ RSVPNodeSession::RSVPNodeSession() : _own(false) {
 	setKey();
 }
 
-RSVPNodeSession::RSVPNodeSession(in_addr dst_addr, uint8_t protocol_id, uint8_t dst_port) : _own(false), _dst_ip_address(dst_addr), _protocol_id(protocol_id), _dst_port(dst_port) {
+RSVPNodeSession::RSVPNodeSession(in_addr dst_addr, uint8_t protocol_id, uint16_t dst_port) : _own(false), _dst_ip_address(dst_addr), _protocol_id(protocol_id), _dst_port(dst_port) {
 	setKey();
 	// key = IPAddress(_dst_ip_address).unparse() + String(_protocol_id) + String(_dst_port);
 }
@@ -489,6 +489,8 @@ bool RSVPNodeSession::operator==(const RSVPNodeSession& other) const {
 }
 
 RSVPSender::RSVPSender() : key(1), src_address(IPAddress("0.0.0.0")), src_port(0) {}
+
+RSVPSender::RSVPSender(in_addr _src_address, uint16_t _src_port) : key(1), src_address(_src_address), src_port(_src_port) {}
 
 RSVPSender::RSVPSender(const RSVPSenderTemplate& senderTemplate) : key(1) {
 	in_addr sa;
@@ -754,6 +756,26 @@ void RSVPNode::eraseResvState(const RSVPNodeSession& session, const RSVPSender& 
 	}
 
 	_resvStates.erase(find(_resvStates, session));
+}
+
+bool RSVPNode::hasReservation(const RSVPNodeSession& session, const RSVPSender& sender) const {
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = _resvStates.find(session);
+	if (_resvStates.begin() != _resvStates.end()) {
+		const RSVPNodeSession& s = _resvStates.begin()->first;
+		/* click_chatter("session didn't match bc %s != %s or %d != %d or %d != %d",
+			IPAddress(session._dst_ip_address).unparse().c_str(),
+			IPAddress(s._dst_ip_address).unparse().c_str(),
+			session._dst_port,
+			s._dst_port,
+			session._protocol_id,
+			s._protocol_id);*/
+	}
+	if (it1 == _resvStates.end()) {
+		return false;
+	}
+	
+	HashTable<RSVPSender, RSVPResvState>::const_iterator it = it1->second.find(sender);
+	return it != it1->second.end();
 }
 
 int RSVPNode::initialize(ErrorHandler* errh) {
