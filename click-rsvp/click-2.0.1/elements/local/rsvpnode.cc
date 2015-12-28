@@ -627,6 +627,7 @@ void RSVPNode::updatePathState(Packet* packet) {
 	} else {
 		timer = new Timer(this);
 		timer->initialize(this);
+		click_chatter("%s: attaching timer %p to path state", _name.c_str(), timer);
 	}
 	//click_chatter("updatePathState: setting table entry");
 
@@ -688,6 +689,7 @@ void RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilte
 	} else {
 		timer = new Timer(this);
 		timer->initialize(this);
+		// click_chatter("%s: attaching timer %p to resv state", _name.c_str(), timer);
 	}
 
 	RSVPResvState resvState;
@@ -729,11 +731,13 @@ void RSVPNode::erasePathState(const RSVPNodeSession& session, const RSVPSender& 
 		return;
 	}
 	HashTable<RSVPSender, RSVPPathState>::iterator pathit = pathit1->second.find(sender);
-	if (pathit != pathit1->second.end() && pathit->second.timer) {
-		pathit->second.timer->unschedule();
+	if (pathit != pathit1->second.end()) {
+		if (pathit->second.timer) {
+			pathit->second.timer->unschedule();
+		}
+		pathit1->second.erase(pathit);
 	}
-	pathit1->second.erase(find(pathit1->second, sender));
-
+	
 	if (pathit1->second.begin() == pathit1->second.end()) {
 		_pathStates.erase(session);
 	}
@@ -747,29 +751,22 @@ void RSVPNode::eraseResvState(const RSVPNodeSession& session, const RSVPSender& 
 		return;
 	}
 	HashTable<RSVPSender, RSVPResvState>::iterator resvit = resvit1->second.find(sender);
-	if (resvit != resvit1->second.end() && resvit->second.timer) {
-		resvit->second.timer->unschedule();
+	if (resvit != resvit1->second.end()) {
+		if (resvit->second.timer) {
+			resvit->second.timer->unschedule();
+		}
+		resvit1->second.erase(resvit);
 	}
 
 	if (resvit1->second.begin() == resvit1->second.end()) {
 		_resvStates.erase(session);
 	}
 
-	_resvStates.erase(find(_resvStates, session));
 }
 
 bool RSVPNode::hasReservation(const RSVPNodeSession& session, const RSVPSender& sender) const {
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = _resvStates.find(session);
-	if (_resvStates.begin() != _resvStates.end()) {
-		const RSVPNodeSession& s = _resvStates.begin()->first;
-		/* click_chatter("session didn't match bc %s != %s or %d != %d or %d != %d",
-			IPAddress(session._dst_ip_address).unparse().c_str(),
-			IPAddress(s._dst_ip_address).unparse().c_str(),
-			session._dst_port,
-			s._dst_port,
-			session._protocol_id,
-			s._protocol_id);*/
-	}
+
 	if (it1 == _resvStates.end()) {
 		return false;
 	}
@@ -804,14 +801,14 @@ void RSVPNode::run_timer(Timer* timer) {
 	if ((session = (RSVPNodeSession *) sessionForPathStateTimer(timer, &sender))) {
 		erasePathState(*session, *sender);
 
-		click_chatter("%s: timeout: path state for %s", _name.c_str(), IPAddress(session->_dst_ip_address).unparse().c_str());
+		// click_chatter("%s-%p: timeout: path state for %s", _name.c_str(), timer, IPAddress(session->_dst_ip_address).unparse().c_str());
 	} else if ((session = (RSVPNodeSession *) sessionForResvStateTimer(timer, &sender))) {
 		eraseResvState(*session, *sender);
-		click_chatter("%s: timeout: resv state for %s", _name.c_str(), IPAddress(session->_dst_ip_address).unparse().c_str());
+		// click_chatter("%s-%p: timeout: resv state for %s", _name.c_str(), timer, IPAddress(session->_dst_ip_address).unparse().c_str());
 	} // TODO
 }
 
-const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer, const RSVPSender** sender) const {	
+const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer, const RSVPSender** sender) const {
 	for (HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator it = _pathStates.begin(); it != _pathStates.end(); it++) {
 		for (HashTable<RSVPSender, RSVPPathState>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); it2++) {
 			if (it2->second.timer == timer) {
@@ -820,10 +817,12 @@ const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer, co
 			}
 		}
 	}
+
+	*sender = NULL;
 	return NULL;
 }
 
-const RSVPNodeSession* RSVPNode::sessionForResvStateTimer(const Timer* timer, const RSVPSender** sender) const {	
+const RSVPNodeSession* RSVPNode::sessionForResvStateTimer(const Timer* timer, const RSVPSender** sender) const {
 	for (HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it = _resvStates.begin(); it != _resvStates.end(); it++) {
 		for (HashTable<RSVPSender, RSVPResvState>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); it2++) {
 			if (it2->second.timer == timer) {
@@ -832,6 +831,8 @@ const RSVPNodeSession* RSVPNode::sessionForResvStateTimer(const Timer* timer, co
 			}
 		}
 	}
+
+	*sender = NULL;
 	return NULL;
 }
 

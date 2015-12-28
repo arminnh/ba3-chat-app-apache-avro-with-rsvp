@@ -123,13 +123,13 @@ cloud[3]
 
 // Traffic generators
 // QoS traffic
-RatedSource(LENGTH 83, RATE 300)
+RatedSource(LENGTH 83, RATE 0)
 	-> DynamicUDPIPEncap(host1_address:ip, 7, host2_address:ip, 2222)
 	-> EtherEncap(0x0800, host1_address:eth, host1_address:eth)
 	-> host1;
 
 // Best Effort traffic
-RatedSource(LENGTH 83, RATE 1000)
+RatedSource(LENGTH 83, RATE 0)
         -> DynamicUDPIPEncap(host1_address:ip, 7, host2_address:ip, 3333)
         -> EtherEncap(0x0800, host1_address:eth, host1_address:eth)
         -> host1;

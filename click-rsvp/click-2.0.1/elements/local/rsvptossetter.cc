@@ -20,9 +20,7 @@ int RSVPToSSetter::configure(Vector<String> &conf, ErrorHandler *errh) {
 
 	_rsvp = (RSVPNode *) router()->find(rsvpElementName, this, errh);
 
-	if (_rsvp) {
-		click_chatter("RSVPToSSetter: found RSVPNode element!");
-	} else {
+	if (!_rsvp) {
 		click_chatter("RSVPToSSetter: didn't find RSVPNode element.");
 	}
 
@@ -38,18 +36,16 @@ void RSVPToSSetter::push(int, Packet *p)
 	in_addr dst_addr = ip->ip_dst;
 
 	uint16_t src_port, dst_port;
-	uint8_t protocol_id = 0;
+	uint8_t protocol_id = ip->ip_p;
 
-	if (ip->ip_p == 6) { // TCP
+	if (protocol_id == 6) { // TCP
 		const click_tcp* tcp = (const click_tcp *) (ip + 1);
 		src_port = htons(tcp->th_sport);
 		dst_port = htons(tcp->th_dport);
-	} else if (ip->ip_p == 17) { // UDP
+	} else if (protocol_id == 17) { // UDP
 		const click_udp* udp = (const click_udp *) (ip + 1);
 		src_port = htons(udp->uh_sport);
 		dst_port = htons(udp->uh_dport);
-	} else {
-		click_chatter("protocol id in IP header was not TCP or UDP");
 	}
 // click_chatter("src_addr: %s, dst_addr: %s, src_port: %d, dst_port: %d", IPAddress(src_addr).unparse().c_str(), IPAddress(dst_addr).unparse().c_str(), src_port, dst_port);
 	RSVPNodeSession session(dst_addr, protocol_id, dst_port);

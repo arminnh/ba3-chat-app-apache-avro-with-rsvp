@@ -260,9 +260,30 @@ void RSVPElement::erasePathState(const RSVPNodeSession& session, const RSVPSende
 		return;
 	}
 
-	it->second.erase(find(it->second, sender));
+	it->second.erase(it->second.find(sender));
 	if (it->second.begin() == it->second.end()) {
 		_reservations.erase(session);
+	}
+}
+
+void RSVPElement::eraseResvState(const RSVPNodeSession& session, const RSVPSender& sender) {
+	RSVPNode::eraseResvState(session, sender);
+
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator resvit1 = _reservations.find(session);
+	if (resvit1 == _reservations.end()) {
+		return;
+	}
+
+	HashTable<RSVPSender, RSVPResvState>::iterator resvit = resvit1->second.find(sender);
+	if (resvit != resvit1->second.end()) {
+		if (resvit->second.timer) {
+			resvit->second.timer->unschedule();
+		}
+		resvit1->second.erase(resvit);
+	}
+
+	if (resvit1->second.begin() == resvit1->second.end()) {
+		_resvStates.erase(session);
 	}
 }
 
@@ -271,7 +292,7 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator pathit1 = find(_pathStates, *session);
 
 	if (pathit1 == _pathStates.end() || it1 == _resvStates.end()) {
-		click_chatter("Trying to send resv message for nonexistent session");
+		click_chatter("%s: Trying to send resv message for nonexistent session", _name.c_str());
 		return;
 	}
 
@@ -318,7 +339,7 @@ const RSVPNodeSession* RSVPElement::sessionForSenderTimer(const Timer* timer, co
 		}
 	}
 
-	sender = NULL;
+	*sender = NULL;
 	return NULL;
 }
 
@@ -332,7 +353,7 @@ const RSVPNodeSession* RSVPElement::sessionForReservationTimer(const Timer* time
 		}
 	}
 
-	sender = NULL;
+	*sender = NULL;
 	return NULL;
 }
 
@@ -437,8 +458,6 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 		"TTL", 0, cpInteger, &me->_TTL,
 		"REFRESH", 0, cpBool, &refresh, cpEnd) < 0) return -1;
 	
-	uint32_t r;
-	
 	RSVPNodeSession nodeSession(me->_session);
 	RSVPPathState pathState;
 	pathState.senderTemplate = me->_senderTemplate;
@@ -455,7 +474,7 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 		pathState.timer->schedule_now();
 	} else {
 		me->sendPeriodicPathMessage(&nodeSession, &sender);
-		me->_senders.erase(find(me->_senders, nodeSession));
+		me->erasePathState(nodeSession, sender);
 	}
 	
 	//Element* classifier = me->router()->find("in_cl", me);

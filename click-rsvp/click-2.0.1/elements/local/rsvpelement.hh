@@ -25,6 +25,7 @@ public:
 
 	virtual void createSession(const RSVPNodeSession&);
 	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
+	virtual void eraseResvState(const RSVPNodeSession&, const RSVPSender&);
 
 	virtual void push(int, Packet *);
 	Packet* pull(int);
