@@ -186,6 +186,18 @@ struct RSVPResvState {
 	Timer* timer;
 };
 
+struct RSVPSender {
+	RSVPSender();
+	RSVPSender(const RSVPSenderTemplate&);
+	typedef long unsigned int key_type;
+	typedef const key_type& key_const_reference;
+	key_const_reference hashcode() const;
+	key_type key;
+	bool operator==(const RSVPSender& other) const;
+	IPAddress src_address;
+	uint16_t src_port;
+};
+
 uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type);
 uint16_t sizeofRSVPScopeObject(size_t num_addresses);
 const RSVPObjectHeader* nextRSVPObject(const RSVPObjectHeader*);
@@ -210,6 +222,7 @@ void initRSVPFlowspec(RSVPFlowspec*,
 void initRSVPFlowspec(RSVPFlowspec*, const RSVPSenderTSpec*);
 void initRSVPFilterSpec(RSVPFilterSpec*, in_addr src_address, uint16_t src_port);
 void initRSVPSenderTemplate(RSVPSenderTemplate*, in_addr src_address, uint16_t src_port);
+void initRSVPSenderTemplate(RSVPSenderTemplate*, const RSVPSender&);
 void initRSVPSenderTSpec(RSVPSenderTSpec*,
 	float token_bucket_rate,
 	float token_bucket_size,
@@ -268,27 +281,36 @@ public:
 	
 	virtual void push(int port, Packet* packet);
 	void updatePathState(Packet*);
-	void updateReservation(const RSVPNodeSession&, const RSVPFilterSpec&, const RSVPFlowspec&, uint32_t refresh_period_r);
+	void updateReservation(const RSVPNodeSession&, const RSVPFilterSpec*, const RSVPFlowspec*, uint32_t refresh_period_r);
+
+	virtual void createSession(const RSVPNodeSession&);
+	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
+	virtual void eraseResvState(const RSVPNodeSession&, const RSVPSender&);
 
 	int initialize(ErrorHandler* errh);
 
 	void run_timer(Timer*);
-	const RSVPNodeSession* sessionForPathStateTimer(const Timer*) const;
-	const RSVPNodeSession* sessionForResvStateTimer(const Timer*) const;
+	const RSVPNodeSession* sessionForPathStateTimer(const Timer*, const RSVPSender** sender) const;
+	const RSVPNodeSession* sessionForResvStateTimer(const Timer*, const RSVPSender** sender) const;
 	
 	const char *class_name() const	{ return "RSVPNode"; }
 	const char *port_count() const	{ return "1/1"; }
 	const char *processing() const	{ return PUSH; }
 	
+	static int dieHandle(const String& conf, Element *e, void *thunk, ErrorHandler *errh);
 	static int nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
+	virtual void die();
 
 	int configure(Vector<String>&, ErrorHandler*);
 	void add_handlers();
 
-	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip=IPAddress("0.0.0.0"), uint8_t tos=0) const;
+	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip, uint8_t tos) const;
 protected:
 	//IPAddress ipForInterface(int 
 	
+	bool _dead;
+
 	IPAddress ipForInterface(int port) const;
 
 	Vector<IPAddress> _ips;
@@ -297,8 +319,8 @@ protected:
 	int _tos;
 	String _name;
 	in_addr _myIP;
-	HashTable<RSVPNodeSession, RSVPPathState> _pathStates;
-	HashTable<RSVPNodeSession, RSVPResvState> _resvStates;
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> > _pathStates;
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> > _resvStates;
 };
 
 CLICK_ENDDECLS
