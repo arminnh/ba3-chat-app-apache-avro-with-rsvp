@@ -1,3 +1,0 @@
-graceful private chat shutdown
-switching chat modes
-video streaming RAM usage

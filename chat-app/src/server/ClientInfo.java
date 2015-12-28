@@ -2,6 +2,8 @@ package server;
 
 import java.io.IOException;
 import java.net.*;
+
+import org.apache.avro.AvroRemoteException;
 import org.apache.avro.ipc.*;
 import org.apache.avro.ipc.specific.SpecificRequestor;
 
@@ -34,6 +36,21 @@ public class ClientInfo {
 			e.printStackTrace();
 		} catch (IOException e) { // SaslSocketTransceiver and SpecificRequestor
 			e.printStackTrace();
+		}
+	}
+	
+	public void shutdown(boolean first) {
+		try {
+			if (first) {
+				this.proxy.leftPrivateChat();
+				this.proxy.shutdownPrivateChat(false);
+			}
+			this.transceiver.close();
+			this.proxy = null;
+		} catch (AvroRemoteException e) {
+			System.out.println("proxy error shit");
+		} catch (IOException e) { // transceiver.close()
+			System.out.println("this.transceiver.close()");
 		}
 	}
 }

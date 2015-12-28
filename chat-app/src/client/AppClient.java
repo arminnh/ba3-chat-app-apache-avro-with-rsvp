@@ -30,7 +30,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private CharSequence username;
 	private ClientStatus status;
 	private String clientIP, serverIP;
-	private int clientPort, serverPort;
+	private int clientPort, serverPort, reconnectAttempts;
 	private AppServerInterface appServer;
 
 	private ClientInfo privateChatClient;
@@ -39,7 +39,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private JFrame senderFrame = new JFrame();
 	private JFrame receiverFrame = new JFrame();
 	private Graphics receiverG;
-	private int reconnectAttempts;
 
 	// ======================================================================================
 
@@ -142,6 +141,23 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		return 0;
 	}
 
+	@Override
+	public int shutdownPrivateChat(boolean first) {
+		this.privateChatClientArrived = false;
+		this.videoRequestPending = false;
+		this.videoRequestAccepted = false;
+		
+		this.senderFrame.setVisible(false);
+		this.receiverFrame.setVisible(false);
+		
+		if (this.privateChatClient != null) {
+			this.privateChatClient.shutdown(first);
+			this.privateChatClient = null;
+		}
+		
+		return 0;
+	}
+
 	/*
 	 * COMMANDS
 	 */
@@ -163,8 +179,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.setStatus(ClientStatus.PUBLIC);
 
 		System.out.println("\n > " + "You entered the public chatroom.");
-		this.joinChat();
-		System.out.println("\n > " + "You have left the public chat.");
+		int response = this.joinChat();
+		if (response != 0)
+			ErrorWriter.printError(response);
 	}
 
 	@Command
@@ -186,7 +203,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		}
 		
 		if (this.appServer.isRequestStatus((CharSequence) username, this.username, RequestStatus.PENDING)) {
-			this.acceptRequest(username);
+			this.acceptRequest(username, false);
 			return;
 		}
 		
@@ -209,23 +226,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 	@Command
 	public void acceptRequest(String username) throws AvroRemoteException {
-		if (!this.isConnectedToServer())
-			return;
-
-		int response = this.appServer.requestResponse((CharSequence) username, this.username, true);
-
-		// server.requestResponse returned success code
-		if (response == 0) {
-			this.setStatus(ClientStatus.PRIVATE);
-			this.privateChatClient.proxy .receiveMessage("\n > " + this.username + " has accepted your chat request. Use the command startPrivateChat to start chatting!");
-
-			System.out.println("\n > " + "You entered a private chatroom with " + this.privateChatClient.username + ". Wait for them to arrive.");
-			this.joinPrivateChat();
-		} else {
-			ErrorWriter.printError(response);
-		}
+		this.acceptRequest(username, false);
 	}
-
+	
 	@Command
 	public void declineRequest(String username) throws AvroRemoteException {
 		if (!this.isConnectedToServer())
@@ -242,25 +245,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 	@Command
 	public void startPrivateChat() throws AvroRemoteException {
-		if (!this.isConnectedToServer())
-			return;
-
-		if (!this.appServer.isRequestStatusFrom(this.username, RequestStatus.ACCEPTED)) {
-			ErrorWriter.printError(11);
-			return;
-		}
-
-		this.setStatus(ClientStatus.PRIVATE);
-
-		this.privateChatClientArrived = true;
-		this.privateChatClient.proxy.setPrivateChatClientArrived(true);
-		this.privateChatClient.proxy.receiveMessage("\n > " + this.username.toString() + " has entered the private chat.");
-		this.appServer.removeRequest(this.username, this.privateChatClient.username);
-
-		System.out.println("\n > You entered a private chatroom with " + this.privateChatClient.username);
-		this.joinPrivateChat();
+		this.startPrivateChat(false);
 	}
-
+	
 	/*
 	 * OTHER METHODS
 	 */
@@ -295,13 +282,35 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		return true;
 	}
 
-	private int setStatus(ClientStatus status) throws AvroRemoteException {
-		this.appServer.setClientState(this.username, status);
+	private int setStatus(ClientStatus status) {
+		try {
+			this.appServer.setClientState(this.username, status);
+		} catch (AvroRemoteException e) {
+			System.err.println("Not connected to server right now.");
+		}
 		this.status = status;
 		return 0;
 	}
+	
+	private void acceptRequest(String username, boolean isInChatMode) throws AvroRemoteException {
+		if (!this.isConnectedToServer())
+			return;
 
-	// TEST SWITCHING BETWEEN CHAT MODES
+		int response = this.appServer.requestResponse((CharSequence) username, this.username, true);
+
+		// server.requestResponse returned success code
+		if (response == 0) {
+			this.setStatus(ClientStatus.PRIVATE);
+			this.privateChatClient.proxy .receiveMessage("\n > " + this.username + " has accepted your chat request. Use the command startPrivateChat to start chatting!");
+
+			System.out.println("\n > " + "You started a private chatroom with " + this.privateChatClient.username + ". Wait for them to arrive.");
+			if (!isInChatMode)
+				this.joinPrivateChat();
+		} else {
+			ErrorWriter.printError(response);
+		}
+	}
+
 	private int joinChat() throws AvroRemoteException {
 		System.out.println(" > The commands are different here, type ?list to get the list of commands.");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -314,7 +323,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 				input = br.readLine().toLowerCase();
 			}
-		} catch (IOException e) {
+			System.out.println("\n > You have left the chatroom.");
+		} catch (Exception e) {
+			e.printStackTrace();
 			this.setStatus(ClientStatus.LOBBY);
 			return 10;
 		}
@@ -344,7 +355,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 		} else if (input.matches("(\\?)(sendrequest|sr)\\s+[^\\s]+")) {
 			System.out.println("sr");
-			// TODO: check array bounds
 			sendRequest(input.split("\\s+")[1]);
 
 		} else if (input.matches("(\\?)(cancelrequest|cr)\\s+[^\\s]+")) {
@@ -409,14 +419,14 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private void publicChatCommands(String input) throws IOException {
 		if (input.matches("(\\?)(acceptrequest|ar)\\s+[^\\s]+")) {
 			System.out.println("ar");
-			acceptRequest(input.split("\\s+")[1]);
+			acceptRequest(input.split("\\s+")[1], true);
 
 			// go to the private chat if you have an open request that was accepted
 		} else if (input.matches("(\\?)(joinprivatechat|jpc|startprivatechat|spc)") && appServer.isRequestStatusFrom(username, RequestStatus.ACCEPTED)) {
 			System.out.println("join private chat");
-			System.out.println("\n > Left the public chatroom.\n > Joined private chat with " + privateChatClient.username + ".");
-			setStatus(ClientStatus.PRIVATE);
-			// TODO: handle private chat stuff
+			System.out.println("\n > Left the public chatroom.");
+			this.startPrivateChat(true);
+			this.setStatus(ClientStatus.PRIVATE);
 
 			// if no command was detected, send input to everyone in public chat mode
 		} else if (this.isConnectedToServer()) {
@@ -428,8 +438,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private void privateChatCommands(String input) throws AvroRemoteException {
 		if (input.matches("(\\?)(joinpublicchat|jpc)")) {
 			System.out.println("\n > Left the private chat.\n > Joined the public chatroom.");
-			setStatus(ClientStatus.PUBLIC);
-			// TODO: private chat cleanup
+			this.shutdownPrivateChat(this.privateChatClient != null);
+			this.setStatus(ClientStatus.PUBLIC);
 		}
 
 		if (privateChatClientArrived && this.privateChatClient != null) {
@@ -459,6 +469,27 @@ public class AppClient extends TimerTask implements AppClientInterface {
 				this.privateChatClient.proxy.receiveMessage(time + ": " + input);
 			}
 		}
+	}
+	
+	private void startPrivateChat(boolean isInChatMode) throws AvroRemoteException {
+		if (!this.isConnectedToServer())
+			return;
+
+		if (!this.appServer.isRequestStatusFrom(this.username, RequestStatus.ACCEPTED)) {
+			ErrorWriter.printError(11);
+			return;
+		}
+
+		this.setStatus(ClientStatus.PRIVATE);
+
+		this.privateChatClientArrived = true;
+		this.privateChatClient.proxy.setPrivateChatClientArrived(true);
+		this.privateChatClient.proxy.receiveMessage("\n > " + this.username.toString() + " has entered the private chat.");
+		this.appServer.removeRequest(this.username, this.privateChatClient.username);
+
+		System.out.println("\n > You entered a private chatroom with " + this.privateChatClient.username);
+		if (!isInChatMode)
+			this.joinPrivateChat();
 	}
 
 	private void declineVideoRequest() throws AvroRemoteException {
@@ -495,26 +526,12 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	}
 
 	private void joinPrivateChat() throws AvroRemoteException {
-		//TODO: interrupt other chat on exit
 		int response = this.joinChat();
 
-		if (response == 0)
-			System.out.println("\n > You have left the private chat.");
-		else
+		if (response != 0)
 			ErrorWriter.printError(response);
 
-		if (this.privateChatClient != null) {
-			try {
-				if (this.privateChatClientArrived) {
-					this.privateChatClient.proxy.leftPrivateChat();
-				}
-				this.privateChatClient.transceiver.close();
-				this.privateChatClient = null;
-			} catch (IOException e) {
-			}
-		}
-
-		this.privateChatClientArrived = false;
+		this.shutdownPrivateChat(this.privateChatClient != null);
 	}
 
 	// function that will be ran periodically by a Timer
@@ -560,12 +577,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 				this.privateChatClient.proxy.echo(666);
 			}
 		} catch (AvroRemoteException e) {
-			System.out.println("\n > Disconnected from private chat. Returning to lobby. ");
-			// TODO: try to clean up gracefully
-			// TODO: interrupt chat
-			this.senderFrame.setVisible(false);
-			this.receiverFrame.setVisible(false);
-			this.privateChatClient = null;
+			System.out.println("\n > Disconnected from private chat. Write ?q to return to lobby. ");
+			this.shutdownPrivateChat(this.privateChatClient != null);
 
 		}
 	}

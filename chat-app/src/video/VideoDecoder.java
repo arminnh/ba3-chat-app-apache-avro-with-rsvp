@@ -40,14 +40,12 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
         this.initVideoStreamIndex(container);
         
         fps = container.getStream(videoStreamIndex).getFrameRate().getDouble();
-        s.MICRO_SECONDS_PER_FRAME = (long) (1000000.0 / fps);
-        System.out.println("FPS: " + fps + ", microseconds per frame: " + s.MICRO_SECONDS_PER_FRAME);
+        //System.out.println("FPS: " + fps + ", microseconds per frame: " + s.MICRO_SECONDS_PER_FRAME);
     }
 
 	private void initVideoStreamIndex(IContainer container) {
 		for (int i = 0; i < container.getNumStreams(); i++) {
 			// Find the stream object
-			System.out.println(i);
 			IStream stream = container.getStream(i);
 			
 			// Get the pre-configured decoder that can decode this stream;
@@ -68,7 +66,7 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
         while (this.reader.readPacket() == null && s.frame.isVisible()) {
             do { } while (false);
         }
-        System.out.println("VIDEO DECODED");
+        //System.out.println("VIDEO DECODED");
         
     	s.videoDecoded = true;
 	}

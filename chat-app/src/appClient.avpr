@@ -42,6 +42,10 @@
         "setFrameVisible": {
         	"request": [{"name": "visible", "type": "boolean"}],
         	"response": "int"
-    	}
+    	},
+    	"shutdownPrivateChat":  {
+    		"request": [{"name": "first", "type": "boolean"}],
+    		"response":  "int"
+		}
     }
 }
