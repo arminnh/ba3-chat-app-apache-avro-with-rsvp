@@ -4,6 +4,8 @@ import javax.swing.JPanel;
 import javax.swing.JFrame;
 import javax.imageio.ImageIO;
 import java.awt.Image;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.Graphics;
 import java.awt.BorderLayout;
 
@@ -67,12 +69,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	}
 
 	@Override
-	public int receiveRequest(CharSequence request) throws AvroRemoteException {
-		System.out.println(request.toString());
-		return 0;
-	}
-
-	@Override
 	public int setPrivateChatClient(CharSequence username, CharSequence ipaddress, int port) {
 		ClientInfo client = new ClientInfo(username, ipaddress, port);
 
@@ -94,7 +90,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 	@Override
 	public int leftPrivateChat() throws AvroRemoteException {
-		System.out.println("\n > " + this.privateChatClient.username + " has left the private chat. Messages you write will now not be sent.");
+		String name = this.privateChatClient.username != null ? this.privateChatClient.username : "Your chat buddy";
+		System.out.println("\n > " + name + " has left the private chat. Messages you write will now not be sent.");
 		System.out.println(" > You can now choose to go to either the lobby or the public chatroom.");
 		this.privateChatClientArrived = false;
 
@@ -133,12 +130,27 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	}
 
 	@Override
-	public int setFrameVisible(boolean visible) throws AvroRemoteException {
-		this.receiverFrame.setVisible(visible);
-		if (visible)
-			this.receiverG = this.receiverFrame.getGraphics();
+	public int setFrameVisible(boolean receiving, boolean visible) throws AvroRemoteException {
+		if (receiving) {
+			this.receiverFrame.setVisible(visible);
+			if (visible)
+				this.receiverG = this.receiverFrame.getGraphics();
+		} else {
+			this.senderFrame.setVisible(visible);
+			if (visible)
+				this.receiverG = this.receiverFrame.getGraphics();
+		}
 
 		return 0;
+	}
+	
+	@Override
+	public boolean isFrameVisible(boolean receiving) throws AvroRemoteException {
+		if (receiving) {
+			return this.receiverFrame.isVisible();
+		} else {
+			return this.senderFrame.isVisible();
+		}
 	}
 
 	@Override
@@ -237,7 +249,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		int response = this.appServer.requestResponse((CharSequence) username, this.username, false);
 
 		if (response == 0) {
-			System.out.println("\n > You have declined the request from" + username + "");
+			System.out.println("\n > You have declined the request from " + username + ".");
 		} else {
 			ErrorWriter.printError(response);
 		}
@@ -249,68 +261,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	}
 	
 	/*
-	 * OTHER METHODS
+	 * CHAT RELATED METHODS
 	 */
-
-	public void initJFrames(int x, int y, int width, int height) {
-		this.senderFrame = new JFrame();
-		this.senderFrame.getContentPane().add(new JPanel(new BorderLayout()));
-		this.senderFrame.setBounds(x, y, width, height);
-
-		this.receiverFrame = new JFrame();
-		this.receiverFrame.getContentPane().add(new JPanel(new BorderLayout()));
-		this.receiverFrame.setBounds(x + width + 50, y, width, height);
-	}
-
-	public int register(String username) throws AvroRemoteException {
-		if (this.appServer.isNameAvailable((CharSequence) username)) {
-			this.appServer.registerClient((CharSequence) username, (CharSequence) clientIP, clientPort);
-			this.username = username;
-			this.connectedToServer = true;
-			return 0;
-		}
-
-		return 9;
-	}
-
-	private boolean isConnectedToServer() {
-		if (!this.connectedToServer) {
-			System.err.println(" > Not connected to server right now.");
-			return false;
-		}
-
-		return true;
-	}
-
-	private int setStatus(ClientStatus status) {
-		try {
-			this.appServer.setClientState(this.username, status);
-		} catch (AvroRemoteException e) {
-			System.err.println("Not connected to server right now.");
-		}
-		this.status = status;
-		return 0;
-	}
 	
-	private void acceptRequest(String username, boolean isInChatMode) throws AvroRemoteException {
-		if (!this.isConnectedToServer())
-			return;
-
-		int response = this.appServer.requestResponse((CharSequence) username, this.username, true);
-
-		// server.requestResponse returned success code
-		if (response == 0) {
-			this.setStatus(ClientStatus.PRIVATE);
-			this.privateChatClient.proxy .receiveMessage("\n > " + this.username + " has accepted your chat request. Use the command startPrivateChat to start chatting!");
-
-			System.out.println("\n > " + "You started a private chatroom with " + this.privateChatClient.username + ". Wait for them to arrive.");
-			if (!isInChatMode)
-				this.joinPrivateChat();
-		} else {
-			ErrorWriter.printError(response);
-		}
-	}
-
 	private int joinChat() throws AvroRemoteException {
 		System.out.println(" > The commands are different here, type ?list to get the list of commands.");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -320,9 +273,12 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 			while (!input.matches("(\\?)(leave|q)")) {
 				chatCommands(input);
-
 				input = br.readLine().toLowerCase();
 			}
+			
+			if (this.status == ClientStatus.PRIVATE)
+				this.shutdownPrivateChat(this.privateChatClient != null);
+			
 			System.out.println("\n > You have left the chatroom.");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -342,35 +298,27 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private void chatCommands(String input) throws IOException {
 		// check for all the global commands first, then public/private chat
 		if (input.matches("(\\?)(list|l)")) {
-			System.out.println("list");
 			chatCommandsList();
 
 		} else if (input.matches("(\\?)(getlistofusers|glou)")) {
-			System.out.println("glou");
 			getListOfUsers();
 
 		} else if (input.matches("(\\?)(listmyrequests|lmr)")) {
-			System.out.println("lmr");
 			listMyRequests();
 
 		} else if (input.matches("(\\?)(sendrequest|sr)\\s+[^\\s]+")) {
-			System.out.println("sr");
 			sendRequest(input.split("\\s+")[1]);
 
 		} else if (input.matches("(\\?)(cancelrequest|cr)\\s+[^\\s]+")) {
-			System.out.println("cr");
 			cancelRequest(input.split("\\s+")[1]);
 
 		} else if (input.matches("(\\?)(declinerequest|dr)\\s+[^\\s]+")) {
-			System.out.println("dr");
 			declineRequest(input.split("\\s+")[1]);
 
 		} else if (status == ClientStatus.PUBLIC) {
-			System.out.println("public");
 			publicChatCommands(input);
 
 		} else if (status == ClientStatus.PRIVATE) {
-			System.out.println("private");
 			privateChatCommands(input);
 		}
 	}
@@ -386,7 +334,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 						     + "List your requests:              ?listMyRequests,   ?lmr\n"
 						     + "Send a request to X:             ?sendRequest X,    ?sr X\n"
 						     + "Cancel a request to X:           ?cancelRequest X,  ?cr X\n"
-						     + "Decline a request from X:        ?declineRequest X, ?dc X\n");
+						     + "Decline a request from X:        ?declineRequest X, ?dr X\n");
 
 			// only public chat commands
 			if (status == ClientStatus.PUBLIC) {
@@ -404,7 +352,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		if (status == ClientStatus.PRIVATE) {
 			System.out.println("\n=================          PRIVATE CHAT COMMANDS          ==================\n"
 						     + "Go to the the public chatroom:   ?joinPublicChat, ?jpc\n"
-						     + "Send a video request:            ?videoRequest,    ?vr, ?sendVideoRequest, ?svr");
+						     + "Send a video request:            ?videoRequest,   ?vr, ?sendVideoRequest, ?svr");
 
 			if (videoRequestAccepted)
 				System.out.println("Send a video:                    ?sendVideo,    ?sv");
@@ -418,19 +366,16 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 	private void publicChatCommands(String input) throws IOException {
 		if (input.matches("(\\?)(acceptrequest|ar)\\s+[^\\s]+")) {
-			System.out.println("ar");
 			acceptRequest(input.split("\\s+")[1], true);
 
 			// go to the private chat if you have an open request that was accepted
 		} else if (input.matches("(\\?)(joinprivatechat|jpc|startprivatechat|spc)") && appServer.isRequestStatusFrom(username, RequestStatus.ACCEPTED)) {
-			System.out.println("join private chat");
 			System.out.println("\n > Left the public chatroom.");
 			this.startPrivateChat(true);
 			this.setStatus(ClientStatus.PRIVATE);
 
 			// if no command was detected, send input to everyone in public chat mode
 		} else if (this.isConnectedToServer()) {
-			System.out.println("send public");
 			appServer.sendMessage(username, input);
 		}
 	}
@@ -452,17 +397,14 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 			} else if (videoRequestPending) {
 				if (input.matches("(\\?)(acceptvideo|av)")) {
-					System.out.println("av");
 					acceptVideoRequest();
 				}
 				else if (input.matches("(\\?)(declinevideo|dv)")) {
-					System.out.println("dv");
 					declineVideoRequest();
 				}
 
 				// if no command was detected, send input to the private chat partner
 			} else {
-				System.out.println("send private");
 				Date dNow = new Date( );
 				SimpleDateFormat dFormat = new SimpleDateFormat ("hh:mm");
 				String time = dFormat.format(dNow);
@@ -517,7 +459,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			return;
 		}
 		this.senderFrame.setVisible(true);
-		this.privateChatClient.proxy.setFrameVisible(true);
+		this.privateChatClient.proxy.setFrameVisible(true, true);
 		VideoSender videoSender = new VideoSender(video, this.senderFrame, this.privateChatClient.proxy);
 		Thread sender = new Thread(videoSender);
 		sender.start();
@@ -532,6 +474,126 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			ErrorWriter.printError(response);
 
 		this.shutdownPrivateChat(this.privateChatClient != null);
+	}
+
+	/*
+	 * OTHER METHODS
+	 */
+
+	private int register(String username) throws AvroRemoteException {
+		username = username.replaceAll("\\s+","");
+		if (this.appServer.isNameAvailable((CharSequence) username)) {
+			this.appServer.registerClient((CharSequence) username, (CharSequence) clientIP, clientPort);
+			this.username = username;
+			this.connectedToServer = true;
+			return 0;
+		}
+
+		return 9;
+	}
+
+	public String registerUser(Scanner in) throws AvroRemoteException {
+		// choose a username and register it with the server
+		String username;
+		System.out.println(" > Enter your username.");
+		while (true) {
+			username = in.nextLine();
+			if (this.register(username) == 0) {
+				break;
+			}
+			System.out.println("\n > That name is not available, choose another one.");
+		}
+		return username;
+	}
+
+	public void initJFrames(int x, int y, int width, int height) {
+		this.senderFrame = new JFrame();
+		this.senderFrame.getContentPane().add(new JPanel(new BorderLayout()));
+		this.senderFrame.setBounds(x, y, width, height);
+		this.senderFrame.setTitle("Sending Video");
+
+		this.senderFrame.addWindowListener( new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent we) {
+            	try {
+                	if (privateChatClient != null) {
+                		if (privateChatClient.proxy.isFrameVisible(true)) {
+                			privateChatClient.proxy.receiveMessage(username + " stopped sending video.");
+                			System.out.println(" > You stopped sending the video.");
+                		}
+                		privateChatClient.proxy.setFrameVisible(true, false);
+                	}
+            	} catch (Exception e) {
+            		
+            	}
+            }
+        } );
+
+		this.receiverFrame = new JFrame();
+		this.receiverFrame.getContentPane().add(new JPanel(new BorderLayout()));
+		this.receiverFrame.setBounds(x + width + 50, y, width, height);
+		this.receiverFrame.setTitle("Receiving Video");
+
+		this.receiverFrame.addWindowListener( new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent we) {
+            	try {
+                	if (privateChatClient != null) {
+                		if (privateChatClient.proxy.isFrameVisible(false)) {
+                			privateChatClient.proxy.receiveMessage(username + " stopped receiving video.");
+                			System.out.println(" > You stopped receiving the video.");
+                		}
+                		privateChatClient.proxy.setFrameVisible(false, false);
+                	}
+            	} catch (Exception e) {
+            		
+            	}
+            }
+        } );
+	}
+	
+	private int setStatus(ClientStatus status) {
+		try {
+			this.appServer.setClientState(this.username, status);
+		} catch (AvroRemoteException e) {
+			System.err.println("Not connected to server right now.");
+		}
+		this.status = status;
+		return 0;
+	}
+	
+	private void acceptRequest(String username, boolean isInChatMode) throws AvroRemoteException {
+		if (!this.isConnectedToServer())
+			return;
+		
+		// if somebody else already accepted a request from that user, dont allow this accept
+		if (this.appServer.isRequestStatusFrom((CharSequence) username, RequestStatus.ACCEPTED)) {
+			System.err.println("Somebody else already accepted a request from " + username + ", try again later.");
+			return;
+		}
+
+		int response = this.appServer.requestResponse((CharSequence) username, this.username, true);
+
+		// server.requestResponse returned success code
+		if (response == 0) {
+			this.setStatus(ClientStatus.PRIVATE);
+			this.privateChatClient.proxy .receiveMessage("\n > " + this.username + " has accepted your chat request. Use the command startPrivateChat to start chatting!");
+
+			System.out.println("\n > " + "You started a private chatroom with " + this.privateChatClient.username + ". Wait for them to arrive.");
+			if (!isInChatMode)
+				this.joinPrivateChat();
+		} else {
+			ErrorWriter.printError(response);
+		}
+	}
+
+	private boolean isConnectedToServer() {
+		if (!this.connectedToServer) {
+			System.err.println(" > Not connected to server right now.");
+			return false;
+		}
+
+		return true;
 	}
 
 	// function that will be ran periodically by a Timer
@@ -577,24 +639,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 				this.privateChatClient.proxy.echo(666);
 			}
 		} catch (AvroRemoteException e) {
-			System.out.println("\n > Disconnected from private chat. Write ?q to return to lobby. ");
+			System.out.println("\n > Disconnected from private chat. You can now choose to go to either the lobby or the public chatroom. ");
 			this.shutdownPrivateChat(this.privateChatClient != null);
 
 		}
-	}
-
-	private static String registerUser(Scanner in, AppClient clientRequester) throws AvroRemoteException {
-		// choose a username and register it with the server
-		String username;
-		System.out.println(" > Enter your username.");
-		while (true) {
-			username = in.nextLine();
-			if (clientRequester.register(username) == 0) {
-				break;
-			}
-			System.out.println("\n > That name is already taken, choose another one.");
-		}
-		return username;
 	}
 
 	private static void printWelcome() {
@@ -608,6 +656,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		System.out.println("\n > Welcome to Chat App, type ?list to get a list of available commands.");
 	}
 
+	/*
+	 * MAIN METHOD
+	 */
+	
 	public static void main(String[] argv) {
 		 String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
 		//String clientIP = "143.129.81.7", serverIP = "143.129.81.7";
@@ -657,7 +709,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 				}
 			}
 
-			String username = registerUser(in, clientRequester);
+			String username = clientRequester.registerUser(in);
 
 			// temporary for testing on localhost
 			if (clientPort == 2345) {
@@ -686,38 +738,3 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 	}
 }
-
-// Get hosts ipadress by:
-// http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
-// -> Just ask the user for now
-
-/*
- * try { Enumeration e = NetworkInterface.getNetworkInterfaces();
- * while(e.hasMoreElements()) { NetworkInterface n = (NetworkInterface)
- * e.nextElement(); Enumeration ee = n.getInetAddresses(); while
- * (ee.hasMoreElements()) { InetAddress i = (InetAddress) ee.nextElement();
- * System.out.println(i.getHostAddress());
- * System.out.println("i.isAnyLocalAddress(): " + i.isAnyLocalAddress());
- * System.out.println("i.isLinkLocalAddress(): " + i.isLinkLocalAddress());
- * System.out.println("i.isLoopbackAddress(): " + i.isLoopbackAddress());
- * System.out.println(); } } } catch (SocketException e1) {
- * e1.printStackTrace(); }
- */
-
-// System.out.println("transceiver connected: " + transceiver.isConnected());
-// System.out.println("transceiver.getRemoteName(): " +
-// transceiver.getRemoteName());
-
-/*
- * clientRequester.register(username); clientRequester.privateChatClient = new
- * ClientInfo();
- * 
- * if (username.equals("a")) { clientPort = 2346;
- * System.out.println("clientport =" + clientPort); } else clientPort = 2345;
- * 
- * while (true) { try { clientRequester.setPrivateChatClient("b", "00.0.0.0",
- * clientPort); break; } catch (Exception e) { if (clientPort < 65535) {
- * clientPort++; } else {
- * System.err.println("Failed to find open port, quitting program.");
- * System.exit(1); } } } clientRequester.startPrivateChat();
- */

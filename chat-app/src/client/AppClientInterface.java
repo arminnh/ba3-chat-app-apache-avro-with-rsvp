@@ -8,17 +8,17 @@ package client;
 @SuppressWarnings("all")
 @org.apache.avro.specific.AvroGenerated
 public interface AppClientInterface {
-  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"AppClientInterface\",\"namespace\":\"client\",\"types\":[],\"messages\":{\"echo\":{\"request\":[{\"name\":\"message\",\"type\":\"int\"}],\"response\":\"int\"},\"receiveMessage\":{\"request\":[{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"receiveRequest\":{\"request\":[{\"name\":\"request\",\"type\":\"string\"}],\"response\":\"int\"},\"setPrivateChatClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"setPrivateChatClientArrived\":{\"request\":[{\"name\":\"arrived\",\"type\":\"boolean\"}],\"response\":\"int\"},\"leftPrivateChat\":{\"request\":[],\"response\":\"int\"},\"videoRequest\":{\"request\":[],\"response\":\"int\"},\"videoRequestAccepted\":{\"request\":[],\"response\":\"int\"},\"receiveImage\":{\"request\":[{\"name\":\"imgBytes\",\"type\":\"bytes\"}],\"response\":\"int\"},\"setFrameVisible\":{\"request\":[{\"name\":\"visible\",\"type\":\"boolean\"}],\"response\":\"int\"},\"shutdownPrivateChat\":{\"request\":[{\"name\":\"first\",\"type\":\"boolean\"}],\"response\":\"int\"}}}");
+  public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse("{\"protocol\":\"AppClientInterface\",\"namespace\":\"client\",\"types\":[],\"messages\":{\"echo\":{\"request\":[{\"name\":\"message\",\"type\":\"int\"}],\"response\":\"int\"},\"receiveMessage\":{\"request\":[{\"name\":\"message\",\"type\":\"string\"}],\"response\":\"int\"},\"setPrivateChatClient\":{\"request\":[{\"name\":\"username\",\"type\":\"string\"},{\"name\":\"ipaddress\",\"type\":\"string\"},{\"name\":\"port\",\"type\":\"int\"}],\"response\":\"int\"},\"setPrivateChatClientArrived\":{\"request\":[{\"name\":\"arrived\",\"type\":\"boolean\"}],\"response\":\"int\"},\"leftPrivateChat\":{\"request\":[],\"response\":\"int\"},\"videoRequest\":{\"request\":[],\"response\":\"int\"},\"videoRequestAccepted\":{\"request\":[],\"response\":\"int\"},\"receiveImage\":{\"request\":[{\"name\":\"imgBytes\",\"type\":\"bytes\"}],\"response\":\"int\"},\"setFrameVisible\":{\"request\":[{\"name\":\"receiving\",\"type\":\"boolean\"},{\"name\":\"visible\",\"type\":\"boolean\"}],\"response\":\"int\"},\"isFrameVisible\":{\"request\":[{\"name\":\"receiving\",\"type\":\"boolean\"}],\"response\":\"boolean\"},\"shutdownPrivateChat\":{\"request\":[{\"name\":\"first\",\"type\":\"boolean\"}],\"response\":\"int\"}}}");
   int echo(int message) throws org.apache.avro.AvroRemoteException;
   int receiveMessage(java.lang.CharSequence message) throws org.apache.avro.AvroRemoteException;
-  int receiveRequest(java.lang.CharSequence request) throws org.apache.avro.AvroRemoteException;
   int setPrivateChatClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port) throws org.apache.avro.AvroRemoteException;
   int setPrivateChatClientArrived(boolean arrived) throws org.apache.avro.AvroRemoteException;
   int leftPrivateChat() throws org.apache.avro.AvroRemoteException;
   int videoRequest() throws org.apache.avro.AvroRemoteException;
   int videoRequestAccepted() throws org.apache.avro.AvroRemoteException;
   int receiveImage(java.nio.ByteBuffer imgBytes) throws org.apache.avro.AvroRemoteException;
-  int setFrameVisible(boolean visible) throws org.apache.avro.AvroRemoteException;
+  int setFrameVisible(boolean receiving, boolean visible) throws org.apache.avro.AvroRemoteException;
+  boolean isFrameVisible(boolean receiving) throws org.apache.avro.AvroRemoteException;
   int shutdownPrivateChat(boolean first) throws org.apache.avro.AvroRemoteException;
 
   @SuppressWarnings("all")
@@ -26,14 +26,14 @@ public interface AppClientInterface {
     public static final org.apache.avro.Protocol PROTOCOL = client.AppClientInterface.PROTOCOL;
     void echo(int message, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void receiveMessage(java.lang.CharSequence message, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void receiveRequest(java.lang.CharSequence request, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void setPrivateChatClient(java.lang.CharSequence username, java.lang.CharSequence ipaddress, int port, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void setPrivateChatClientArrived(boolean arrived, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void leftPrivateChat(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void videoRequest(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void videoRequestAccepted(org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
     void receiveImage(java.nio.ByteBuffer imgBytes, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
-    void setFrameVisible(boolean visible, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void setFrameVisible(boolean receiving, boolean visible, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
+    void isFrameVisible(boolean receiving, org.apache.avro.ipc.Callback<java.lang.Boolean> callback) throws java.io.IOException;
     void shutdownPrivateChat(boolean first, org.apache.avro.ipc.Callback<java.lang.Integer> callback) throws java.io.IOException;
   }
 }

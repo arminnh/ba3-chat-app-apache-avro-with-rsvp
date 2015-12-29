@@ -11,10 +11,6 @@
 	        "request": [{"name": "message", "type": "string"}],
 	        "response": "int"
         },
-        "receiveRequest": {
-	        "request": [{"name": "request", "type": "string"}],
-	        "response": "int"
-        },
         "setPrivateChatClient": {
 	        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
 	        "response": "int"
@@ -40,8 +36,12 @@
 	        "response": "int"
         },
         "setFrameVisible": {
-        	"request": [{"name": "visible", "type": "boolean"}],
+        	"request": [{"name": "receiving", "type": "boolean"}, {"name": "visible", "type": "boolean"}],
         	"response": "int"
+    	},
+        "isFrameVisible": {
+        	"request": [{"name": "receiving", "type": "boolean"}],
+        	"response": "boolean"
     	},
     	"shutdownPrivateChat":  {
     		"request": [{"name": "first", "type": "boolean"}],

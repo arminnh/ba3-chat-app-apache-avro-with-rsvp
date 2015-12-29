@@ -58,7 +58,7 @@ public class VideoSender implements Runnable {
     	imgBuffer.clear();
 		frame.setVisible(false);
 		try {
-			proxy.setFrameVisible(false);
+			proxy.setFrameVisible(true, false);
 		} catch (IOException e) {
 			System.err.println("The other user has disconnected, stopping video.");
 		}

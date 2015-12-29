@@ -1,0 +1,42 @@
+usernames with spaces will have the spaces removed upon registration
+when in chat mode, user input is not taken by Cliche, but sent straight to other users instead, so chatting will be smoother
+
+to start a private chat session: a sends a request to b, b accepts the request from a, a joins the private chatroom with 'startPrivateChat'
+sending requests to yourself/nonexisting users will display an error message
+users cannot go into private chat mode if nobody accepted their private chat request
+
+lobby:
+	can receive/send/accept/decline private chat requests
+	
+public chat:
+	can receive/send/accept/decline private chat requests
+	can switch between public and private chat mode
+	available commands for the user will be updated depending on chat mode and open requests
+
+private chat:
+	can receive/send private chat requests
+	can switch between public and private chat mode
+	available commands for the user will be updated depending on chat mode and open requests
+	
+	video:
+		videos can be selected with a file chooser
+		can stream/receive video
+		can stream and receive video simultaneously
+		video decoding is separated from video sending
+		
+fault control:
+	in lobby/public chat, server disconnects:
+		commands are disabled until a new connection is made
+		if no new connection was made in a timeperiod, app will exit
+		
+	in private chat:
+		1 of the users disconnects: 
+			chat will be gracefully shutdown for the other user
+			if video was streaming, video streaming will stop and display windows will be removed 
+		
+		server disconnects:
+			commands are disabled
+			users can still finish their chat session
+			app will exit after chat session is over, if server could not reconnect 
+			
+			

@@ -43,6 +43,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 
 	@Override
 	public boolean isNameAvailable(CharSequence username) throws AvroRemoteException {
+		if (username.length() == 0) return false;
 		return !this.clients.containsKey(username.toString());
 	}
 
@@ -295,6 +296,10 @@ public class AppServer extends TimerTask implements AppServerInterface {
 	public void run() {
 		this.checkConnectedList();
 	}
+	
+	/*
+	 * MAIN METHOD
+	 */
 	
 	public static void main(String[] argv) { 
 		Server server = null;

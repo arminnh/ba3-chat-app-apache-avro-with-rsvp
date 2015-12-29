@@ -48,9 +48,7 @@ public class ClientInfo {
 			this.transceiver.close();
 			this.proxy = null;
 		} catch (AvroRemoteException e) {
-			System.out.println("proxy error shit");
 		} catch (IOException e) { // transceiver.close()
-			System.out.println("this.transceiver.close()");
 		}
 	}
 }
