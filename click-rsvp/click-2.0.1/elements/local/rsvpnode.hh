@@ -157,7 +157,7 @@ struct RSVPResvConf { // class num = 15, C-type = 1
 // used to locally store a session
 struct RSVPNodeSession {
 	RSVPNodeSession();
-	RSVPNodeSession(in_addr, uint8_t protocol_id, uint8_t dst_port);
+	RSVPNodeSession(in_addr, uint8_t protocol_id, uint16_t dst_port);
 	RSVPNodeSession(const RSVPSession&);
 	typedef long unsigned int key_type;
 	typedef const key_type& key_const_reference;
@@ -188,6 +188,7 @@ struct RSVPResvState {
 
 struct RSVPSender {
 	RSVPSender();
+	RSVPSender(in_addr _src_address, uint16_t _src_port);
 	RSVPSender(const RSVPSenderTemplate&);
 	typedef long unsigned int key_type;
 	typedef const key_type& key_const_reference;
@@ -286,6 +287,8 @@ public:
 	virtual void createSession(const RSVPNodeSession&);
 	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
 	virtual void eraseResvState(const RSVPNodeSession&, const RSVPSender&);
+
+	bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
 
 	int initialize(ErrorHandler* errh);
 

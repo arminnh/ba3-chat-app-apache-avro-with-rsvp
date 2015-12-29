@@ -1,3 +1,5 @@
+userlevel/rsvptossetter.d
+userlevel/rsvptossetter.o
 userlevel/rsvpnode.d
 userlevel/rsvpnode.o
 userlevel/ipflowrawsockets.d

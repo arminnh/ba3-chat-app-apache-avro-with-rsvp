@@ -8,6 +8,7 @@ elementclass Host {
 	// Shared IP input path
 	ip :: Strip(14)
 		-> CheckIPHeader
+		-> RSVPToSSetter(rsvp)
 		-> rsvp_cl::IPClassifier(proto 46, -)[1]
 		-> rt :: StaticIPLookup(
 			$address:ip/32 0,
@@ -24,7 +25,7 @@ elementclass Host {
 		-> output;
 		
 	rsvp_cl[0]
-		-> rsvp::RSVPElement($address, AUTORESV false)
+		-> rsvp::RSVPElement($address, AUTORESV true)
 		-> rt;
 		
 	ipgw[1]	-> ICMPError($address, parameterproblem)
