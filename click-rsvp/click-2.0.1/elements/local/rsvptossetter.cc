@@ -53,7 +53,7 @@ void RSVPToSSetter::push(int, Packet *p)
 	RSVPSender sender(src_addr, src_port);
 
 	if (_rsvp->hasReservation(session, sender)) {
-		click_chatter("setting tos to 1");
+		// click_chatter("setting tos to 1");
 		ip->ip_tos = 1;
 	} else {
 		ip->ip_tos = 0;

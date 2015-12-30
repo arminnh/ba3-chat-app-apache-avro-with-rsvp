@@ -93,7 +93,9 @@ void RSVPElement::push(int, Packet *packet) {
 			// read rfc
 			break;
 		case RSVP_MSG_PATHTEAR:
-			// remove session, send resv tear
+			// restore chopped-off IP header
+			packet = packet->push(sizeof(click_ip));
+			RSVPNode::push(0, packet);
 			break;
 		case RSVP_MSG_RESVTEAR:
 			// remove session, send path tear
@@ -260,7 +262,15 @@ void RSVPElement::erasePathState(const RSVPNodeSession& session, const RSVPSende
 		return;
 	}
 
-	it->second.erase(it->second.find(sender));
+	HashTable<RSVPSender, RSVPResvState>::iterator it2 = it->second.find(sender);
+
+	if (it2 != it->second.end()) {
+		if (it2->second.timer) {
+			it2->second.timer->unschedule();
+		}
+		it->second.erase(it2);
+	}
+
 	if (it->second.begin() == it->second.end()) {
 		_reservations.erase(session);
 	}
@@ -284,6 +294,25 @@ void RSVPElement::eraseResvState(const RSVPNodeSession& session, const RSVPSende
 
 	if (resvit1->second.begin() == resvit1->second.end()) {
 		_resvStates.erase(session);
+	}
+}
+
+void RSVPElement::removeSender(const RSVPNodeSession& session, const RSVPSender& sender) {
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::iterator pathit1 = _senders.find(session);
+	if (pathit1 == _pathStates.end()) {
+		return;
+	}
+
+	HashTable<RSVPSender, RSVPPathState>::iterator pathit = pathit1->second.find(sender);
+	if (pathit != pathit1->second.end()) {
+		if (pathit->second.timer) {
+			pathit->second.timer->unschedule();
+		}
+		pathit1->second.erase(pathit);
+	}
+	
+	if (pathit1->second.begin() == pathit1->second.end()) {
+		_senders.erase(session);
 	}
 }
 
@@ -542,6 +571,8 @@ int RSVPElement::pathTearHandle(const String &conf, Element *e, void * thunk, Er
 		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
+	me->erasePathState(me->_session, me->_senderTemplate);
+
 	WritablePacket* message = me->createPathTearMessage();
 	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
@@ -918,7 +949,7 @@ WritablePacket* RSVPElement::createPathTearMessage() const
 	
 	initRSVPCommonHeader(commonHeader, RSVP_MSG_PATHTEAR, _TTL, packetSize);
 	*session = _session;
-	*hop = _hop;
+	initRSVPHop(hop, _myIP, 0);
 	
 	if (_senderDescriptor) {
 		*senderTemplate = _senderTemplate;

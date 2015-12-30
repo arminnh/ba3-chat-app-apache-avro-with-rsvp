@@ -21,9 +21,19 @@ elementclass Host {
 		-> FixIPSrc($address)
 		-> ttl :: DecIPTTL
 		-> frag :: IPFragmenter(1500)
+		-> qos_cl::IPClassifier(tos 0, -)
+		-> beQueue::Queue
+		-> Shaper(700000)
+		-> [1]prio::PrioSched
+		-> LinkUnqueue(LATENCY 0, BANDWIDTH 1000kbps)
 		-> arpq :: ARPQuerier($address)
 		-> output;
-		
+	
+	qos_cl[1]
+		-> qosQueue::Queue
+		-> Shaper(300000)
+		-> [0]prio;
+
 	rsvp_cl[0]
 		-> rsvp::RSVPElement($address, AUTORESV true)
 		-> rt;

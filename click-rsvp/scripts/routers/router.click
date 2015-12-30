@@ -77,7 +77,15 @@ elementclass Router {
 		-> FixIPSrc($lan_address)
 		-> lan_ttl :: DecIPTTL
 		-> lan_frag :: IPFragmenter(1500)
+		-> lan_qos_cl::IPClassifier(tos 0, -)
+		-> lan_beQueue::Queue
+		-> [1]lan_prio::PrioSched
+		-> LinkUnqueue(LATENCY 0, BANDWIDTH 1000kbps)
 		-> [0]lan_arpq;
+
+	lan_qos_cl[1]
+		-> lan_qosQueue::Queue
+		-> [0]lan_prio;
 
 	lan_paint[1]
 		-> ICMPError($lan_address, redirect, host)
@@ -102,7 +110,15 @@ elementclass Router {
 		-> FixIPSrc($wan_address)
 		-> wan_ttl :: DecIPTTL
 		-> wan_frag :: IPFragmenter(1500)
+		-> wan_qos_cl::IPClassifier(tos 0, -)
+		-> wan_beQueue::Queue
+		-> [1]wan_prio::PrioSched
+		-> LinkUnqueue(LATENCY 0, BANDWIDTH 1000kbps)
 		-> [0]wan_arpq;
+
+	wan_qos_cl[1]
+		-> wan_qosQueue::Queue
+		-> [0]wan_prio;
 
 	wan_paint[1]
 		-> ICMPError($wan_address, redirect, host)

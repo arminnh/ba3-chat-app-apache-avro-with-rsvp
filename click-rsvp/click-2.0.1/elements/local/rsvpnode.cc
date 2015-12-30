@@ -10,6 +10,18 @@
 
 CLICK_DECLS
 
+bool operator==(const RSVPSenderTSpec& a, const RSVPSenderTSpec& b)
+{
+	return a.token_bucket_rate_float == b.token_bucket_rate_float
+		&& a.token_bucket_size_float == b.token_bucket_size_float
+		&& a.minimum_policed_unit == b.minimum_policed_unit
+		&& a.maximum_packet_size == b.maximum_packet_size;
+}
+
+bool operator!=(const RSVPSenderTSpec& a, const RSVPSenderTSpec& b) {
+	return !(a == b);
+}
+
 uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type)
 {
 	size_t size;
@@ -538,6 +550,8 @@ void RSVPNode::push(int port, Packet* packet) {
 	IPAddress gateway; // not used, required argument to lookup_route
 	int gwPort;
 	
+	RSVPHop* hop;// = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
+
 	if (msg_type == RSVP_MSG_PATH) {
 		if (find(_pathStates, RSVPNodeSession(*session)) == _pathStates.end()) {
 			click_chatter("%s: creating new path state for %s", _name.c_str(), IPAddress(session->IPv4_dest_address).unparse().c_str());
@@ -546,8 +560,8 @@ void RSVPNode::push(int port, Packet* packet) {
 		forward = packet->uniqueify();
 		
 		// adjust next/previous hop address
+		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(dstIP, gateway);
-		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 		
 		// recalculate RSVP checksum
@@ -592,13 +606,64 @@ void RSVPNode::push(int port, Packet* packet) {
 		forward = packet->uniqueify();
 		
 		// set destination IP address to next hop
-		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
+		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(pathState.previous_hop_node, gateway);
 		addIPHeader(forward, pathState.previous_hop_node, gateway, _tos);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 
 		// click_chatter("%s forwarding resv message with destination %s", _name.c_str(), IPAddress(forward->dst_ip_anno()).unparse().c_str());
 		output(0).push(forward);
+	} else if (msg_type == RSVP_MSG_PATHTEAR) {
+		const RSVPSenderTemplate* senderTemplate = (const RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TEMPLATE);
+		const RSVPSenderTSpec* senderTSpec = (const RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
+
+		if (!senderTSpec) {
+			click_chatter("%s: Received path tear message with no sender tspec", _name.c_str());
+			packet->kill();
+			return;
+
+		}
+
+		const RSVPPathState* pstate = this->pathState(*session, *senderTemplate);
+
+		if (!pstate) {
+			click_chatter("%s: Received path tear message for nonexistent path state.", _name.c_str());
+			packet->kill();
+			return;
+
+		}
+
+		if (senderTSpec && (*senderTSpec != pstate->senderTSpec)) {
+			click_chatter("%s: Received path tear message for existent path state, but sender tspec did not match.", _name.c_str());
+			packet->kill();
+			return;
+
+		}
+		
+		in_addr previous_hop_node;
+		readRSVPHop(hop, &previous_hop_node, NULL);
+
+		if (previous_hop_node != pstate->previous_hop_node) {
+			click_chatter("%s: Received path tear message with matching sender tspec, but previous hop node did not match.", _name.c_str());
+			packet->kill();
+			return;
+		}
+
+		forward = packet->uniqueify();
+		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
+		gwPort = _ipLookup->lookup_route(dstIP, gateway);
+		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
+
+		RSVPNodeSession ns(*session);
+		RSVPSender sender(*senderTemplate);
+		click_chatter("%s: Deleted path state for %s/%d/%d from %s/%d because of a pathtear message.", IPAddress(ns._dst_ip_address).unparse().c_str(), ns._dst_port, IPAddress(sender.src_address).unparse().c_str(), sender.src_port);
+		erasePathState(*session, *senderTemplate);
+
+		addIPHeader(forward, dstIP, srcIP, _tos);
+
+		// if (!dynamic_cast<RSVPElement *>(this)) {
+			output(0).push(forward);
+		// }
 	}
 }
 
@@ -627,7 +692,7 @@ void RSVPNode::updatePathState(Packet* packet) {
 	} else {
 		timer = new Timer(this);
 		timer->initialize(this);
-		click_chatter("%s: attaching timer %p to path state", _name.c_str(), timer);
+		// click_chatter("%s: attaching timer %p to path state", _name.c_str(), timer);
 	}
 	//click_chatter("updatePathState: setting table entry");
 
@@ -764,6 +829,44 @@ void RSVPNode::eraseResvState(const RSVPNodeSession& session, const RSVPSender& 
 
 }
 
+const RSVPPathState* RSVPNode::pathState(const RSVPNodeSession& session, const RSVPSender& sender) const {
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator it1 = _pathStates.find(session);
+	if (it1 == _pathStates.end()) {
+		click_chatter("didn't find session");
+		return NULL;
+	}
+
+	HashTable<RSVPSender, RSVPPathState>::const_iterator it = it1->second.find(sender);
+	if (it == it1->second.end()) {
+		return NULL;
+	}
+
+	return &it->second;
+}
+
+const RSVPResvState* RSVPNode::resvState(const RSVPNodeSession& session, const RSVPSender& sender) const {
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = _resvStates.find(session);
+	if (it1 == _resvStates.end()) {
+		return NULL;
+	}
+
+	HashTable<RSVPSender, RSVPResvState>::const_iterator it = it1->second.find(sender);
+	if (it == it1->second.end()) {
+		return NULL;
+	}
+
+	return &it->second;
+}
+
+RSVPPathState* RSVPNode::pathState(const RSVPNodeSession& session, const RSVPSender& sender) {
+	return const_cast<RSVPPathState *>(static_cast<const RSVPNode *>(this)->pathState(session, sender));
+}
+
+RSVPResvState* RSVPNode::resvState(const RSVPNodeSession& session, const RSVPSender& sender) {
+	return const_cast<RSVPResvState *>(static_cast<const RSVPNode *>(this)->resvState(session, sender));
+}
+
+
 bool RSVPNode::hasReservation(const RSVPNodeSession& session, const RSVPSender& sender) const {
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = _resvStates.find(session);
 
@@ -776,22 +879,7 @@ bool RSVPNode::hasReservation(const RSVPNodeSession& session, const RSVPSender& 
 }
 
 int RSVPNode::initialize(ErrorHandler* errh) {
-	// find all qos classifiers
-	/*Vector<RSVPQoSClassifier> classifiers;
 	
-	StringAccum name;
-	Element* e;
-	int i = 0;
-	do {
-		name << "qos_cl" << i;
-		click_chatter("looking for %s", name.c_str());
-		e = this->router()->find(name.c_str(), this);
-		classifiers.push_back((RSVPQoSClassifier *) e);
-		name.clear();
-	 } while (e != NULL);
-	 
-	 // last element is NULL, so remove it
-	 classifiers.pop_back();*/
 	 return 0;
 }
 
@@ -906,6 +994,8 @@ void RSVPNode::addIPHeader(WritablePacket* p, in_addr dst_ip, in_addr src_ip, ui
 
 	struct click_ip* ip = (click_ip *) p->data();
 	memset(ip, 0, sizeof(click_ip));
+
+	tos = 1;
 
 	ip->ip_v = 4;
 	ip->ip_hl = sizeof(click_ip) >> 2;

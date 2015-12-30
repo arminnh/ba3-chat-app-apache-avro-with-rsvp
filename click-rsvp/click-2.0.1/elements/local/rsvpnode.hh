@@ -149,6 +149,9 @@ struct RSVPSenderTSpec { // class num = 12, C-type = 2
 
 // RSVPPolicyData class num = 14, C-type = 1
 
+bool operator==(const RSVPSenderTSpec&, const RSVPSenderTSpec&);
+bool operator!=(const RSVPSenderTSpec&, const RSVPSenderTSpec&);
+
 struct RSVPResvConf { // class num = 15, C-type = 1
 	RSVPObjectHeader header;
 	in_addr receiver_address;
@@ -287,6 +290,11 @@ public:
 	virtual void createSession(const RSVPNodeSession&);
 	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
 	virtual void eraseResvState(const RSVPNodeSession&, const RSVPSender&);
+
+	const RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&) const;
+	const RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&) const;
+	RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&);
+	RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&);
 
 	bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
 
