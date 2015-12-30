@@ -1,0 +1,51 @@
+{
+    "namespace": "client",
+    "protocol": "AppClientInterface",
+    
+    "messages" : {
+    	"echo": {
+    		"request": [{"name": "message", "type" : "int"}],
+    		"response": "int"
+		},
+        "receiveMessage": {
+	        "request": [{"name": "message", "type": "string"}],
+	        "response": "int"
+        },
+        "setPrivateChatClient": {
+	        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
+	        "response": "int"
+        },
+        "setPrivateChatClientArrived": {
+	        "request": [{"name": "arrived", "type": "boolean"}],
+	        "response": "int"
+        },
+        "leftPrivateChat": {
+	        "request": [],
+	        "response": "int"
+        },
+        "videoRequest": {
+	        "request": [],
+	        "response": "int"
+        },
+        "videoRequestAccepted": {
+	        "request": [],
+	        "response": "int"
+        },
+        "receiveImage": {
+	        "request": [{"name": "imgBytes", "type": "bytes"}],
+	        "response": "int"
+        },
+        "setFrameVisible": {
+        	"request": [{"name": "receiving", "type": "boolean"}, {"name": "visible", "type": "boolean"}],
+        	"response": "int"
+    	},
+        "isFrameVisible": {
+        	"request": [{"name": "receiving", "type": "boolean"}],
+        	"response": "boolean"
+    	},
+    	"shutdownPrivateChat":  {
+    		"request": [{"name": "first", "type": "boolean"}],
+    		"response":  "int"
+		}
+    }
+}

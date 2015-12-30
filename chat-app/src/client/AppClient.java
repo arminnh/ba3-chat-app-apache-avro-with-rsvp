@@ -219,6 +219,11 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			return;
 		}
 		
+		if (this.privateChatClient != null && this.privateChatClient.username.equals(username)) {
+			System.err.println("You are already in a private chat session with that user.");
+			return;
+		}
+		
 		int response = this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
 
 		if (response != 0)
