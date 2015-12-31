@@ -35,8 +35,6 @@ bool operator!=(const RSVPFlowspec& a, const RSVPFlowspec& b) {
 	return !(a == b);
 }
 
-
-
 uint16_t sizeofRSVPObject(uint8_t class_num, uint8_t c_type)
 {
 	size_t size;
@@ -582,7 +580,8 @@ void RSVPNode::push(int port, Packet* packet) {
 		
 		// recalculate RSVP checksum
 		RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) forward->data();
-		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) packet->data(), packet->length());
+		commonHeader->RSVP_checksum = 0;
+		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) forward->data(), forward->length());
 		
 		addIPHeader(forward, dstIP, srcIP, _tos);
 
@@ -624,8 +623,14 @@ void RSVPNode::push(int port, Packet* packet) {
 		// set destination IP address to next hop
 		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(pathState.previous_hop_node, gateway);
-		addIPHeader(forward, pathState.previous_hop_node, ipForInterface(gwPort), _tos);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
+		
+		// recalculate checksum
+		RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) forward->data();
+		commonHeader->RSVP_checksum = 0;
+		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) forward->data(), forward->length());
+		
+		addIPHeader(forward, pathState.previous_hop_node, ipForInterface(gwPort), _tos);
 
 		// click_chatter("%s forwarding resv message with destination %s", _name.c_str(), IPAddress(forward->dst_ip_anno()).unparse().c_str());
 		output(0).push(forward);
@@ -671,7 +676,7 @@ void RSVPNode::push(int port, Packet* packet) {
 		}
 		
 		erasePathState(*session, *senderTemplate);
-		click_chatter("%s: Deleted path state for %s/%d/%d from %s/%d because of a pathtear message.",
+		click_chatter("%s: Received pathtear message; deleted path state for %s/%d/%d from %s/%d",
 			_name.c_str(),
 			IPAddress(nodeSession._dst_ip_address).unparse().c_str(),
 			nodeSession._protocol_id,
@@ -689,6 +694,11 @@ void RSVPNode::push(int port, Packet* packet) {
 		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(dstIP, gateway);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
+
+		// recalculate checksum
+		RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) forward->data();
+		commonHeader->RSVP_checksum = 0;
+		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) forward->data(), forward->length());
 
 		addIPHeader(forward, dstIP, srcIP, _tos);
 		
@@ -722,7 +732,7 @@ void RSVPNode::push(int port, Packet* packet) {
 		}
 		
 		eraseResvState(nodeSession, sender);
-		click_chatter("%s: Deleted resv state for %s/%d/%d from %s/%d because of a resvtear message.",
+		click_chatter("%s: Received resvtear message; deleted resv state for %s/%d/%d from %s/%d",
 			_name.c_str(),
 			IPAddress(nodeSession._dst_ip_address).unparse().c_str(),
 			nodeSession._protocol_id,
@@ -738,9 +748,16 @@ void RSVPNode::push(int port, Packet* packet) {
 		forward = packet->uniqueify();
 		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(pathState->previous_hop_node, gateway);
-		// click_chatter("%s: forwarding resvtear message to %s", _name.c_str(), IPAddress(pathState->previous_hop_node).unparse().c_str());
-		addIPHeader(forward, pathState->previous_hop_node, ipForInterface(gwPort), _tos);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
+		click_chatter("%s: gateway port %d, IP %s", _name.c_str(), gwPort, ipForInterface(gwPort).unparse().c_str());
+		// click_chatter("%s: forwarding resvtear message to %s", _name.c_str(), IPAddress(pathState->previous_hop_node).unparse().c_str());
+		
+		// recalculate checksum
+		RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) forward->data();
+		commonHeader->RSVP_checksum = 0;
+		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) forward->data(), forward->length());
+		
+		addIPHeader(forward, pathState->previous_hop_node, ipForInterface(gwPort), _tos);
 		
 		output(0).push(forward);
 	}

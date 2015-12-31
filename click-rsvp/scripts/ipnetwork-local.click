@@ -37,7 +37,7 @@ cloud :: ListenEtherSwitch;
 
 // Connect the host to the network
 // While doing this, count the amount of QoS and BE traffic received and transmitted by each host
-host1	-> host1_tx_tee :: Tee(2)
+host1	-> Queue -> LinkUnqueue(0, 1000kbps) -> host1_tx_tee :: Tee(2)
 	-> host1link :: BandwidthLimiter(1000kbps)
 	-> [1]network1[1]
 	-> host1_rx_tee :: Tee(2)

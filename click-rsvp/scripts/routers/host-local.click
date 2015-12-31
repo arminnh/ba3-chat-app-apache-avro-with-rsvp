@@ -21,12 +21,12 @@ elementclass Host {
 		-> FixIPSrc($address)
 		-> ttl :: DecIPTTL
 		-> frag :: IPFragmenter(1500)
+		-> arpq :: ARPQuerier($address)
 		-> qos_cl::IPClassifier(tos 0, -)
 		-> beQueue::Queue
 		-> Shaper(87500)
 		-> [1]prio::PrioSched
 		-> LinkUnqueue(LATENCY 0, BANDWIDTH 1000kbps)
-		-> arpq :: ARPQuerier($address)
 		-> output;
 	
 	qos_cl[1]
@@ -39,13 +39,13 @@ elementclass Host {
 		-> rt;
 		
 	ipgw[1]	-> ICMPError($address, parameterproblem)
-		-> output;
+		-> qos_cl;
 
 	ttl[1]	-> ICMPError($address, timeexceeded)
-		-> output;
+		-> qos_cl;
 
 	frag[1]	-> ICMPError($address, unreachable, needfrag)
-		-> output;
+		-> qos_cl;
 
 	// incoming packets
 	input	-> HostEtherFilter($address)

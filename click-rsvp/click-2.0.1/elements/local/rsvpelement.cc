@@ -542,10 +542,7 @@ int RSVPElement::resvConfObjectHandle(const String &conf, Element *e, void * thu
 
 int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	in_addr destinationIP = IPAddress("0.0.0.0");
 	bool refresh = true;
-	
-	readRSVPSession(&me->_session, &destinationIP, NULL, NULL, NULL);
 
 	//click_chatter("pathHandle: destinationIP: %s", IPAddress(destinationIP).unparse().c_str());
 	if (cp_va_kparse(conf, me, errh,
@@ -580,14 +577,12 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 
 int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	in_addr destinationIP = IPAddress("0.0.0.0");
 
 	if (cp_va_kparse(conf, me, errh,
-		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvMessage();
-	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, me->_filterSpec.src_address, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -596,14 +591,12 @@ int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorH
 
 int RSVPElement::pathErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	in_addr destinationIP = IPAddress("0.0.0.0");
 
 	if (cp_va_kparse(conf, me, errh,
-		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createPathErrMessage();
-	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, me->_session.IPv4_dest_address, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -613,14 +606,18 @@ int RSVPElement::pathErrHandle(const String &conf, Element *e, void * thunk, Err
 
 int RSVPElement::resvErrHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	in_addr destinationIP = IPAddress("0.0.0.0");
 
 	if (cp_va_kparse(conf, me, errh,
-		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
+	const RSVPPathState* pathState = me->pathState(me->_session, me->_filterSpec);
+	
+	if (!pathState) {
+		errh->error("Trying to send resverr message with no matching path state");
+	}
+	
 	WritablePacket* message = me->createResvErrMessage();
-	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, pathState->previous_hop_node, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -647,16 +644,21 @@ int RSVPElement::pathTearHandle(const String &conf, Element *e, void * thunk, Er
 
 int RSVPElement::resvTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	in_addr destinationIP = IPAddress("0.0.0.0");
 
 	if (cp_va_kparse(conf, me, errh,
-		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+
+	const RSVPPathState* pathState = me->pathState(me->_session, me->_filterSpec);
+	
+	if (!pathState) {
+		errh->error("Trying to tear down resv state with no matching path state.");
+		return -1;
+	}
 	
 	me->removeReservation(me->_session, me->_filterSpec);
 	
 	WritablePacket* message = me->createResvTearMessage();
-	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, pathState->previous_hop_node, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -666,14 +668,12 @@ int RSVPElement::resvTearHandle(const String &conf, Element *e, void * thunk, Er
 
 int RSVPElement::resvConfHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	in_addr destinationIP = IPAddress("0.0.0.0");
 
 	if (cp_va_kparse(conf, me, errh,
-		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
 	WritablePacket* message = me->createResvConfMessage();
-	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, me->_session.IPv4_dest_address, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
