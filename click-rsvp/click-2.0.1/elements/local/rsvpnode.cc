@@ -546,11 +546,12 @@ void RSVPNode::push(int port, Packet* packet) {
 	readRSVPCommonHeader((RSVPCommonHeader*) packet->transport_header(), &msg_type, NULL, NULL);
 
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
+	RSVPNodeSession nodeSession(*session);
 	
 	IPAddress gateway; // not used, required argument to lookup_route
 	int gwPort;
 	
-	RSVPHop* hop;// = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
+	//RSVPHop* hop;// = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
 
 	if (msg_type == RSVP_MSG_PATH) {
 		if (find(_pathStates, RSVPNodeSession(*session)) == _pathStates.end()) {
@@ -560,7 +561,7 @@ void RSVPNode::push(int port, Packet* packet) {
 		forward = packet->uniqueify();
 		
 		// adjust next/previous hop address
-		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
+		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(dstIP, gateway);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 		
@@ -580,7 +581,7 @@ void RSVPNode::push(int port, Packet* packet) {
 		HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator pathit = find(_pathStates, RSVPNodeSession(*session));
 		HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator resvit = _resvStates.find(RSVPNodeSession(*session));
 		if (pathit == _pathStates.end() || resvit == _resvStates.end()) {
-			click_chatter("%s: received resv message for nonexistent session.");
+			click_chatter("%s: received resv message for nonexistent session.", _name.c_str());
 			packet->kill();
 			return;
 		} else if (resvit->second.find(*filterSpec) == resvit->second.end()) {
@@ -606,7 +607,7 @@ void RSVPNode::push(int port, Packet* packet) {
 		forward = packet->uniqueify();
 		
 		// set destination IP address to next hop
-		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
+		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(pathState.previous_hop_node, gateway);
 		addIPHeader(forward, pathState.previous_hop_node, gateway, _tos);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
@@ -614,17 +615,19 @@ void RSVPNode::push(int port, Packet* packet) {
 		// click_chatter("%s forwarding resv message with destination %s", _name.c_str(), IPAddress(forward->dst_ip_anno()).unparse().c_str());
 		output(0).push(forward);
 	} else if (msg_type == RSVP_MSG_PATHTEAR) {
+		click_chatter("%s: received path tear message", _name.c_str());
 		const RSVPSenderTemplate* senderTemplate = (const RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TEMPLATE);
 		const RSVPSenderTSpec* senderTSpec = (const RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
+
+		RSVPSender sender(*senderTemplate);
 
 		if (!senderTSpec) {
 			click_chatter("%s: Received path tear message with no sender tspec", _name.c_str());
 			packet->kill();
 			return;
-
 		}
-
-		const RSVPPathState* pstate = this->pathState(*session, *senderTemplate);
+		
+		const RSVPPathState* pstate = this->pathState(nodeSession, sender);
 
 		if (!pstate) {
 			click_chatter("%s: Received path tear message for nonexistent path state.", _name.c_str());
@@ -633,13 +636,17 @@ void RSVPNode::push(int port, Packet* packet) {
 
 		}
 
-		if (senderTSpec && (*senderTSpec != pstate->senderTSpec)) {
+		if (!senderTSpec) {
+			click_chatter("%s: Received path tear message for existent path state, but no sender tspec supplied.", _name.c_str());
+			packet->kill();
+			return;
+		} else if (*senderTSpec != pstate->senderTSpec) {
 			click_chatter("%s: Received path tear message for existent path state, but sender tspec did not match.", _name.c_str());
 			packet->kill();
 			return;
-
 		}
 		
+		RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
 		in_addr previous_hop_node;
 		readRSVPHop(hop, &previous_hop_node, NULL);
 
@@ -649,21 +656,29 @@ void RSVPNode::push(int port, Packet* packet) {
 			return;
 		}
 
+		click_chatter("%s: Deleted path state for %s/%d/%d from %s/%d because of a pathtear message.",
+			_name.c_str(),
+			IPAddress(nodeSession._dst_ip_address).unparse().c_str(),
+			nodeSession._protocol_id,
+			nodeSession._dst_port,
+			IPAddress(sender.src_address).unparse().c_str(),
+			sender.src_port);
+		erasePathState(*session, *senderTemplate);
+
+		// done if this is a host element
+		if (dynamic_cast<RSVPElement *>(this)) {
+			packet->kill();
+			return;
+		}
+
 		forward = packet->uniqueify();
 		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
 		gwPort = _ipLookup->lookup_route(dstIP, gateway);
 		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
 
-		RSVPNodeSession ns(*session);
-		RSVPSender sender(*senderTemplate);
-		click_chatter("%s: Deleted path state for %s/%d/%d from %s/%d because of a pathtear message.", IPAddress(ns._dst_ip_address).unparse().c_str(), ns._dst_port, IPAddress(sender.src_address).unparse().c_str(), sender.src_port);
-		erasePathState(*session, *senderTemplate);
-
 		addIPHeader(forward, dstIP, srcIP, _tos);
-
-		// if (!dynamic_cast<RSVPElement *>(this)) {
-			output(0).push(forward);
-		// }
+		
+		output(0).push(forward);
 	}
 }
 
@@ -924,6 +939,18 @@ const RSVPNodeSession* RSVPNode::sessionForResvStateTimer(const Timer* timer, co
 	return NULL;
 }
 
+String RSVPNode::pathStateTableHandle(Element *e, void *thunk) {
+	RSVPNode* me = (RSVPNode *) e;
+	
+	return me->stateTableToString(me->_pathStates, "Path state");
+}
+
+String RSVPNode::resvStateTableHandle(Element *e, void *thunk) {
+	RSVPNode* me = (RSVPNode *) e;
+	
+	return me->stateTableToString(me->_resvStates, "Resv state");
+}
+
 int RSVPNode::dieHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh) {
 	RSVPElement* me = (RSVPElement *) e;
 	
@@ -980,6 +1007,8 @@ int RSVPNode::configure(Vector<String> &conf, ErrorHandler *errh) {
 }
 
 void RSVPNode::add_handlers() {
+	add_read_handler("pathstatetable", &pathStateTableHandle, 0);
+	add_read_handler("resvstatetable", &resvStateTableHandle, 0);
 	add_write_handler("name", &nameHandle, (void *) 0);
 	add_write_handler("die", &dieHandle, (void*) 0);
 }

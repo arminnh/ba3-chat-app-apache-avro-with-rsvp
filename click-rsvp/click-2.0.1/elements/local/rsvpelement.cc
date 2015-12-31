@@ -213,7 +213,7 @@ void RSVPElement::run_timer(Timer* timer) {
 // click_chatter("%s: timer %p is for sending a periocic resv message", _name.c_str(), timer);
 		refresh_period_r = _reservations.find(*session)->second.find(*sender)->second.refresh_period_r;
 	} else {
-		click_chatter("%s: timer %p seems to be a timeout timer", _name.c_str(), timer);
+		// click_chatter("%s: timer %p seems to be a timeout timer", _name.c_str(), timer);
 		RSVPNode::run_timer(timer);
 		return;
 	}
@@ -308,12 +308,15 @@ void RSVPElement::removeSender(const RSVPNodeSession& session, const RSVPSender&
 		if (pathit->second.timer) {
 			pathit->second.timer->unschedule();
 		}
+		click_chatter("Removed sender");
 		pathit1->second.erase(pathit);
 	}
 	
 	if (pathit1->second.begin() == pathit1->second.end()) {
 		_senders.erase(session);
 	}
+	
+	eraseResvState(session, sender);
 }
 
 void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const RSVPSender* sender) {
@@ -565,16 +568,14 @@ int RSVPElement::resvErrHandle(const String &conf, Element *e, void * thunk, Err
 
 int RSVPElement::pathTearHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
-	in_addr destinationIP = IPAddress("0.0.0.0");
 
 	if (cp_va_kparse(conf, me, errh,
-		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	me->erasePathState(me->_session, me->_senderTemplate);
+	me->removeSender(me->_session, me->_senderTemplate);
 
 	WritablePacket* message = me->createPathTearMessage();
-	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, me->_session.IPv4_dest_address, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
@@ -723,6 +724,18 @@ String RSVPElement::getTTLHandle(Element *e, void * thunk) {
 	return String((int) me->_TTL);
 }
 
+String RSVPElement::sendersTableHandle(Element *e, void *thunk) {
+	RSVPElement* me = (RSVPElement *) e;
+	
+	return me->stateTableToString(me->_senders, "Senders");
+}
+
+String RSVPElement::reservationsTableHandle(Element *e, void *thunk) {
+	RSVPElement* me = (RSVPElement *) e;
+	
+	return me->stateTableToString(me->_reservations, "Reservations");
+}
+
 void RSVPElement::add_handlers() {
 	RSVPNode::add_handlers();
 
@@ -748,6 +761,10 @@ void RSVPElement::add_handlers() {
 
 	// random read handler
 	add_read_handler("TTL", &getTTLHandle, (void *) 0);
+	
+	// other read handlers
+	add_read_handler("senderstable", &sendersTableHandle, 0);
+	add_read_handler("reservationstable", &reservationsTableHandle, 0);
 }
 
 WritablePacket* RSVPElement::createPacket(uint16_t packetSize) const

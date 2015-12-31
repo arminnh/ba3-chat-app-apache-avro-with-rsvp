@@ -298,6 +298,9 @@ public:
 
 	bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
 
+	template<typename S>
+	String stateTableToString(const HashTable<RSVPNodeSession, HashTable<RSVPSender, S> >&, String name) const;
+
 	int initialize(ErrorHandler* errh);
 
 	void run_timer(Timer*);
@@ -308,6 +311,8 @@ public:
 	const char *port_count() const	{ return "1/1"; }
 	const char *processing() const	{ return PUSH; }
 	
+	static String pathStateTableHandle(Element *e, void *thunk);
+	static String resvStateTableHandle(Element *e, void *thunk);
 	static int dieHandle(const String& conf, Element *e, void *thunk, ErrorHandler *errh);
 	static int nameHandle(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
 
@@ -333,6 +338,22 @@ protected:
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> > _pathStates;
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> > _resvStates;
 };
+
+template <typename S>
+String RSVPNode::stateTableToString(const HashTable<RSVPNodeSession, HashTable<RSVPSender, S> >& table, String type) const {
+	String s = _name + ": " + type + " table contents: \n";
+	for (typename HashTable<RSVPNodeSession, HashTable<RSVPSender, S> >::const_iterator it1 = table.begin(); it1 != table.end(); it1++) {
+		const RSVPNodeSession& session = it1->first;
+		const HashTable<RSVPSender, S>& subtable = it1->second;
+		s += IPAddress(session._dst_ip_address).unparse() + "/" + String(session._protocol_id) + "/" + String(session._dst_port) + "\n";
+		for (typename HashTable<RSVPSender, S>::const_iterator it2 = subtable.begin(); it2 != subtable.end(); it2++) {
+			const RSVPSender& sender = it2->first;
+			s += "\t" + IPAddress(sender.src_address).unparse() + "/" + String(sender.src_port) + "\n";
+		}
+	}
+	
+	return s;
+}
 
 CLICK_ENDDECLS
 #endif // CLICK_RSVPNODE_HH
