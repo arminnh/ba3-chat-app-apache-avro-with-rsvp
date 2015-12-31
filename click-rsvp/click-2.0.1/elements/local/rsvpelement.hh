@@ -60,6 +60,9 @@ public:
 	static int tosHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh);
 	static String getTTLHandle(Element *e, void * thunk);
 
+	static String sendersTableHandle(Element *e, void *thunk);
+	static String reservationsTableHandle(Element *e, void *thunk);
+
 	void add_handlers();
 	
 	WritablePacket* createPacket(uint16_t packetSize) const;
