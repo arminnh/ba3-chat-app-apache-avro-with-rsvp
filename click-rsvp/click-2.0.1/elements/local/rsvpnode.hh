@@ -152,6 +152,9 @@ struct RSVPSenderTSpec { // class num = 12, C-type = 2
 bool operator==(const RSVPSenderTSpec&, const RSVPSenderTSpec&);
 bool operator!=(const RSVPSenderTSpec&, const RSVPSenderTSpec&);
 
+bool operator==(const RSVPFlowspec&, const RSVPFlowspec&);
+bool operator!=(const RSVPFlowspec&, const RSVPFlowspec&);
+
 struct RSVPResvConf { // class num = 15, C-type = 1
 	RSVPObjectHeader header;
 	in_addr receiver_address;
@@ -244,11 +247,11 @@ const void* readRSVPErrorSpec(const RSVPErrorSpec*, in_addr* error_node_address,
 const void* readRSVPResvConf(const RSVPResvConf*, in_addr* receiverAddress);
 const void* readRSVPScope(const RSVPObjectHeader*, Vector<in_addr>* src_addresses);
 const void* readRSVPFlowspec(const RSVPFlowspec*,
-	float& token_bucket_rate,
-	float& token_bucket_size,
-	float& peak_data_rate,
-	uint32_t& minimum_policed_unit,
-	uint32_t& maximum_packet_size);
+	float* token_bucket_rate,
+	float* token_bucket_size,
+	float* peak_data_rate,
+	uint32_t* minimum_policed_unit,
+	uint32_t* maximum_packet_size);
 void* readRSVPFilterSpec(RSVPFilterSpec*, in_addr* src_address, uint16_t* src_port);
 void* readRSVPSenderTemplate(RSVPSenderTemplate*, in_addr* src_address, uint16_t* src_port);
 void* readRSVPSenderTSpec(RSVPSenderTSpec*,
@@ -291,8 +294,10 @@ public:
 	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
 	virtual void eraseResvState(const RSVPNodeSession&, const RSVPSender&);
 
-	const RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&) const;
-	const RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&) const;
+	virtual void removeAllState();
+
+	virtual const RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&) const;
+	virtual const RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&) const;
 	RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&);
 	RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&);
 
@@ -323,7 +328,6 @@ public:
 
 	void addIPHeader(WritablePacket*, in_addr dst_ip, in_addr src_ip, uint8_t tos) const;
 protected:
-	//IPAddress ipForInterface(int 
 	
 	bool _dead;
 
@@ -345,7 +349,7 @@ String RSVPNode::stateTableToString(const HashTable<RSVPNodeSession, HashTable<R
 	for (typename HashTable<RSVPNodeSession, HashTable<RSVPSender, S> >::const_iterator it1 = table.begin(); it1 != table.end(); it1++) {
 		const RSVPNodeSession& session = it1->first;
 		const HashTable<RSVPSender, S>& subtable = it1->second;
-		s += IPAddress(session._dst_ip_address).unparse() + "/" + String(session._protocol_id) + "/" + String(session._dst_port) + "\n";
+		s += IPAddress(session._dst_ip_address).unparse() + "/" + String((int) session._protocol_id) + "/" + String((int) session._dst_port) + "\n";
 		for (typename HashTable<RSVPSender, S>::const_iterator it2 = subtable.begin(); it2 != subtable.end(); it2++) {
 			const RSVPSender& sender = it2->first;
 			s += "\t" + IPAddress(sender.src_address).unparse() + "/" + String(sender.src_port) + "\n";

@@ -18,16 +18,23 @@ public:
 	int configure(Vector<String>&, ErrorHandler*);
 	int initialize(ErrorHandler *);
 	void run_timer(Timer *);
+	
 	const RSVPNodeSession* sessionForSenderTimer(const Timer *, const RSVPSender**) const;
 	const RSVPNodeSession* sessionForReservationTimer(const Timer *, const RSVPSender**) const;
+	
 	void sendPeriodicPathMessage(const RSVPNodeSession*, const RSVPSender*);
 	void sendPeriodicResvMessage(const RSVPNodeSession*, const RSVPSender*);
 
 	virtual void createSession(const RSVPNodeSession&);
+	
 	virtual void erasePathState(const RSVPNodeSession&, const RSVPSender&);
 	virtual void eraseResvState(const RSVPNodeSession&, const RSVPSender&);
-
 	void removeSender(const RSVPNodeSession&, const RSVPSender&);
+	void removeReservation(const RSVPNodeSession&, const RSVPSender&);
+	virtual void removeAllState();
+
+	virtual const RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&) const;
+	virtual const RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&) const;
 
 	virtual void push(int, Packet *);
 	Packet* pull(int);

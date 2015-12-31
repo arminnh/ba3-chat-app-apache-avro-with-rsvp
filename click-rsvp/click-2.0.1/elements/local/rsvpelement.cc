@@ -98,6 +98,8 @@ void RSVPElement::push(int, Packet *packet) {
 			RSVPNode::push(0, packet);
 			break;
 		case RSVP_MSG_RESVTEAR:
+			packet = packet->push(sizeof(click_ip));
+			RSVPNode::push(0, packet);
 			// remove session, send path tear
 			break;
 		case RSVP_MSG_RESVCONF:
@@ -181,7 +183,7 @@ int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 }
 
 int RSVPElement::initialize(ErrorHandler* errh) {
-	// _timer.initialize(this);
+	_name = this->name();
 
 	srand(time(NULL));
 
@@ -256,24 +258,6 @@ void RSVPElement::createSession(const RSVPNodeSession& session) {
 
 void RSVPElement::erasePathState(const RSVPNodeSession& session, const RSVPSender& sender) {
 	RSVPNode::erasePathState(session, sender);
-
-	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator it = _reservations.find(session);
-	if (it == _reservations.end()) {
-		return;
-	}
-
-	HashTable<RSVPSender, RSVPResvState>::iterator it2 = it->second.find(sender);
-
-	if (it2 != it->second.end()) {
-		if (it2->second.timer) {
-			it2->second.timer->unschedule();
-		}
-		it->second.erase(it2);
-	}
-
-	if (it->second.begin() == it->second.end()) {
-		_reservations.erase(session);
-	}
 }
 
 void RSVPElement::eraseResvState(const RSVPNodeSession& session, const RSVPSender& sender) {
@@ -286,15 +270,45 @@ void RSVPElement::eraseResvState(const RSVPNodeSession& session, const RSVPSende
 
 	HashTable<RSVPSender, RSVPResvState>::iterator resvit = resvit1->second.find(sender);
 	if (resvit != resvit1->second.end()) {
+
 		if (resvit->second.timer) {
+			click_chatter("unscheduling timer %p", resvit->second.timer);
 			resvit->second.timer->unschedule();
 		}
 		resvit1->second.erase(resvit);
 	}
 
 	if (resvit1->second.begin() == resvit1->second.end()) {
-		_resvStates.erase(session);
+		_reservations.erase(session);
 	}
+}
+
+const RSVPPathState* RSVPElement::pathState(const RSVPNodeSession& session, const RSVPSender& sender) const {
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator it1 = _senders.find(session);
+	if (it1 == _senders.end()) {
+		return RSVPNode::pathState(session, sender);
+	}
+
+	HashTable<RSVPSender, RSVPPathState>::const_iterator it = it1->second.find(sender);
+	if (it == it1->second.end()) {
+		return RSVPNode::pathState(session, sender);
+	}
+
+	return &it->second;
+}
+
+const RSVPResvState* RSVPElement::resvState(const RSVPNodeSession& session, const RSVPSender& sender) const {
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = _reservations.find(session);
+	if (it1 == _reservations.end()) {
+		return RSVPNode::resvState(session, sender);
+	}
+
+	HashTable<RSVPSender, RSVPResvState>::const_iterator it = it1->second.find(sender);
+	if (it == it1->second.end()) {
+		return RSVPNode::resvState(session, sender);
+	}
+
+	return &it->second;
 }
 
 void RSVPElement::removeSender(const RSVPNodeSession& session, const RSVPSender& sender) {
@@ -308,7 +322,6 @@ void RSVPElement::removeSender(const RSVPNodeSession& session, const RSVPSender&
 		if (pathit->second.timer) {
 			pathit->second.timer->unschedule();
 		}
-		click_chatter("Removed sender");
 		pathit1->second.erase(pathit);
 	}
 	
@@ -317,6 +330,55 @@ void RSVPElement::removeSender(const RSVPNodeSession& session, const RSVPSender&
 	}
 	
 	eraseResvState(session, sender);
+}
+
+void RSVPElement::removeReservation(const RSVPNodeSession& session, const RSVPSender& sender) {
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator resvit1 = _reservations.find(session);
+	if (resvit1 == _reservations.end()) {
+		return;
+	}
+
+	HashTable<RSVPSender, RSVPResvState>::iterator resvit = resvit1->second.find(sender);
+	if (resvit != resvit1->second.end()) {
+		if (resvit->second.timer) {
+			resvit->second.timer->unschedule();
+		}
+		resvit1->second.erase(resvit);
+	}
+	
+	if (resvit1->second.begin() == resvit1->second.end()) {
+		_reservations.erase(session);
+	}
+}
+
+void RSVPElement::removeAllState() {
+	RSVPNode::removeAllState();
+	
+	for (HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::iterator it1 = _senders.begin(); it1 != _senders.end(); it1++) {
+		HashTable<RSVPSender, RSVPPathState>& senders = it1->second;
+		while (senders.begin() != senders.end()) {
+			RSVPPathState& pathState = senders.begin()->second;
+			if (pathState.timer) {
+				pathState.timer->unschedule();
+			}
+			senders.erase(senders.begin());
+		}
+	}
+	
+	_senders.clear();
+	
+	for (HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator it1 = _reservations.begin(); it1 != _reservations.end(); it1++) {
+		HashTable<RSVPSender, RSVPResvState>& reservations = it1->second;
+		while (reservations.begin() != reservations.end()) {
+			RSVPResvState& resvState = reservations.begin()->second;
+			if (resvState.timer) {
+				resvState.timer->unschedule();
+			}
+			reservations.erase(reservations.begin());
+		}
+	}
+	
+	_reservations.clear();
 }
 
 void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const RSVPSender* sender) {
@@ -590,6 +652,8 @@ int RSVPElement::resvTearHandle(const String &conf, Element *e, void * thunk, Er
 	if (cp_va_kparse(conf, me, errh,
 		"DST", cpkP, cpIPAddress, &destinationIP,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+	
+	me->removeReservation(me->_session, me->_filterSpec);
 	
 	WritablePacket* message = me->createResvTearMessage();
 	me->addIPHeader(message, destinationIP, me->_myIP, (uint8_t) me->_tos);
@@ -1050,26 +1114,6 @@ WritablePacket* RSVPElement::createResvConfMessage() const
 
 void RSVPElement::die() {
 	RSVPNode::die();
-	
-	Timer* timer;
-	for (HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::iterator it1 = _senders.begin(); it1 != _senders.end(); it1++) {
-		for (HashTable<RSVPSender, RSVPPathState>::iterator it = it1->second.begin(); it != it1->second.end(); it++) {
-			timer = it->second.timer;
-			if (timer) {
-				timer->unschedule();
-			}
-		}
-		
-	}
-	for (HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator it1 = _reservations.begin(); it1 != _reservations.end(); it1++) {
-		for (HashTable<RSVPSender, RSVPResvState>::iterator it = it1->second.begin(); it != it1->second.end(); it++) {
-			timer = it->second.timer;
-			if (timer) {
-				timer->unschedule();
-			}
-		}
-		
-	}
 }
 
 void RSVPElement::clean() {
