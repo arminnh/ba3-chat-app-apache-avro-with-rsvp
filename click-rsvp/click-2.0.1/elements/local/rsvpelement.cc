@@ -44,6 +44,7 @@ void RSVPElement::push(int, Packet *packet) {
 	RSVPNodeSession nodeSession = *session;
 	RSVPFilterSpec* filterSpec;
 	RSVPFlowspec* flowspec;
+	RSVPResvConf* resvConf;
 	
 	RSVPPathState pathState;
 
@@ -72,19 +73,33 @@ void RSVPElement::push(int, Packet *packet) {
 
 			break;
 		case RSVP_MSG_RESV:
-			if (find(_resvStates, nodeSession) == _resvStates.end()) {
-				click_chatter("%s: creating new resv state for %s", _name.c_str(), IPAddress(nodeSession._dst_ip_address).unparse().c_str(), _name.c_str());
-			} else {
-				// click_chatter("%s: updating resv state for %s", _name.c_str(), IPAddress(nodeSession._dst_ip_address).unparse().c_str());
-			}
-
+		
 			// get the necessary information in order to update the reservation
 			filterSpec = (RSVPFilterSpec *) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
 			flowspec = (RSVPFlowspec *) RSVPObjectOfType(packet, RSVP_CLASS_FLOWSPEC);
 			uint32_t refresh_period_r;
 			readRSVPTimeValues((RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES), &refresh_period_r);
-			
+		
+			if (!this->resvState(nodeSession, *filterSpec)) {
+				click_chatter("%s: creating new resv state for %s", _name.c_str(), IPAddress(nodeSession._dst_ip_address).unparse().c_str(), _name.c_str());
+			} else {
+				// click_chatter("%s: updating resv state for %s", _name.c_str(), IPAddress(nodeSession._dst_ip_address).unparse().c_str());
+			}
+
 			updateReservation(*session, filterSpec, flowspec, refresh_period_r);
+			
+			if ((resvConf = (RSVPResvConf *) RSVPObjectOfType(packet, RSVP_CLASS_RESV_CONF))) {
+				_session = *session;
+				initRSVPErrorSpec(&_errorSpec, _myIP, false, false, 0, 0);
+				_resvConf = *resvConf;
+				_resvConf_given = true;
+				
+				WritablePacket* response = createResvConfMessage();
+				addIPHeader(response, resvConf->receiver_address, _myIP, _tos);
+				click_chatter("%s: responding to resv conf request", _name.c_str());
+				output(0).push(response);
+			}
+			
 			break;
 		case RSVP_MSG_PATHERR:
 			// read rfc
@@ -100,10 +115,16 @@ void RSVPElement::push(int, Packet *packet) {
 		case RSVP_MSG_RESVTEAR:
 			packet = packet->push(sizeof(click_ip));
 			RSVPNode::push(0, packet);
-			// remove session, send path tear
 			break;
 		case RSVP_MSG_RESVCONF:
-			// notify application if session present
+			resvConf = (RSVPResvConf *) RSVPObjectOfType(packet, RSVP_CLASS_RESV_CONF);
+			if (IPAddress(resvConf->receiver_address) == _myIP) {
+				const RSVPErrorSpec* errorSpec = (const RSVPErrorSpec *) RSVPObjectOfType(packet, RSVP_CLASS_ERROR_SPEC);
+				in_addr src;
+				readRSVPErrorSpec(errorSpec, &src, NULL, NULL, NULL, NULL);
+				click_chatter("%s: Received resvconf message from %s", _name.c_str(), IPAddress(src).unparse().c_str());
+			}
+			
 			break;
 		default:
 			click_chatter("RSVPElement %s: no message type %d", _name.c_str(), msg_type);
@@ -413,10 +434,17 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 	RSVPHop hop; initRSVPHop(&hop, _myIP, 0);
 	RSVPTimeValues timeValues; initRSVPTimeValues(&timeValues, resvState.refresh_period_r);
 
+	RSVPResvConf resvConf;
+
+	if (resvState.confirm) {
+		click_chatter("%s: confirm was requested", _name.c_str());
+		initRSVPResvConf(&resvConf, _myIP);
+	}
+
 	WritablePacket* message = createResvMessage(&packetSession,
 		&hop,
 		&timeValues,
-		NULL, // also implement & test resv conf
+		resvState.confirm ? &resvConf : NULL,
 		&resvState.flowspec,
 		&resvState.filterSpec);
 	addIPHeader(message, pathState.previous_hop_node, _myIP, _tos);
@@ -568,9 +596,6 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 		me->erasePathState(nodeSession, sender);
 	}
 	
-	//Element* classifier = me->router()->find("in_cl", me);
-	//click_chatter("find returned %p", (void*) classifier);
-	
 	me->clean();
 	return 0;
 }
@@ -578,12 +603,37 @@ int RSVPElement::pathHandle(const String &conf, Element *e, void * thunk, ErrorH
 int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorHandler *errh) {
 	RSVPElement * me = (RSVPElement *) e;
 
+	bool refresh = true, confirm = false;
+
 	if (cp_va_kparse(conf, me, errh,
-		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
+		"TTL", 0, cpInteger, &me->_TTL,
+		"REFRESH", 0, cpBool, &refresh,
+		"CONFIRM", 0, cpBool, &confirm, cpEnd) < 0) return -1;
 	
-	WritablePacket* message = me->createResvMessage();
-	me->addIPHeader(message, me->_filterSpec.src_address, me->_myIP, (uint8_t) me->_tos);
-	me->output(0).push(message);
+	RSVPNodeSession session(me->_session);
+	RSVPSender sender(me->_filterSpec);
+	RSVPResvState resvState;
+	
+	initRSVPHop(&me->_hop, me->_myIP, 0);
+	
+	uint32_t refresh_period_r;
+	readRSVPTimeValues(&me->_timeValues, &refresh_period_r);
+	resvState.filterSpec = me->_filterSpec;
+	resvState.flowspec = me->_flowspec;
+	resvState.refresh_period_r = refresh_period_r;
+	resvState.confirm = confirm;
+	resvState.timer = new Timer(me);
+	resvState.timer->initialize(me);
+	
+	me->createSession(session);
+	me->_reservations.find(session)->second.set(sender, resvState);
+	
+	if (refresh) {
+		resvState.timer->schedule_now();
+	} else {
+		me->sendPeriodicResvMessage(&session, &sender);
+		me->eraseResvState(session, sender);
+	}
 	
 	me->clean();
 	return 0;

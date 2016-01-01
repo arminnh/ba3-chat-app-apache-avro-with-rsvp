@@ -35,7 +35,7 @@ elementclass Host {
 		-> [0]prio;
 
 	rsvp_cl[0]
-		-> rsvp::RSVPElement($address, AUTORESV true)
+		-> rsvp::RSVPElement($address, AUTORESV false)
 		-> rt;
 		
 	ipgw[1]	-> ICMPError($address, parameterproblem)

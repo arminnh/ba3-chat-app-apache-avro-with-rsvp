@@ -189,6 +189,7 @@ struct RSVPResvState {
 	RSVPFilterSpec filterSpec;
 	RSVPFlowspec flowspec;
 	uint32_t refresh_period_r;
+	bool confirm;
 	Timer* timer;
 };
 

@@ -760,6 +760,12 @@ void RSVPNode::push(int port, Packet* packet) {
 		addIPHeader(forward, pathState->previous_hop_node, ipForInterface(gwPort), _tos);
 		
 		output(0).push(forward);
+	} else if (msg_type == RSVP_MSG_RESVCONF) {
+		click_chatter("%s: forwarding resvconf message", _name.c_str());
+		packet = packet->push(sizeof(click_ip));
+		output(0).push(packet);
+	} else {
+		packet->kill();
 	}
 }
 
@@ -1011,13 +1017,30 @@ void RSVPNode::run_timer(Timer* timer) {
 	RSVPNodeSession* session;
 	const RSVPSender* sender;
 	if ((session = (RSVPNodeSession *) sessionForPathStateTimer(timer, &sender))) {
+		click_chatter("%s: timeout: path state for session %s/%d/%d, sender %s/%d", _name.c_str(),
+			IPAddress(session->_dst_ip_address).unparse().c_str(),
+			session->_protocol_id,
+			session->_dst_port,
+			IPAddress(sender->src_address).unparse().c_str(),
+			sender->src_port);
+			
 		erasePathState(*session, *sender);
 
-		click_chatter("%s-%p: timeout: path state for %s", _name.c_str(), timer, IPAddress(session->_dst_ip_address).unparse().c_str());
 	} else if ((session = (RSVPNodeSession *) sessionForResvStateTimer(timer, &sender))) {
+		click_chatter("%s: timeout: resv state for session %s/%d/%d, sender %s/%d", _name.c_str(),
+			IPAddress(session->_dst_ip_address).unparse().c_str(),
+			session->_protocol_id,
+			session->_dst_port,
+			IPAddress(sender->src_address).unparse().c_str(),
+			sender->src_port);
+			
 		eraseResvState(*session, *sender);
-		click_chatter("%s-%p: timeout: resv state for %s", _name.c_str(), timer, IPAddress(session->_dst_ip_address).unparse().c_str());
-	} // TODO
+		
+	} else {
+		return;
+	}
+	
+	
 }
 
 const RSVPNodeSession* RSVPNode::sessionForPathStateTimer(const Timer* timer, const RSVPSender** sender) const {
