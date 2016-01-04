@@ -27,6 +27,7 @@ import org.apache.avro.ipc.specific.*;
 import server.*;
 import video.*;
 import errorwriter.ErrorWriter;
+import rsvp.RSVP;
 
 public class AppClient extends TimerTask implements AppClientInterface {
 	private CharSequence username;
@@ -41,6 +42,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private JFrame senderFrame = new JFrame();
 	private JFrame receiverFrame = new JFrame();
 	private Graphics receiverG;
+	
+	private RSVP rsvp;
 
 	// ======================================================================================
 
@@ -51,6 +54,13 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.serverIP = serverIP;
 		this.serverPort = serverPort;
 		this.status = ClientStatus.LOBBY;
+		
+		try {
+			//TODO: juiste naam kiezen voor host1 host2
+			RSVP rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, "host1/rsvp");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/*
@@ -103,6 +113,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		System.out.println("\n > " + this.privateChatClient.username + " has requested to videochat. Use the ?acceptVideo or ?declineVideo commands to accept or decline.");
 		this.videoRequestPending = true;
 
+		//TODO: send path message = request for QoS reservation
+		this.rsvp.requestReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+		
 		return 0;
 	}
 
@@ -166,6 +179,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			this.privateChatClient.shutdown(first);
 			this.privateChatClient = null;
 		}
+		
+		//TODO: break down RSVP, tear messages ?
 		
 		return 0;
 	}
@@ -449,6 +464,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		System.out.println("\n > You have accepted the video request.");
 		this.videoRequestPending = false;
 		this.privateChatClient.proxy.videoRequestAccepted();
+		
+		//TODO: send resv message = accept QoS reservation
+		this.rsvp.confirmReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 	}
 
 	private void sendVideo() throws AvroRemoteException {
@@ -468,6 +486,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		VideoSender videoSender = new VideoSender(video, this.senderFrame, this.privateChatClient.proxy);
 		Thread sender = new Thread(videoSender);
 		sender.start();
+		
+		//TODO: break down RSVP, tear messages ?
 		
 		this.videoRequestAccepted = false;
 	}
