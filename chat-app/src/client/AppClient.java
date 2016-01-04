@@ -666,9 +666,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	 */
 	
 	public static void main(String[] argv) {
-		 String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
-		//String clientIP = "143.129.81.7", serverIP = "143.129.81.7";
-		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1";
+		 //String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
+		//String clientIP = "143.129.81.11", serverIP = "143.129.81.11";
+		String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
+		// clientIP = 192.168.10.1 for ipnetwork.click user
 		int serverPort = 6789, clientPort = 2345;
 		Scanner in = new Scanner(System.in);
 
