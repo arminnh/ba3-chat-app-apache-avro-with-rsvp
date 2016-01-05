@@ -36,6 +36,8 @@ public:
 	virtual const RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&) const;
 	virtual const RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&) const;
 
+	virtual bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
+
 	virtual void push(int, Packet *);
 	Packet* pull(int);
 

@@ -332,6 +332,14 @@ const RSVPResvState* RSVPElement::resvState(const RSVPNodeSession& session, cons
 	return &it->second;
 }
 
+bool RSVPElement::hasReservation(const RSVPNodeSession& session, const RSVPSender& sender) const {
+	if (RSVPNode::hasReservation(session, sender)) {
+		return true;
+	}
+
+	return resvState(session, sender);
+}
+
 void RSVPElement::removeSender(const RSVPNodeSession& session, const RSVPSender& sender) {
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::iterator pathit1 = _senders.find(session);
 	if (pathit1 == _pathStates.end()) {

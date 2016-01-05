@@ -302,7 +302,7 @@ public:
 	RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&);
 	RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&);
 
-	bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
+	virtual bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
 
 	template<typename S>
 	String stateTableToString(const HashTable<RSVPNodeSession, HashTable<RSVPSender, S> >&, String name) const;
