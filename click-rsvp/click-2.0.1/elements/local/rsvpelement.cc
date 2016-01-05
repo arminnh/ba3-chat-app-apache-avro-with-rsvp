@@ -193,7 +193,7 @@ RSVPElement::~ RSVPElement()
 int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 	_application = false;
 
-	_autoResv = true;
+	_autoResv = false;
 
 	if (cp_va_kparse(conf, this, errh,
 		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
@@ -205,6 +205,9 @@ int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 
 int RSVPElement::initialize(ErrorHandler* errh) {
 	_name = this->name();
+	
+	initRSVPHop(&_hop, _myIP, sizeof(RSVPHop));
+	initRSVPTimeValues(&_timeValues, 5);
 
 	srand(time(NULL));
 
@@ -1182,8 +1185,6 @@ void RSVPElement::clean() {
 	
 	memset(&_session, 0, sizeof(RSVPSession));
 	memset(&_errorSpec, 0, sizeof(RSVPErrorSpec));
-	initRSVPHop(&_hop, _myIP, sizeof(RSVPHop));
-	initRSVPTimeValues(&_timeValues, 5);
 	
 	_senderDescriptor = false;
 	memset(&_senderTemplate, 0, sizeof(RSVPSenderTemplate));
