@@ -429,12 +429,12 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 	HashTable<RSVPSender, RSVPPathState>::const_iterator pathit = find(pathStates, *sender);
 
 	if (it == reservations.end()) {
-		click_chatter("%s: Trying to send resv message for nonexistent reservation.");
+		click_chatter("%s: Trying to send resv message for nonexistent reservation.", _name.c_str());
 		return;
 	}
 
 	if (pathit == pathStates.end()) {
-		click_chatter("%s: Trying to send resv message for nonexitent path state.");
+		click_chatter("%s: Trying to send resv message for nonexitent path state, looking for %s/%d", _name.c_str(), IPAddress(session->_dst_ip_address).s().c_str(), session->_dst_port);
 		return;
 	}
 

@@ -57,7 +57,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		try {
 			//TODO: juiste naam kiezen voor host1 host2
-			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, "host2/rsvp", this.clientIP, this.clientPort);
+			boolean eersteClient = clientPort == 2345;
+			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, this.clientIP, this.clientPort, eersteClient);
 		} catch (Exception e) {
 			this.rsvp = null;
 			e.printStackTrace();
@@ -114,10 +115,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		System.out.println("\n > " + this.privateChatClient.username + " has requested to videochat. Use the ?acceptVideo or ?declineVideo commands to accept or decline.");
 		this.videoRequestPending = true;
 
-		//TODO: send path message = request for QoS reservation
-		if (this.rsvp != null)
-			this.rsvp.requestQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
-		
 		return 0;
 	}
 
@@ -420,6 +417,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			if (input.matches("(\\?)(sendvideorequest|videorequest|svr|vr)")) {
 				if (!this.senderFrame.isVisible()) {
 					System.out.println("\n > You have sent a video request.");
+					//TODO: send path message = request for QoS reservation
+					if (this.rsvp != null)
+						this.rsvp.requestQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+					
 					this.privateChatClient.proxy.videoRequest();
 				} else {
 					System.err.println("\n > You are already streaming a video.");
