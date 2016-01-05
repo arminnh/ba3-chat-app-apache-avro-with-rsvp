@@ -38,9 +38,15 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
         	throw new IllegalArgumentException("could not open file: " + s.video);
 		
         this.initVideoStreamIndex(container);
-        
+        /*
+         * 30fps
+         * 1/30 = seconds for 1 frame
+         * 1000*1/30 = ms for 1 frame
+         * 1000000000*1/30 = ns for 1 frame
+         */
         fps = container.getStream(videoStreamIndex).getFrameRate().getDouble();
-        //System.out.println("FPS: " + fps + ", microseconds per frame: " + s.MICRO_SECONDS_PER_FRAME);
+        s.NANOSECONDS_PER_FRAME = (long) (1/fps * 1000000000);
+        System.out.println("FPS: " + fps);
     }
 
 	private void initVideoStreamIndex(IContainer container) {
@@ -80,12 +86,18 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
             return;
         }
 
+        /*
+         * s.imgBuffer.put should wait in case the queue is full, 
+         * but it doesn't and throws an out of memory exception
+         * so we make the thread sleep manually
+         */
         while (s.imgBuffer.size() > 10*this.fps) {
-        	try {
-				Thread.sleep(5*s.MICRO_SECONDS_PER_FRAME/1000);
+        	//TODO: find the right sleep time
+        	/*try {
+				Thread.sleep(5*s.NANOSECONDS_PER_FRAME);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
-			}
+			}*/
         }
         
         try {

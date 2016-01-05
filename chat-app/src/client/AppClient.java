@@ -55,12 +55,12 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.serverPort = serverPort;
 		this.status = ClientStatus.LOBBY;
 		
-		try {
+		/*try {
 			//TODO: juiste naam kiezen voor host1 host2
 			RSVP rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, "host1/rsvp");
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	/*
@@ -114,7 +114,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.videoRequestPending = true;
 
 		//TODO: send path message = request for QoS reservation
-		this.rsvp.requestReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+		//this.rsvp.requestReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 		
 		return 0;
 	}
@@ -409,8 +409,12 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 		if (privateChatClientArrived && this.privateChatClient != null) {
 			if (input.matches("(\\?)(sendvideorequest|videorequest|svr|vr)")) {
-				System.out.println("\n > You have sent a video request.");
-				this.privateChatClient.proxy.videoRequest();
+				if (!this.senderFrame.isVisible()) {
+					System.out.println("\n > You have sent a video request.");
+					this.privateChatClient.proxy.videoRequest();
+				} else {
+					System.err.println("\n > You are already streaming a video.");
+				}
 
 			} else if (input.matches("(\\?)(sendvideo|sv)") && videoRequestAccepted) {
 				sendVideo();
@@ -466,7 +470,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.privateChatClient.proxy.videoRequestAccepted();
 		
 		//TODO: send resv message = accept QoS reservation
-		this.rsvp.confirmReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+		//this.rsvp.confirmReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 	}
 
 	private void sendVideo() throws AvroRemoteException {
@@ -686,9 +690,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	 */
 	
 	public static void main(String[] argv) {
-		 //String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
-		//String clientIP = "143.129.81.11", serverIP = "143.129.81.11";
-		String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
+		//String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
+		String clientIP = "143.129.81.6", serverIP = "143.129.81.6";
+		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
 		// clientIP = 192.168.10.1 for ipnetwork.click user
 		int serverPort = 6789, clientPort = 2345;
 		Scanner in = new Scanner(System.in);
@@ -737,6 +741,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 			String username = clientRequester.registerUser(in);
 
+			//TODO: remove on release
 			// temporary for testing on localhost
 			if (clientPort == 2345) {
 				clientRequester.initJFrames(50, 250, 400, 300);
