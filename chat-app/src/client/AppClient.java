@@ -55,12 +55,13 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.serverPort = serverPort;
 		this.status = ClientStatus.LOBBY;
 		
-		/*try {
+		try {
 			//TODO: juiste naam kiezen voor host1 host2
-			RSVP rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, "host1/rsvp");
-		} catch (IOException e) {
+			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, "host2/rsvp", this.clientIP, this.clientPort);
+		} catch (Exception e) {
+			this.rsvp = null;
 			e.printStackTrace();
-		}*/
+		}
 	}
 
 	/*
@@ -114,7 +115,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.videoRequestPending = true;
 
 		//TODO: send path message = request for QoS reservation
-		//this.rsvp.requestReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+		if (this.rsvp != null)
+			this.rsvp.requestQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 		
 		return 0;
 	}
@@ -148,6 +150,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			this.receiverFrame.setVisible(visible);
 			if (visible)
 				this.receiverG = this.receiverFrame.getGraphics();
+			else if (this.rsvp != null) {
+				this.rsvp.tearResv();
+			}
 		} else {
 			this.senderFrame.setVisible(visible);
 			if (visible)
@@ -174,13 +179,17 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		this.senderFrame.setVisible(false);
 		this.receiverFrame.setVisible(false);
+
+		//TODO: break down RSVP, tear messages ?
+		if (this.rsvp != null) {
+			this.rsvp.tearPath();
+			this.rsvp.tearResv();
+		}
 		
 		if (this.privateChatClient != null) {
 			this.privateChatClient.shutdown(first);
 			this.privateChatClient = null;
 		}
-		
-		//TODO: break down RSVP, tear messages ?
 		
 		return 0;
 	}
@@ -470,7 +479,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.privateChatClient.proxy.videoRequestAccepted();
 		
 		//TODO: send resv message = accept QoS reservation
-		//this.rsvp.confirmReservation(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+		if (this.rsvp != null)
+			this.rsvp.confirmQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 	}
 
 	private void sendVideo() throws AvroRemoteException {
@@ -492,6 +502,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		sender.start();
 		
 		//TODO: break down RSVP, tear messages ?
+		if (this.rsvp != null)
+			this.rsvp.tearPath();
 		
 		this.videoRequestAccepted = false;
 	}
@@ -691,8 +703,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	
 	public static void main(String[] argv) {
 		//String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
-		String clientIP = "143.129.81.6", serverIP = "143.129.81.6";
-		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
+		//String clientIP = "143.129.81.6", serverIP = "143.129.81.6";
+		String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
 		// clientIP = 192.168.10.1 for ipnetwork.click user
 		int serverPort = 6789, clientPort = 2345;
 		Scanner in = new Scanner(System.in);
@@ -718,6 +730,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		// connect to the server to create the appServer proxy object.
 		try {
 			transceiver = new SaslSocketTransceiver(new InetSocketAddress( serverIP, serverPort));
+			
 			appServer = (AppServerInterface) SpecificRequestor.getClient( AppServerInterface.class, transceiver);
 
 			// try multiple clientPorts in case the port is already in use

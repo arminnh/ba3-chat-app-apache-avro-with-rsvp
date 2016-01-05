@@ -11,26 +11,37 @@ public class RSVP {
 	String _elementName;
 	ControlSocket.HandlerInfo _sessionHandler;
 	
-	public RSVP(InetAddress address, int port, String elementName) throws IOException {
+	String srcIP, dstIP;
+	int srcPort, dstPort;
+	
+	public RSVP(InetAddress address, int port, String elementName, String srcIP, int srcPort) throws IOException {
 		_controlSocket = new ControlSocket(address, port);
 		_elementName = elementName;
+		this.srcIP = srcIP;
+		this.srcPort = srcPort;
 	}
 	
-	public void requestReservation(String srcIP, int srcPort, String dstIP, int dstPort) {
+	public void requestQoS(String dstIP, int dstPort) {
+		this.dstIP = dstIP;
+		this.dstPort = dstPort;
+		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
 			_controlSocket.write(_elementName, "timevalues", "REFRESH 3");
 			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "path", "REFRESH true");
 		} catch (ClickException e) {
-			System.err.println("Setting session unsuccessful");
-			e.getCause();
+			System.err.println("Requesting QoS reservation unsuccesful.");
+			System.err.println(e.getCause().getMessage());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void confirmReservation(String srcIP, int srcPort, String dstIP, int dstPort) {
+	public void confirmQoS(String dstIP, int dstPort) {
+		this.dstIP = dstIP;
+		this.dstPort = dstPort;
+		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
 			_controlSocket.write(_elementName, "timevalues", "REFRESH 3");
@@ -38,7 +49,33 @@ public class RSVP {
 			_controlSocket.write(_elementName, "resv", "REFRESH true, CONFIRM true");
 		} catch (ClickException e) {
 			System.err.println("Setting session unsuccessful");
-			e.getCause();
+			System.err.println(e.getCause().getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void tearPath() {
+		try {
+			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
+			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "pathtear", "");
+		} catch (ClickException e) {
+			System.err.println("Setting session unsuccessful");
+			System.err.println(e.getCause().getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void tearResv() {
+		try {
+			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
+			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "resvtear", "");
+		} catch (ClickException e) {
+			System.err.println("Setting session unsuccessful");
+			System.err.println(e.getCause().getMessage());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
