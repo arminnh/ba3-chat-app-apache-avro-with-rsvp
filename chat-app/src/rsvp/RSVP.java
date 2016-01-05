@@ -14,9 +14,12 @@ public class RSVP {
 	String srcIP, dstIP;
 	int srcPort, dstPort;
 	
-	public RSVP(InetAddress address, int port, String elementName, String srcIP, int srcPort) throws IOException {
+	public RSVP(InetAddress address, int port, String elementName, String srcIP, int srcPort) throws IOException, ClickException {
 		_controlSocket = new ControlSocket(address, port);
-		_elementName = elementName;
+		if (_controlSocket.checkHandler("host1/rsvp", "session", true))
+			_elementName = "host1/rsvp";
+		else if (_controlSocket.checkHandler("host2/rsvp", "session", true))
+			_elementName = "host2/rsvp";
 		this.srcIP = srcIP;
 		this.srcPort = srcPort;
 	}
@@ -27,7 +30,7 @@ public class RSVP {
 		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
-			_controlSocket.write(_elementName, "timevalues", "REFRESH 3");
+			//_controlSocket.write(_elementName, "timevalues", "REFRESH 3");
 			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "path", "REFRESH true");
 		} catch (ClickException e) {
@@ -44,7 +47,7 @@ public class RSVP {
 		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
-			_controlSocket.write(_elementName, "timevalues", "REFRESH 3");
+			//_controlSocket.write(_elementName, "timevalues", "REFRESH 3");
 			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "resv", "REFRESH true, CONFIRM true");
 		} catch (ClickException e) {
