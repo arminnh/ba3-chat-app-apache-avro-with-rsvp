@@ -38,7 +38,6 @@ public class VideoSender implements Runnable {
 		videoDecoder.start();
     	long lastFrameWrite = System.nanoTime() - NANOSECONDS_PER_FRAME;
     	long timeNow = 0;
-    	System.out.println("NANO_SECONDS_PER_FRAME: " + this.NANOSECONDS_PER_FRAME);
     	
     	try {
     		while ((!videoDecoded || !imgBuffer.isEmpty()) && frame.isVisible()) {

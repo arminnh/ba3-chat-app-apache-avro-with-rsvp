@@ -46,7 +46,6 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
          */
         fps = container.getStream(videoStreamIndex).getFrameRate().getDouble();
         s.NANOSECONDS_PER_FRAME = (long) (1/fps * 1000000000);
-        System.out.println("FPS: " + fps);
     }
 
 	private void initVideoStreamIndex(IContainer container) {

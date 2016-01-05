@@ -569,7 +569,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
             	try {
                 	if (privateChatClient != null) {
                 		if (privateChatClient.proxy.isFrameVisible(false)) {
-                			privateChatClient.proxy.receiveMessage(username + " stopped receiving video.");
+                			privateChatClient.proxy.receiveMessage(" > " + username + " stopped receiving video.");
                 			System.out.println(" > You stopped receiving the video.");
                 		}
                 		privateChatClient.proxy.setFrameVisible(false, false);
