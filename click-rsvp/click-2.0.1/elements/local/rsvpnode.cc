@@ -528,8 +528,7 @@ RSVPSender::key_const_reference RSVPSender::hashcode() const {
 }
 
 bool RSVPSender::operator==(const RSVPSender& other) const {
-	return src_address == other.src_address
-		&& src_port == other.src_port;
+	return src_address == other.src_address;
 }
 
 
