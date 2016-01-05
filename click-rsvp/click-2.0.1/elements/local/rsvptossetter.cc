@@ -46,6 +46,8 @@ void RSVPToSSetter::push(int, Packet *p)
 		const click_udp* udp = (const click_udp *) (ip + 1);
 		src_port = htons(udp->uh_sport);
 		dst_port = htons(udp->uh_dport);
+	} else if (protocol_id == 46) {
+		ip->ip_tos = 1;
 	}
 // click_chatter("src_addr: %s, dst_addr: %s, src_port: %d, dst_port: %d", IPAddress(src_addr).unparse().c_str(), IPAddress(dst_addr).unparse().c_str(), src_port, dst_port);
 	RSVPNodeSession session(dst_addr, protocol_id, dst_port);

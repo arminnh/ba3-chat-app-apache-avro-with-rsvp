@@ -403,7 +403,7 @@ void RSVPElement::removeAllState() {
 }
 
 void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const RSVPSender* sender) {
-	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = find(_reservations, *session);
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator it1 = find(_reservations, *session);
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator pathit1 = find(_pathStates, *session);
 
 	if (pathit1 == _pathStates.end() || it1 == _resvStates.end()) {
@@ -411,10 +411,10 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 		return;
 	}
 
-	const HashTable<RSVPSender, RSVPResvState>& reservations = it1->second;
+	HashTable<RSVPSender, RSVPResvState>& reservations = it1->second;
 	const HashTable<RSVPSender, RSVPPathState>& pathStates = pathit1->second;
 
-	HashTable<RSVPSender, RSVPResvState>::const_iterator it = find(reservations, *sender);
+	HashTable<RSVPSender, RSVPResvState>::iterator it = find(reservations, *sender);
 	HashTable<RSVPSender, RSVPPathState>::const_iterator pathit = find(pathStates, *sender);
 
 	if (it == reservations.end()) {
@@ -427,7 +427,7 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 		return;
 	}
 
-	const RSVPResvState& resvState = it->second;
+	RSVPResvState& resvState = it->second;
 	const RSVPPathState& pathState = pathit->second;
 
 	RSVPSession packetSession; initRSVPSession(&packetSession, session);
@@ -447,6 +447,9 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 		resvState.confirm ? &resvConf : NULL,
 		&resvState.flowspec,
 		&resvState.filterSpec);
+
+	resvState.confirm = false;
+
 	addIPHeader(message, pathState.previous_hop_node, _myIP, _tos);
 	output(0).push(message);
 }
