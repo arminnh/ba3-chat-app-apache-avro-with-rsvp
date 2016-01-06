@@ -15,7 +15,6 @@ elementclass Router {
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
-		-> RSVPToSSetter(rsvp)
 		-> rsvp_cl::IPClassifier(proto 46, -)[1]
 		-> rt :: StaticIPLookup(
 			$lan_address/32 0,

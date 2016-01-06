@@ -13,6 +13,7 @@ elementclass Host {
 	// Shared IP input path
 	ip :: Strip(14)
 		-> CheckIPHeader
+		-> tos::RSVPToSSetter(rsvp)
 		-> rsvp_cl::IPClassifier(proto 46, -)[1]
 		-> rt :: StaticIPLookup(
 			$address:ip/32 0,

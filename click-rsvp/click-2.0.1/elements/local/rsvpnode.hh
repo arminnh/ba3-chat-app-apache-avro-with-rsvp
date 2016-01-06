@@ -304,7 +304,7 @@ public:
 	RSVPPathState* pathState(const RSVPNodeSession&, const RSVPSender&);
 	RSVPResvState* resvState(const RSVPNodeSession&, const RSVPSender&);
 
-	bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
+	virtual bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
 
 	String specToString(const RSVPSenderTSpec& senderDescriptor) const;
 	String specToString(const RSVPFlowspec& flowspec) const;

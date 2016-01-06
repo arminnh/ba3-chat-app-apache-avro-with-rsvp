@@ -193,7 +193,7 @@ RSVPElement::~ RSVPElement()
 int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 	_application = false;
 
-	_autoResv = true;
+	_autoResv = false;
 
 	if (cp_va_kparse(conf, this, errh,
 		"IP", cpkM + cpkP, cpIPAddress, &_myIP,
@@ -205,6 +205,9 @@ int RSVPElement::configure(Vector<String> &conf, ErrorHandler *errh) {
 
 int RSVPElement::initialize(ErrorHandler* errh) {
 	_name = this->name();
+	
+	initRSVPHop(&_hop, _myIP, sizeof(RSVPHop));
+	initRSVPTimeValues(&_timeValues, 5);
 
 	srand(time(NULL));
 
@@ -332,6 +335,14 @@ const RSVPResvState* RSVPElement::resvState(const RSVPNodeSession& session, cons
 	return &it->second;
 }
 
+bool RSVPElement::hasReservation(const RSVPNodeSession& session, const RSVPSender& sender) const {
+	if (RSVPNode::hasReservation(session, sender)) {
+		return true;
+	}
+
+	return resvState(session, sender);
+}
+
 void RSVPElement::removeSender(const RSVPNodeSession& session, const RSVPSender& sender) {
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::iterator pathit1 = _senders.find(session);
 	if (pathit1 == _pathStates.end()) {
@@ -403,7 +414,7 @@ void RSVPElement::removeAllState() {
 }
 
 void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const RSVPSender* sender) {
-	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = find(_reservations, *session);
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator it1 = find(_reservations, *session);
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator pathit1 = find(_pathStates, *session);
 
 	if (pathit1 == _pathStates.end() || it1 == _resvStates.end()) {
@@ -411,23 +422,23 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 		return;
 	}
 
-	const HashTable<RSVPSender, RSVPResvState>& reservations = it1->second;
+	HashTable<RSVPSender, RSVPResvState>& reservations = it1->second;
 	const HashTable<RSVPSender, RSVPPathState>& pathStates = pathit1->second;
 
-	HashTable<RSVPSender, RSVPResvState>::const_iterator it = find(reservations, *sender);
+	HashTable<RSVPSender, RSVPResvState>::iterator it = find(reservations, *sender);
 	HashTable<RSVPSender, RSVPPathState>::const_iterator pathit = find(pathStates, *sender);
 
 	if (it == reservations.end()) {
-		click_chatter("%s: Trying to send resv message for nonexistent reservation.");
+		click_chatter("%s: Trying to send resv message for nonexistent reservation.", _name.c_str());
 		return;
 	}
 
 	if (pathit == pathStates.end()) {
-		click_chatter("%s: Trying to send resv message for nonexitent path state.");
+		click_chatter("%s: Trying to send resv message for nonexitent path state, looking for %s/%d", _name.c_str(), IPAddress(session->_dst_ip_address).s().c_str(), session->_dst_port);
 		return;
 	}
 
-	const RSVPResvState& resvState = it->second;
+	RSVPResvState& resvState = it->second;
 	const RSVPPathState& pathState = pathit->second;
 
 	RSVPSession packetSession; initRSVPSession(&packetSession, session);
@@ -447,6 +458,9 @@ void RSVPElement::sendPeriodicResvMessage(const RSVPNodeSession* session, const 
 		resvState.confirm ? &resvConf : NULL,
 		&resvState.flowspec,
 		&resvState.filterSpec);
+
+	resvState.confirm = false;
+
 	addIPHeader(message, pathState.previous_hop_node, _myIP, _tos);
 	output(0).push(message);
 }
@@ -1171,8 +1185,6 @@ void RSVPElement::clean() {
 	
 	memset(&_session, 0, sizeof(RSVPSession));
 	memset(&_errorSpec, 0, sizeof(RSVPErrorSpec));
-	initRSVPHop(&_hop, _myIP, sizeof(RSVPHop));
-	initRSVPTimeValues(&_timeValues, 5);
 	
 	_senderDescriptor = false;
 	memset(&_senderTemplate, 0, sizeof(RSVPSenderTemplate));
