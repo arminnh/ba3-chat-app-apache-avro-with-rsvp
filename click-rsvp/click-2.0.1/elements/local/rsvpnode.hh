@@ -180,6 +180,7 @@ struct RSVPNodeSession {
 struct RSVPPathState {
 	in_addr previous_hop_node;
 	RSVPSenderTSpec senderTSpec;
+	const RSVPSenderTSpec& spec() const;
 	RSVPSenderTemplate senderTemplate;
 	uint32_t refresh_period_r;
 	Timer* timer;
@@ -188,6 +189,7 @@ struct RSVPPathState {
 struct RSVPResvState {
 	RSVPFilterSpec filterSpec;
 	RSVPFlowspec flowspec;
+	const RSVPFlowspec& spec() const;
 	uint32_t refresh_period_r;
 	bool confirm;
 	Timer* timer;
@@ -304,6 +306,9 @@ public:
 
 	bool hasReservation(const RSVPNodeSession&, const RSVPSender&) const;
 
+	String specToString(const RSVPSenderTSpec& senderDescriptor) const;
+	String specToString(const RSVPFlowspec& flowspec) const;
+
 	template<typename S>
 	String stateTableToString(const HashTable<RSVPNodeSession, HashTable<RSVPSender, S> >&, String name) const;
 
@@ -353,7 +358,9 @@ String RSVPNode::stateTableToString(const HashTable<RSVPNodeSession, HashTable<R
 		s += IPAddress(session._dst_ip_address).unparse() + "/" + String((int) session._protocol_id) + "/" + String((int) session._dst_port) + "\n";
 		for (typename HashTable<RSVPSender, S>::const_iterator it2 = subtable.begin(); it2 != subtable.end(); it2++) {
 			const RSVPSender& sender = it2->first;
+			const S& state = it2->second;
 			s += "\t" + IPAddress(sender.src_address).unparse() + "/" + String(sender.src_port) + "\n";
+			s += "\t\t" + specToString(state.spec());
 		}
 	}
 	

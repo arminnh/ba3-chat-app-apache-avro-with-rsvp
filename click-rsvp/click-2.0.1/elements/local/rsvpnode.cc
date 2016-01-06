@@ -513,6 +513,14 @@ bool RSVPNodeSession::operator==(const RSVPNodeSession& other) const {
 		&& _dst_port == other._dst_port;
 }
 
+const RSVPSenderTSpec& RSVPPathState::spec() const {
+	return senderTSpec;
+}
+
+const RSVPFlowspec& RSVPResvState::spec() const {
+	return flowspec;
+}
+
 RSVPSender::RSVPSender() : key(1), src_address(IPAddress("0.0.0.0")), src_port(0) {}
 
 RSVPSender::RSVPSender(in_addr _src_address, uint16_t _src_port) : key(1), src_address(_src_address), src_port(_src_port) {}
@@ -1005,6 +1013,24 @@ bool RSVPNode::hasReservation(const RSVPNodeSession& session, const RSVPSender& 
 	
 	HashTable<RSVPSender, RSVPResvState>::const_iterator it = it1->second.find(sender);
 	return it != it1->second.end();
+}
+
+String RSVPNode::specToString(const RSVPSenderTSpec& senderTSpec) const {
+	RSVPFlowspec flowspec;
+	initRSVPFlowspec(&flowspec, &senderTSpec);
+	
+	return specToString(flowspec);
+	
+}
+
+String RSVPNode::specToString(const RSVPFlowspec& flowspec) const {
+	float tbr, tbs, pdr;
+	uint32_t mpu, mps;
+	readRSVPFlowspec(&flowspec, &tbr, &tbs, &pdr, &mpu, &mps);
+	
+	String s = "tbr: " + String(tbr) + " tbs: " + tbs + " pdr: " + pdr + " mpu: " + mpu + " mps: " + mps;
+	
+	return s;
 }
 
 int RSVPNode::initialize(ErrorHandler* errh) {
