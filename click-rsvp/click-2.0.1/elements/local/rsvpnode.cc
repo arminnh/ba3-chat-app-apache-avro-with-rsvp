@@ -563,7 +563,12 @@ void RSVPNode::push(int port, Packet* packet) {
 	uint8_t msg_type;
 	WritablePacket* forward;
 	
-	readRSVPCommonHeader((RSVPCommonHeader*) packet->transport_header(), &msg_type, NULL, NULL);
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader*) packet->transport_header();
+	readRSVPCommonHeader(commonHeader, &msg_type, NULL, NULL);
+
+	if (click_in_cksum((unsigned char *) commonHeader, htons(commonHeader->RSVP_length))) {
+		click_chatter("%s: RSVPElement::push: received packet with bad checksum", _name.c_str());
+	}
 
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 	RSVPNodeSession nodeSession(*session);
@@ -768,7 +773,7 @@ void RSVPNode::push(int port, Packet* packet) {
 		
 		output(0).push(forward);
 	} else if (msg_type == RSVP_MSG_RESVCONF) {
-		click_chatter("%s: forwarding resvconf message", _name.c_str());
+		// click_chatter("%s: forwarding resvconf message", _name.c_str());
 		packet = packet->push(sizeof(click_ip));
 		output(0).push(packet);
 	} else {
@@ -827,7 +832,7 @@ void RSVPNode::updatePathState(Packet* packet) {
 	unsigned state_lifetime = (k + 0.5) * 1.5 * refresh_period_r;
 // click_chatter("%s: setting path state lifetime to %d with R = %d", _name.c_str(), state_lifetime, refresh_period_r);
 	pathState.timer = timer;
-	timer->schedule_after_sec(state_lifetime);
+	timer->schedule_after_msec(state_lifetime);
 	
 	// add new / updated path state to path state table
 	it1->second.set(sender, pathState);
@@ -883,7 +888,7 @@ void RSVPNode::updateReservation(const RSVPNodeSession& session, const RSVPFilte
 	unsigned state_lifetime = (k + 0.5) * 1.5 * refresh_period_r;
 // click_chatter("%s: setting reservation state lifetime to %d with R = %d", _name.c_str(), state_lifetime, refresh_period_r);
 	resvState.timer = timer;
-	timer->schedule_after_sec(state_lifetime);
+	timer->schedule_after_msec(state_lifetime);
 	
 	resvStates.set(*filterSpec, resvState);
 
@@ -1027,7 +1032,7 @@ String RSVPNode::specToString(const RSVPFlowspec& flowspec) const {
 	uint32_t mpu, mps;
 	readRSVPFlowspec(&flowspec, &tbr, &tbs, &pdr, &mpu, &mps);
 	
-	String s = "tbr: " + String(tbr) + " tbs: " + tbs + " pdr: " + pdr + " mpu: " + mpu + " mps: " + mps;
+	String s = "tbr: " + String(tbr) + " tbs: " + String(tbs) + " pdr: " + String(pdr) + " mpu: " + String(mpu) + " mps: " + String(mps);
 	
 	return s;
 }

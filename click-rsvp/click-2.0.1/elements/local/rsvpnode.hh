@@ -360,7 +360,7 @@ String RSVPNode::stateTableToString(const HashTable<RSVPNodeSession, HashTable<R
 			const RSVPSender& sender = it2->first;
 			const S& state = it2->second;
 			s += "\t" + IPAddress(sender.src_address).unparse() + "/" + String(sender.src_port) + "\n";
-			s += "\t\t" + specToString(state.spec());
+			s += "\t\t" + specToString(state.spec()) + "\n";
 		}
 	}
 	

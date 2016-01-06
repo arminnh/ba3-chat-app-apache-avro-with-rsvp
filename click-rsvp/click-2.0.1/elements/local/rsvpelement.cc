@@ -38,7 +38,13 @@ void RSVPElement::push(int, Packet *packet) {
 	packet->pull(sizeof(click_ip));
 	
 	uint8_t msg_type;
-	readRSVPCommonHeader((RSVPCommonHeader*) packet->data(), &msg_type, NULL, NULL);
+	
+	RSVPCommonHeader* commonHeader = (RSVPCommonHeader*) packet->data();
+	readRSVPCommonHeader(commonHeader, &msg_type, NULL, NULL);
+	
+	if (click_in_cksum((unsigned char *) commonHeader, htons(commonHeader->RSVP_length))) {
+		click_chatter("%s: RSVPElement::push: received packet with bad checksum", _name.c_str());
+	}
 	
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 	RSVPNodeSession nodeSession = *session;
@@ -207,7 +213,7 @@ int RSVPElement::initialize(ErrorHandler* errh) {
 	_name = this->name();
 	
 	initRSVPHop(&_hop, _myIP, sizeof(RSVPHop));
-	initRSVPTimeValues(&_timeValues, 5);
+	initRSVPTimeValues(&_timeValues, 5000);
 
 	srand(time(NULL));
 
@@ -244,7 +250,7 @@ void RSVPElement::run_timer(Timer* timer) {
 		return;
 	}
 	
-	double randomized_refresh = 1000 * ((double) rand() / RAND_MAX + 0.5) * refresh_period_r;
+	double randomized_refresh = ((double) rand() / RAND_MAX + 0.5) * refresh_period_r;
 	// click_chatter("%s: setting randomized refresh to %f with R = %d", _name.c_str(), randomized_refresh / 1000, refresh_period_r);
 	// click_chatter("%s: rescheduling timer %p", _name.c_str(), (void*) timer);
 	timer->reschedule_after_msec(randomized_refresh);
@@ -286,17 +292,24 @@ void RSVPElement::erasePathState(const RSVPNodeSession& session, const RSVPSende
 
 void RSVPElement::eraseResvState(const RSVPNodeSession& session, const RSVPSender& sender) {
 	RSVPNode::eraseResvState(session, sender);
-
+	click_chatter("entered eraseresvstate");
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator resvit1 = _reservations.find(session);
-	if (resvit1 == _reservations.end()) {
+	if (resvit1 == _reservations.end() && _reservations.begin() != _reservations.end() && _reservations.begin()->first == session) {
+		resvit1 = _reservations.begin();
+	} else if (resvit1 == _reservations.end()) {
 		return;
 	}
-
+	click_chatter("found session");
 	HashTable<RSVPSender, RSVPResvState>::iterator resvit = resvit1->second.find(sender);
+	
+	if (resvit == resvit1->second.end() && resvit1->second.begin() != resvit1->second.end() && resvit1->second.begin()->first == sender) {
+		resvit = resvit1->second.begin();
+	} else if (resvit == resvit1->second.end()) {
+		return;
+	}
+	
 	if (resvit != resvit1->second.end()) {
-
 		if (resvit->second.timer) {
-			click_chatter("unscheduling timer %p", resvit->second.timer);
 			resvit->second.timer->unschedule();
 		}
 		resvit1->second.erase(resvit);
@@ -497,7 +510,7 @@ int RSVPElement::sessionHandle(const String &conf, Element *e, void * thunk, Err
 	RSVPElement * me = (RSVPElement *) e;
 
 	int protocol_ID;
-	bool police;
+	bool police = false;
 	int destination_port;
 	
 	in_addr destination_address;
@@ -505,7 +518,7 @@ int RSVPElement::sessionHandle(const String &conf, Element *e, void * thunk, Err
 	if (cp_va_kparse(conf, me, errh, 
 		"DEST", cpkM, cpIPAddress, &destination_address, 
 		"PROTOCOL", cpkM, cpUnsigned, &protocol_ID,
-		"POLICE", cpkM, cpBool, &police,
+		"POLICE", 0, cpBool, &police,
 		"PORT", cpkM, cpUnsigned, &destination_port, 
 		cpEnd) < 0) return -1;
 	
@@ -640,6 +653,12 @@ int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorH
 	resvState.timer->initialize(me);
 	
 	me->createSession(session);
+	
+	if (me->_pathStates.find(session)->second.find(sender) == me->_pathStates.find(session)->second.end()) {
+		errh->error("Did not find path state corresponding to the session!");
+		return -1;
+	}
+	
 	me->_reservations.find(session)->second.set(sender, resvState);
 	
 	if (refresh) {
@@ -942,7 +961,6 @@ WritablePacket* RSVPElement::createPathMessage(const RSVPSession* p_session,
 		*senderTemplate = *p_senderTemplate;
 		*senderTSpec = *p_senderTSpec;
 	}
-	
 	
 	commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) commonHeader, packetSize);
 	
