@@ -654,7 +654,7 @@ int RSVPElement::resvHandle(const String &conf, Element *e, void * thunk, ErrorH
 	
 	me->createSession(session);
 	
-	if (me->_pathStates.find(session)->second.find(sender) == me->_pathStates.find(session)->second.end()) {
+	if (find(find(me->_pathStates, session)->second, sender) == me->_pathStates.find(session)->second.end()) {
 		errh->error("Did not find path state corresponding to the session %s/%d/%d,\n sender %s/%d,\n sender tspec %s",
 			IPAddress(session._dst_ip_address).unparse().c_str(),
 			session._protocol_id,
