@@ -24,9 +24,9 @@ public class RSVP {
 	
 	public void requestQoS(String srcIP, int srcPort, String dstIP, int dstPort) {
 		
-		System.out.println("session DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
+		/*System.out.println("session DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
 		System.out.println("senderdescriptor SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
-		System.out.println("path REFRESH true");
+		System.out.println("path REFRESH true");*/
 		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
@@ -41,9 +41,9 @@ public class RSVP {
 	
 	public void confirmQoS(String srcIP, int srcPort, String dstIP, int dstPort) {
 		
-		System.out.println("session DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
+		/*System.out.println("session DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
 		System.out.println("flowdescriptor SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
-		System.out.println("resv REFRESH true, CONFIRM true");
+		System.out.println("resv REFRESH true, CONFIRM true");*/
 		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
