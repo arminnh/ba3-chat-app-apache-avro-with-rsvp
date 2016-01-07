@@ -478,8 +478,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.privateChatClient.proxy.videoRequestAccepted();
 		
 		//TODO: send resv message = accept QoS reservation
-		if (this.rsvp != null)
+		if (this.rsvp != null) {
+			System.out.println("should send resv message now.");
 			this.rsvp.confirmQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+		}
 	}
 
 	private void sendVideo() throws AvroRemoteException {

@@ -25,67 +25,67 @@ package controlsocket;
 
 public class ClickException extends Exception {
 
-    ClickException() {
-	super("Click error");
-    }
-    ClickException(String s) {
-	super(s);
-    }
+	ClickException() {
+		super("Click error");
+	}
+	ClickException(String s) {
+		super(s);
+	}
 
-    static public class NoSuchElementException extends ClickException {
-	NoSuchElementException() { 
-	    super("No such element"); 
+	static public class NoSuchElementException extends ClickException {
+		NoSuchElementException() { 
+			super("No such element"); 
+		}
+		NoSuchElementException(String s) { 
+			super("No such element `" + s + "'"); 
+		}
 	}
-	NoSuchElementException(String s) { 
-	    super("No such element `" + s + "'"); 
-	}
-    }
-    
-    static public class HandlerException extends ClickException {
-	private String _handlerId;
-	HandlerException(String handlerId, String description) {
-	    super(description);
-	    _handlerId = handlerId;
-	}
-	public String getHandlerId() {
-	    return _handlerId;
-	}
-    }
 
-    static public class NoSuchHandlerException extends HandlerException {
-	NoSuchHandlerException() { 
-	    super("", "No such handler"); 
+	static public class HandlerException extends ClickException {
+		private String _handlerId;
+		HandlerException(String handlerId, String description) {
+			super(description);
+			_handlerId = handlerId;
+		}
+		public String getHandlerId() {
+			return _handlerId;
+		}
 	}
-	NoSuchHandlerException(String hid) {
-	    super(hid, "No such handler `" + hid + "'"); 
-	}
-    }
 
-    static public class PermissionDeniedException extends HandlerException {
-	PermissionDeniedException() {
-	    super("", "Permission denied calling handler"); 
+	static public class NoSuchHandlerException extends HandlerException {
+		NoSuchHandlerException() { 
+			super("", "No such handler"); 
+		}
+		NoSuchHandlerException(String hid) {
+			super(hid, "No such handler `" + hid + "'"); 
+		}
 	}
-	PermissionDeniedException(String hid) {
-	    super(hid, "Permission denied calling handler `" + hid + "'"); 
-	}
-    }
 
-    static public class HandlerErrorException extends HandlerException {
-	HandlerErrorException() { 
-	    super("", "Unspecified error calling handler"); 
+	static public class PermissionDeniedException extends HandlerException {
+		PermissionDeniedException() {
+			super("", "Permission denied calling handler"); 
+		}
+		PermissionDeniedException(String hid) {
+			super(hid, "Permission denied calling handler `" + hid + "'"); 
+		}
 	}
-	HandlerErrorException(String hid, String description) { 
-	    super(hid, description);
-	}
-    }
 
-    static public class HandlerFormatException extends HandlerException {
-	HandlerFormatException() {
-	    super("", "Unspecified error calling handler"); 
+	static public class HandlerErrorException extends HandlerException {
+		HandlerErrorException() { 
+			super("", "Unspecified error calling handler"); 
+		}
+		HandlerErrorException(String hid, String description) { 
+			super(hid, description);
+		}
 	}
-	HandlerFormatException(String hid) { 
-	    super(hid, "Bad format in handler `" + hid + "'"); 
+
+	static public class HandlerFormatException extends HandlerException {
+		HandlerFormatException() {
+			super("", "Unspecified error calling handler"); 
+		}
+		HandlerFormatException(String hid) { 
+			super(hid, "Bad format in handler `" + hid + "'"); 
+		}
 	}
-    }
 
 }
