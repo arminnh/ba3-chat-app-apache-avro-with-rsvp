@@ -245,7 +245,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		int response = this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
 
-		if (response != 0)
+		if (response == 0) 
+			System.err.println("\n > " + "You have sent a private chat request to " + username + ".");
+		else
 			ErrorWriter.printError(response);
 	}
 
@@ -427,13 +429,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			} else if (input.matches("(\\?)(sendvideo|sv)") && videoRequestAccepted) {
 				sendVideo();
 
-			} else if (videoRequestPending) {
-				if (input.matches("(\\?)(acceptvideo|av)")) {
-					acceptVideoRequest();
-				}
-				else if (input.matches("(\\?)(declinevideo|dv)")) {
-					declineVideoRequest();
-				}
+			} else if (videoRequestPending && input.matches("(\\?)(acceptvideo|av)")) {
+				acceptVideoRequest();
+			} else if (videoRequestPending && input.matches("(\\?)(declinevideo|dv)")) {
+				declineVideoRequest();
 
 				// if no command was detected, send input to the private chat partner
 			} else {
