@@ -57,6 +57,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		try {
 			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, this.clientIP, this.clientPort);
+			this.rsvp = null;
 		} catch (Exception e) {
 			this.rsvp = null;
 			e.printStackTrace();

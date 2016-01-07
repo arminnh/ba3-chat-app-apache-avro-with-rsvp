@@ -66,6 +66,7 @@ public class RSVP {
 			_controlSocket.write(_elementName, "pathtear", "");
 		} catch (ClickException e) {
 			System.err.println("tear path unsuccesful.");
+			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -78,6 +79,7 @@ public class RSVP {
 			_controlSocket.write(_elementName, "resvtear", "");
 		} catch (ClickException e) {
 			System.err.println("tear resv unsuccesful.");
+			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
