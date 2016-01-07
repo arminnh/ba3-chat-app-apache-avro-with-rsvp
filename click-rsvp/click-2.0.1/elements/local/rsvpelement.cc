@@ -108,10 +108,10 @@ void RSVPElement::push(int, Packet *packet) {
 			
 			break;
 		case RSVP_MSG_PATHERR:
-			// read rfc
+			
 			break;
 		case RSVP_MSG_RESVERR:
-			// read rfc
+
 			break;
 		case RSVP_MSG_PATHTEAR:
 			// restore chopped-off IP header

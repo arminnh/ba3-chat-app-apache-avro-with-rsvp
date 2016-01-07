@@ -789,6 +789,8 @@ void RSVPNode::updatePathState(Packet* packet) {
 	RSVPSenderTSpec* senderTSpec =  (RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
 	RSVPHop* hop = (RSVPHop *) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
 	RSVPTimeValues* timeValues = (RSVPTimeValues *) RSVPObjectOfType(packet, RSVP_CLASS_TIME_VALUES);
+	uint32_t refresh_period_r;
+	readRSVPTimeValues(timeValues, &refresh_period_r);
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 
 	RSVPNodeSession nodeSession(*session);
@@ -822,8 +824,7 @@ void RSVPNode::updatePathState(Packet* packet) {
 		click_chatter("Received path message without sender_tspec object and no path state present.");
 	}
 
-	uint32_t refresh_period_r;
-	readRSVPTimeValues(timeValues, &refresh_period_r);
+	//click_chatter("refresh period r: %d", refresh_period_r);
 	//click_chatter("updatePathState: set table entry stuff");
 	//click_chatter("updatePathState: read refresh period");
 	
