@@ -173,7 +173,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.receiverFrame.setVisible(false);
 
 		//TODO: break down RSVP, tear messages ?
-		if (this.rsvp != null) {
+		if (this.rsvp != null && this.privateChatClient != null) {
 			this.rsvp.tearPath(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 			this.rsvp.tearResv(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
 		}
