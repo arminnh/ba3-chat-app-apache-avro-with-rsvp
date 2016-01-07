@@ -11,9 +11,6 @@ public class RSVP {
 	String _elementName;
 	ControlSocket.HandlerInfo _sessionHandler;
 	
-	String srcIP, dstIP;
-	int srcPort, dstPort;
-	
 	public RSVP(InetAddress address, int port, String srcIP, int srcPort) throws IOException, ClickException {
 		_controlSocket = new ControlSocket(address, port);
 		
@@ -23,14 +20,9 @@ public class RSVP {
 			_elementName = "host2/rsvp";
 		
 		System.out.println("_elementName="+_elementName);
-		
-		this.srcIP = srcIP;
-		this.srcPort = srcPort;
 	}
 	
-	public void requestQoS(String dstIP, int dstPort) {
-		this.dstIP = dstIP;
-		this.dstPort = dstPort;
+	public void requestQoS(String srcIP, int srcPort, String dstIP, int dstPort) {
 		
 		System.out.println("session DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
 		System.out.println("senderdescriptor SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
@@ -47,17 +39,15 @@ public class RSVP {
 		}
 	}
 	
-	public void confirmQoS(String dstIP, int dstPort) {
-		this.dstIP = dstIP;
-		this.dstPort = dstPort;
+	public void confirmQoS(String srcIP, int srcPort, String dstIP, int dstPort) {
 		
-		System.out.println("session DEST " + srcIP + ", PROTOCOL 6, POLICE false, PORT " + srcPort);
-		System.out.println("flowdescriptor SRC_ADDRESS " + dstIP + ", SRC_PORT " + dstPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+		System.out.println("session DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
+		System.out.println("flowdescriptor SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 		System.out.println("resv REFRESH true, CONFIRM true");
 		
 		try {
-			_controlSocket.write(_elementName, "session", "DEST " + srcIP + ", PROTOCOL 6, POLICE false, PORT " + srcPort);
-			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + dstIP + ", SRC_PORT " + dstPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
+			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "resv", "REFRESH true, CONFIRM true");
 		} catch (ClickException e) {
 			System.err.println("Confirming QoS reservation unsuccesful.");
@@ -69,7 +59,7 @@ public class RSVP {
 		}
 	}
 	
-	public void tearPath() {
+	public void tearPath(String srcIP, int srcPort, String dstIP, int dstPort) {
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
 			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
@@ -81,7 +71,7 @@ public class RSVP {
 		}
 	}
 	
-	public void tearResv() {
+	public void tearResv(String srcIP, int srcPort, String dstIP, int dstPort) {
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
 			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");

@@ -146,7 +146,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			if (visible)
 				this.receiverG = this.receiverFrame.getGraphics();
 			else if (this.rsvp != null) {
-				this.rsvp.tearResv();
+				this.rsvp.tearResv(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
 			}
 		} else {
 			this.senderFrame.setVisible(visible);
@@ -177,8 +177,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 		//TODO: break down RSVP, tear messages ?
 		if (this.rsvp != null) {
-			this.rsvp.tearPath();
-			this.rsvp.tearResv();
+			this.rsvp.tearPath(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+			this.rsvp.tearResv(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
 		}
 		
 		if (this.privateChatClient != null) {
@@ -246,7 +246,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		int response = this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
 
 		if (response == 0) 
-			System.err.println("\n > " + "You have sent a private chat request to " + username + ".");
+			System.out.println("\n > " + "You have sent a private chat request to " + username + ".");
 		else
 			ErrorWriter.printError(response);
 	}
@@ -419,7 +419,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 					System.out.println("\n > You have sent a video request.");
 					//TODO: send path message = request for QoS reservation
 					if (this.rsvp != null)
-						this.rsvp.requestQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+						this.rsvp.requestQoS(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 					
 					this.privateChatClient.proxy.videoRequest();
 				} else {
@@ -479,7 +479,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		//TODO: send resv message = accept QoS reservation
 		if (this.rsvp != null) {
 			System.out.println("should send resv message now.");
-			this.rsvp.confirmQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+			this.rsvp.confirmQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
 		}
 	}
 
@@ -503,7 +503,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		//TODO: break down RSVP, tear messages ?
 		if (this.rsvp != null)
-			this.rsvp.tearPath();
+			this.rsvp.tearPath(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 		
 		this.videoRequestAccepted = false;
 	}
