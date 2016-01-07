@@ -1,0 +1,183 @@
+=====================================
+| Chat application with Apache Avro |
+=====================================
+
+chat-app is a CLI java application which allows users to communicate with each other using a server-clients architecture.
+Using the application, users can chat with one another in public or private chat mode. Video streaming is also supported.
+
+Features
+-------------------------------------
+
+Client Modes:
+    Clients can be in one of three modes: lobby, public or private.
+    Public mode is used to chat to all other clients in public mode, whereas private mode is used to chat with one other client in particular.
+    Clients in lobby mode can only execute application commands (e.g. join public chat).
+    Application commands can be executed in every mode, but each mode has its own collection of available commands.
+    
+    
+Application Commands:
+    Application commands are used to provide the application's functionality to users.
+    All input in lobby mode will be treated as a command. To make chatting as smooth as possible, all input in the chat modes is treated 
+    as a message for other clients. To use commands in the chat modes, the input has to be prepended by a question mark.
+    What follows is a list of all possible commands in the chat modes. Commands in lobby mode do not start with a question mark.
+    
+    GLOBAL COMMANDS:
+        Print this list:                 ?list,  ?l
+        Leave the chatroom:              ?leave, ?q
+
+        Get the list of connected users: ?getListOfUsers,   ?glou
+        List your requests:              ?listMyRequests,   ?lmr
+        Send a request to X:             ?sendRequest X,    ?sr X
+        Cancel a request to X:           ?cancelRequest X,  ?cr X
+        Decline a request from X:        ?declineRequest X, ?dr X
+
+    PUBLIC CHAT COMMANDS:
+        if a private chat request for the client is pending:
+            Accept a request from X:         ?acceptRequest X, ?ar X
+
+        if a private chat request has been accepted by another client:
+            To start the private chat:       ?joinPrivateChat, ?jpc, ?startPrivateChat, ?spc
+
+    PRIVATE CHAT COMMANDS:
+        Go to the the public chatroom:   ?joinPublicChat, ?jpc
+        Send a video request:            ?videoRequest,   ?vr, ?sendVideoRequest, ?svr
+
+        if a video request has been accepted:
+            Send a video:                    ?sendVideo,    ?sv
+
+        if a video request to the user is pending:
+            Accept a video request:          ?acceptVideo,  ?av
+            Decline a video request:         ?declineVideo, ?dv    
+    
+    Commands will print an error message if there is no connection to the server.
+    
+    
+Communication:
+    Communication between computers in chat-app is handled by Apache Avro.
+
+
+Server:
+    clients can register at the server with a unique available username.
+        usernames with whitespace in them will have the whitespace removed upon registration.
+    keeps a list of connected users and updates this list frequently.
+    handles clients going into public chat mode and handles the sending of messages to other clients in public chat mode.
+    handles the sending of private chat requests from clients to other clients.
+    does NOT send messages between clients in private chat mode, this communication is handled peer-to-peer between the clients.
+    when a client leaves the application, appropriate data belonging to that client will be removed from the server.
+    
+    
+Client:
+    automatically registers at the server.
+    can enter commands after registration with the server.
+    can request a list of other online users.
+    can go into public chat mode and send messages to other clients in this mode.
+    can send private chat requests to other clients.
+    can accept or decline private chat requests from other clients.
+    private chat mode is possible with only one other client simultaneously.
+    upon acceptation of a private chat request, will go into private chat mode, after which communication happens peer-to-peer between the two clients.
+        can only accept a request if the other client has not already started private chat with someone else
+    in private chat mode, can still send and receive private chat requests.
+    in private chat mode, can start a video streaming session.
+    can leave public chat mode, private chat mode and the application gracefully.
+    
+    sending requests to yourself/non-existent users will display an error message.
+    users cannot go into private chat mode if nobody accepted their private chat request.
+    
+    in private chat mode, video streaming can be done:
+        video streaming requests can be sent/accepted.
+        videos can be selected with a file chooser.
+        videos can be streamed between users.
+        both clients can stream video to each other at the same time.
+        video decoding is separated from video sending.
+        supported video files: 3gp, 3g2, aac, asf, dvd, dxa, ffm, flac, flv, flic, mpg, h261, h263, h264, gif, image2, image2pipe, ipod, m4v, matroska, 
+                               webm, md5, mjpeg, mlp, mov, mp4, m4a, mj2, mp2, mp3, mpeg, mpjpeg, mvi, mxf, wav, xwma, mkv
+    
+    
+Fault tolerance:
+    client in lobby/public mode and server disconnects:
+        all clients will get a message which notifies them of the disconnection.
+        clients will then automatically try to reconnect to the server.
+        commands are disabled while clients try to reconnect.
+        if no reconnection was made in a certain time period, the application will terminate.
+        
+    in private chat:
+        one of the clients disconnects: 
+            a message will be displayed
+            chat will be gracefully shut down for the clients
+            clients can choose to go into lobby or public chat mode 
+            if video was streaming, video streaming will stop and display windows will be removed 
+        
+        server disconnects:
+            both clients will get a message which notifies them of the disconnection.
+            clients will then automatically try to reconnect to the server.
+            commands are disabled
+            the clients can still finish their chat session
+            application will terminate when the clients leave the private chatroom, if they could not reconnect to the server.
+            
+
+Architecture
+-------------------------------------
+
+Several UML diagrams can be found in the uml-diagrams folder:
+
+*) packages-dependencies.png:
+    small overview of all of the packages and their dependencies
+    
+    
+*) client.png:
+    AppClientInterface:
+        An interface generated by Apache Avro using the appClient.avpr file.
+        It defines the set of functions which will be available for remote method invocation from other computers over a network.  
+    AppClient:
+        The main method in this class is what end users (clients) will execute.
+        It does everything that is specified for clients in the assignment. 
+    
+    
+*) server.png:
+    AppServerInterface:
+        An interface generated by Apache Avro using the appServer.avpr file.
+        It defines the set of functions which will be available for remote method invocation from other computers over a network.
+    AppServer:
+        The server in the chat app system. It does everything that is specified for server in the assignment. 
+    Request:
+        represents private chat requests from clients to other clients
+    RequestStatus:
+        represents the status of a request: pending/accepted
+    ClientInfo:
+        holds information about a certain client and a proxy object to that client
+    ClientStatus:
+        represents the mode of a client: lobby/public/private
+        
+    We remark here that putting ClientInfo and ClientStatus in the client package would make more sense than in server, but we could not 
+    make this work with apache avro's import system.
+        
+    
+*) video.png:
+    VideoFileChooser:
+        A simple file chooser which filters on supported video files, using javax.swing.
+    VideoDecoder:
+        This class uses the xuggler library to decode videos. It will decode the video and save each of its frame in a LinkedBlockingQueue of BufferedImages.
+    VideoSender:
+        VideoSender will take the frames decoded by VideoDecoder at the correct frame rate, draw the frame, and send the frame to the other client.
+    
+    
+*) errorwriter.png:
+    ErrorWriter:
+        A simple class that prints out specific error messages.
+    
+    
+*) rsvp.png:
+    RSVP:
+        This class is used for the integration part of the assignment, it can invoke handler calls on a running Click script.
+        It takes the IP address and port on which the click script is running as arguments in its constructor, 
+        then it can invoke handler calls on the "host1/rsvp" or "host2/rsvp" element, depending on which one is available.
+        
+    
+*) system-dependencies.png:
+    This image shows the system (without the client and server interfaces) and their dependencies in one graph. 
+
+
+
+
+
+

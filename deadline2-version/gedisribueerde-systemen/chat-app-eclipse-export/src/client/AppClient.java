@@ -27,6 +27,7 @@ import org.apache.avro.ipc.specific.*;
 import server.*;
 import video.*;
 import errorwriter.ErrorWriter;
+import rsvp.RSVP;
 
 public class AppClient extends TimerTask implements AppClientInterface {
 	private CharSequence username;
@@ -41,6 +42,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private JFrame senderFrame = new JFrame();
 	private JFrame receiverFrame = new JFrame();
 	private Graphics receiverG;
+	
+	private RSVP rsvp;
 
 	// ======================================================================================
 
@@ -51,6 +54,13 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.serverIP = serverIP;
 		this.serverPort = serverPort;
 		this.status = ClientStatus.LOBBY;
+		
+		try {
+			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, this.clientIP, this.clientPort);
+		} catch (Exception e) {
+			this.rsvp = null;
+			e.printStackTrace();
+		}
 	}
 
 	/*
@@ -161,6 +171,12 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		this.senderFrame.setVisible(false);
 		this.receiverFrame.setVisible(false);
+
+		//TODO: break down RSVP, tear messages ?
+		if (this.rsvp != null && this.privateChatClient != null) {
+			this.rsvp.tearPath(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+			this.rsvp.tearResv(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
+		}
 		
 		if (this.privateChatClient != null) {
 			this.privateChatClient.shutdown(first);
@@ -226,7 +242,9 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		int response = this.appServer.sendRequest((CharSequence) this.username, (CharSequence) username);
 
-		if (response != 0)
+		if (response == 0) 
+			System.out.println("\n > " + "You have sent a private chat request to " + username + ".");
+		else
 			ErrorWriter.printError(response);
 	}
 
@@ -394,19 +412,24 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 		if (privateChatClientArrived && this.privateChatClient != null) {
 			if (input.matches("(\\?)(sendvideorequest|videorequest|svr|vr)")) {
-				System.out.println("\n > You have sent a video request.");
-				this.privateChatClient.proxy.videoRequest();
+				if (!this.senderFrame.isVisible()) {
+					System.out.println("\n > You have sent a video request.");
+					//TODO: send path message = request for QoS reservation
+					if (this.rsvp != null)
+						this.rsvp.requestQoS(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
+					
+					this.privateChatClient.proxy.videoRequest();
+				} else {
+					System.err.println("\n > You are already streaming a video.");
+				}
 
 			} else if (input.matches("(\\?)(sendvideo|sv)") && videoRequestAccepted) {
 				sendVideo();
 
-			} else if (videoRequestPending) {
-				if (input.matches("(\\?)(acceptvideo|av)")) {
-					acceptVideoRequest();
-				}
-				else if (input.matches("(\\?)(declinevideo|dv)")) {
-					declineVideoRequest();
-				}
+			} else if (videoRequestPending && input.matches("(\\?)(acceptvideo|av)")) {
+				acceptVideoRequest();
+			} else if (videoRequestPending && input.matches("(\\?)(declinevideo|dv)")) {
+				declineVideoRequest();
 
 				// if no command was detected, send input to the private chat partner
 			} else {
@@ -449,6 +472,12 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		System.out.println("\n > You have accepted the video request.");
 		this.videoRequestPending = false;
 		this.privateChatClient.proxy.videoRequestAccepted();
+		
+		//TODO: send resv message = accept QoS reservation
+		if (this.rsvp != null) {
+			System.out.println("should send resv message now.");
+			this.rsvp.confirmQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
+		}
 	}
 
 	private void sendVideo() throws AvroRemoteException {
@@ -468,7 +497,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		VideoSender videoSender = new VideoSender(video, this.senderFrame, this.privateChatClient.proxy);
 		Thread sender = new Thread(videoSender);
 		sender.start();
-		
+
 		this.videoRequestAccepted = false;
 	}
 
@@ -523,7 +552,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
             	try {
                 	if (privateChatClient != null) {
                 		if (privateChatClient.proxy.isFrameVisible(true)) {
-                			privateChatClient.proxy.receiveMessage(username + " stopped sending video.");
+                			privateChatClient.proxy.receiveMessage(" > " + username + " stopped sending video.");
                 			System.out.println(" > You stopped sending the video.");
                 		}
                 		privateChatClient.proxy.setFrameVisible(true, false);
@@ -545,7 +574,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
             	try {
                 	if (privateChatClient != null) {
                 		if (privateChatClient.proxy.isFrameVisible(false)) {
-                			privateChatClient.proxy.receiveMessage(username + " stopped receiving video.");
+                			privateChatClient.proxy.receiveMessage(" > " + username + " stopped receiving video.");
                 			System.out.println(" > You stopped receiving the video.");
                 		}
                 		privateChatClient.proxy.setFrameVisible(false, false);
@@ -666,9 +695,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	 */
 	
 	public static void main(String[] argv) {
-		 String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
-		//String clientIP = "143.129.81.7", serverIP = "143.129.81.7";
-		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1";
+		//String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
+		String clientIP = "143.129.81.13", serverIP = "143.129.81.13";
+		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
+		// clientIP = 192.168.10.1 for ipnetwork.click user
 		int serverPort = 6789, clientPort = 2345;
 		Scanner in = new Scanner(System.in);
 
@@ -693,6 +723,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		// connect to the server to create the appServer proxy object.
 		try {
 			transceiver = new SaslSocketTransceiver(new InetSocketAddress( serverIP, serverPort));
+			
 			appServer = (AppServerInterface) SpecificRequestor.getClient( AppServerInterface.class, transceiver);
 
 			// try multiple clientPorts in case the port is already in use
@@ -716,6 +747,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 			String username = clientRequester.registerUser(in);
 
+			//TODO: remove on release
 			// temporary for testing on localhost
 			if (clientPort == 2345) {
 				clientRequester.initJFrames(50, 250, 400, 300);

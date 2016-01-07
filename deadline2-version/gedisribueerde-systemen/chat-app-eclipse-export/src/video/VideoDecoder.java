@@ -17,14 +17,14 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
     // The video stream index, used to ensure we display frames from one and only one video stream from the media container.
     private int videoStreamIndex = -1;
     private IMediaReader reader = null;
-    private VideoSender s;
+    private VideoSender sender;
     private double fps;
 
     public VideoDecoder(VideoSender videoSender) {
-    	this.s = videoSender;
+    	this.sender = videoSender;
     	
         // create a media reader for processing video
-        this.reader = ToolFactory.makeReader(s.video.getAbsolutePath());
+        this.reader = ToolFactory.makeReader(sender.video.getAbsolutePath());
 
         // stipulate that we want BufferedImages created in BGR 24bit color space
         this.reader.setBufferedImageTypeToGenerate(BufferedImage.TYPE_3BYTE_BGR);
@@ -34,13 +34,18 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
         this.reader.addListener(this);
         
         IContainer container = IContainer.make();
-		if (container.open(s.video.getAbsolutePath(), IContainer.Type.READ, null) < 0)
-        	throw new IllegalArgumentException("could not open file: " + s.video);
+		if (container.open(sender.video.getAbsolutePath(), IContainer.Type.READ, null) < 0)
+        	throw new IllegalArgumentException("could not open file: " + sender.video);
 		
         this.initVideoStreamIndex(container);
-        
+        /*
+         * 30fps
+         * 1/30 = seconds for 1 frame
+         * 1000*1/30 = ms for 1 frame
+         * 1000000000*1/30 = ns for 1 frame
+         */
         fps = container.getStream(videoStreamIndex).getFrameRate().getDouble();
-        //System.out.println("FPS: " + fps + ", microseconds per frame: " + s.MICRO_SECONDS_PER_FRAME);
+        sender.NANOSECONDS_PER_FRAME = (long) (1/fps * 1000000000);
     }
 
 	private void initVideoStreamIndex(IContainer container) {
@@ -56,19 +61,19 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
 		}
 		
 		if (videoStreamIndex == -1)
-			throw new RuntimeException("could not find video stream in container: " + s.video);
+			throw new RuntimeException("could not find video stream in container: " + sender.video);
 	}
     
 	@Override
 	public void run() {
         // read out the contents of the media file, note that nothing else happens here. 
         // action happens in the onVideoPicture() method which is called when complete video pictures are extracted from the media source
-        while (this.reader.readPacket() == null && s.frame.isVisible()) {
+        while (this.reader.readPacket() == null && sender.frame.isVisible()) {
             do { } while (false);
         }
         //System.out.println("VIDEO DECODED");
         
-    	s.videoDecoded = true;
+    	sender.videoDecoded = true;
 	}
     
     /**
@@ -80,16 +85,22 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
             return;
         }
 
-        while (s.imgBuffer.size() > 10*this.fps) {
-        	try {
-				Thread.sleep(5*s.MICRO_SECONDS_PER_FRAME/1000);
+        /*
+         * s.imgBuffer.put should wait in case the queue is full, 
+         * but it doesn't and throws an out of memory exception
+         * so we make the thread sleep manually
+         */
+        while (sender.imgBuffer.size() > 10*this.fps) {
+        	//TODO: find the right sleep time
+        	/*try {
+				Thread.sleep(5*s.NANOSECONDS_PER_FRAME);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
-			}
+			}*/
         }
         
         try {
-			s.imgBuffer.put(event.getImage());
+			sender.imgBuffer.put(event.getImage());
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

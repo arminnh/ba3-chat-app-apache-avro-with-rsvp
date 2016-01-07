@@ -20,7 +20,8 @@ public class VideoSender implements Runnable {
 	
 	public File video;
 	public boolean videoDecoded = false;
-	public long MICRO_SECONDS_PER_FRAME = -1;
+	//use nanoseconds so we can compare easier with system.nanoTime()
+	public long NANOSECONDS_PER_FRAME = -1;
 	public LinkedBlockingQueue<BufferedImage> imgBuffer = new LinkedBlockingQueue<BufferedImage>();
 	
 	
@@ -35,13 +36,13 @@ public class VideoSender implements Runnable {
 	public void run() {
 		Thread videoDecoder = new Thread(new VideoDecoder(this));
 		videoDecoder.start();
-    	long lastFrameWrite = System.nanoTime()/1000 - MICRO_SECONDS_PER_FRAME;
+    	long lastFrameWrite = System.nanoTime() - NANOSECONDS_PER_FRAME;
     	long timeNow = 0;
     	
     	try {
     		while ((!videoDecoded || !imgBuffer.isEmpty()) && frame.isVisible()) {
-    			timeNow = System.nanoTime()/1000;
-    			if (timeNow - lastFrameWrite >= MICRO_SECONDS_PER_FRAME) {
+    			timeNow = System.nanoTime();
+    			if (timeNow - lastFrameWrite >= NANOSECONDS_PER_FRAME) {
     				lastFrameWrite = timeNow;
     				BufferedImage img = imgBuffer.take();
     				g.drawImage(img, 0, 0, frame.getWidth(), frame.getHeight(), null);

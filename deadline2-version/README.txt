@@ -29,13 +29,3 @@ Behaalde functionaliteit
 
 Alles.
 Meer specifieke info over functionaliteit en implementatie is te vinden in gedistribueerde-systemen/.
-
-
-
-Gedistribueerde Systemen: Chat app met Apache Avro
-==================================================
-
-Behaalde functionaliteit
---------------------------------------------------
-Alles.
-

@@ -95,7 +95,7 @@ public class AppServer extends TimerTask implements AppServerInterface {
 
 			// if client is in public chat, send the message to them if they are not the sender
 			if (client.getValue().status == ClientStatus.PUBLIC && !client.getKey().equals(username.toString())) {
-				System.out.println("Sending message to " + client.getKey());
+				//System.out.println("Sending message to " + client.getKey());
 				client.getValue().proxy.receiveMessage(time + " " + username + ": " + message);
 			}
 		}

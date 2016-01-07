@@ -53,10 +53,4 @@ public class VideoFileChooser extends JFrame {
 	public void setFile(File file) {
 		this.file = file;
 	}
-	
-	public static void main(String args[]) {
-		VideoFileChooser sfc = new VideoFileChooser();
-		System.out.println(sfc.getFile().getName());
-		System.exit(1);
-	}
 }
