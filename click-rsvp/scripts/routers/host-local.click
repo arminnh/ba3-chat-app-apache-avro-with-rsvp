@@ -24,14 +24,12 @@ elementclass Host {
 		-> arpq :: ARPQuerier($address)
 		-> qos_cl::IPClassifier(tos 0, -)
 		-> beQueue::Queue
-		-> Shaper(87500)
 		-> [1]prio::PrioSched
 		-> LinkUnqueue(LATENCY 0, BANDWIDTH 1000kbps)
 		-> output;
 	
 	qos_cl[1]
 		-> qosQueue::Queue
-		-> Shaper(37500)
 		-> [0]prio;
 
 	rsvp_cl[0]
