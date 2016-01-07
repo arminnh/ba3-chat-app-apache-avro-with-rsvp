@@ -22,6 +22,8 @@ public class RSVP {
 		else if (_controlSocket.checkHandler("host2/rsvp", "session", true))
 			_elementName = "host2/rsvp";
 		
+		System.out.println("_elementName="+_elementName);
+		
 		this.srcIP = srcIP;
 		this.srcPort = srcPort;
 	}
@@ -42,7 +44,6 @@ public class RSVP {
 			_controlSocket.write(_elementName, "path", "REFRESH true");
 		} catch (ClickException e) {
 			System.err.println("Requesting QoS reservation unsuccesful.");
-			System.err.println(e.getCause().getMessage());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -60,11 +61,13 @@ public class RSVP {
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + srcIP + ", PROTOCOL 6, POLICE false, PORT " + srcPort);
 			_controlSocket.write(_elementName, "timevalues", "REFRESH 3");
-			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + dstIP + ", SRC_PORT " + dstPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "resv", "REFRESH true, CONFIRM true");
 		} catch (ClickException e) {
 			System.err.println("Confirming QoS reservation unsuccesful.");
 			e.getCause();
+			System.out.println("stack trace:");
+			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -77,7 +80,6 @@ public class RSVP {
 			_controlSocket.write(_elementName, "pathtear", "");
 		} catch (ClickException e) {
 			System.err.println("tear path unsuccesful.");
-			e.getCause();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -90,7 +92,6 @@ public class RSVP {
 			_controlSocket.write(_elementName, "resvtear", "");
 		} catch (ClickException e) {
 			System.err.println("tear resv unsuccesful.");
-			e.getCause();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
