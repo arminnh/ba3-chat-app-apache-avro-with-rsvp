@@ -56,9 +56,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.status = ClientStatus.LOBBY;
 		
 		try {
-			//TODO: juiste naam kiezen voor host1 host2
-			boolean eersteClient = clientPort == 2345;
-			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, this.clientIP, this.clientPort, eersteClient);
+			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, this.clientIP, this.clientPort);
 		} catch (Exception e) {
 			this.rsvp = null;
 			e.printStackTrace();

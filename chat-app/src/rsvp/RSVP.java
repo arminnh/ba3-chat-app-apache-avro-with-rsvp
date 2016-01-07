@@ -14,19 +14,14 @@ public class RSVP {
 	String srcIP, dstIP;
 	int srcPort, dstPort;
 	
-	public RSVP(InetAddress address, int port, String srcIP, int srcPort, boolean eersteClient) throws IOException, ClickException {
+	public RSVP(InetAddress address, int port, String srcIP, int srcPort) throws IOException, ClickException {
 		_controlSocket = new ControlSocket(address, port);
-		/*
+		
 		if (_controlSocket.checkHandler("host1/rsvp", "session", true))
 			_elementName = "host1/rsvp";
 		else if (_controlSocket.checkHandler("host2/rsvp", "session", true))
 			_elementName = "host2/rsvp";
-			*/
-		if (eersteClient) {
-			_elementName = "host1/rsvp";
-		} else {
-			_elementName = "host2/rsvp";
-		}
+		
 		this.srcIP = srcIP;
 		this.srcPort = srcPort;
 	}
@@ -68,8 +63,8 @@ public class RSVP {
 			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "resv", "REFRESH true, CONFIRM true");
 		} catch (ClickException e) {
-			System.err.println("Setting session unsuccessful");
-			System.err.println(e.getCause().getMessage());
+			System.err.println("Confirming QoS reservation unsuccesful.");
+			e.getCause();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -81,8 +76,8 @@ public class RSVP {
 			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "pathtear", "");
 		} catch (ClickException e) {
-			System.err.println("Setting session unsuccessful");
-			System.err.println(e.getCause().getMessage());
+			System.err.println("tear path unsuccesful.");
+			e.getCause();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -94,8 +89,8 @@ public class RSVP {
 			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "resvtear", "");
 		} catch (ClickException e) {
-			System.err.println("Setting session unsuccessful");
-			System.err.println(e.getCause().getMessage());
+			System.err.println("tear resv unsuccesful.");
+			e.getCause();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
