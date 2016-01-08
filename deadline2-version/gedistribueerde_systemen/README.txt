@@ -10,15 +10,15 @@ Features which are implemented are listed in features.txt. More information abou
 Requirements
 -------------------------------------
 The following files (which are delivered with this package) need to be included in the build path of the program:
-    asg.cliche-110413.jar
-    avro-1.7.7.jar:
+    asg.cliche-110413.jar          (for command line interface)
+    avro-1.7.7.jar:                (for communication between computers)
     avro-ipc-1.7.7.jar
     jackson-core-asl-1.9.13.jar
     jackson-mapper-asl-1.9.13.jar
-    java-rt-jar-stubs-1.5.0.jar
+    java-rt-jar-stubs-1.5.0.jar    (for drawing frames and images and a file chooser)
     slf4j-api-1.7.7.jar
     slf4j-simple-1.7.7.jar
-    xuggle-xuggler-5.4
+    xuggle-xuggler-5.4             (for decoding videos)
      
         
 Install

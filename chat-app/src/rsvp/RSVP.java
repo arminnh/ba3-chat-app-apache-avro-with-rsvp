@@ -29,7 +29,7 @@ public class RSVP {
 		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
-			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 50000, TOKEN_BUCKET_SIZE 50000, PEAK_DATA_RATE 350000, MINIMUM_POLICED_UNIT 50, MAXIMUM_PACKET_SIZE 1514");
 			_controlSocket.write(_elementName, "path", "REFRESH true");
 		} catch (ClickException e) {
 			System.err.println("Requesting QoS reservation unsuccesful.");
@@ -46,7 +46,7 @@ public class RSVP {
 		
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
-			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 50000, TOKEN_BUCKET_SIZE 50000, PEAK_DATA_RATE 350000, MINIMUM_POLICED_UNIT 50, MAXIMUM_PACKET_SIZE 1514");
 			_controlSocket.write(_elementName, "resv", "REFRESH true, CONFIRM true");
 		} catch (ClickException e) {
 			System.err.println("Confirming QoS reservation unsuccesful.");
@@ -59,7 +59,7 @@ public class RSVP {
 	public void tearPath(String srcIP, int srcPort, String dstIP, int dstPort) {
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
-			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 50000, TOKEN_BUCKET_SIZE 50000, PEAK_DATA_RATE 350000, MINIMUM_POLICED_UNIT 50, MAXIMUM_PACKET_SIZE 1514");
 			_controlSocket.write(_elementName, "pathtear", "");
 		} catch (ClickException e) {
 			//System.err.println("tear path unsuccesful.");
@@ -72,7 +72,7 @@ public class RSVP {
 	public void tearResv(String srcIP, int srcPort, String dstIP, int dstPort) {
 		try {
 			_controlSocket.write(_elementName, "session", "DEST " + dstIP + ", PROTOCOL 6, POLICE false, PORT " + dstPort);
-			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
+			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 50000, TOKEN_BUCKET_SIZE 50000, PEAK_DATA_RATE 350000, MINIMUM_POLICED_UNIT 50, MAXIMUM_PACKET_SIZE 1514");
 			_controlSocket.write(_elementName, "resvtear", "");
 		} catch (ClickException e) {
 			//System.err.println("tear resv unsuccesful.");
