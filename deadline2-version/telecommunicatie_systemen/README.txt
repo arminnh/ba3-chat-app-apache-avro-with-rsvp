@@ -54,6 +54,8 @@ For resverr, specify session, errorspec and flowdescriptor.
 
 The path and resv handlers will setup timers to periodically send messages, except if the REFRESH parameter is explicitly set to false.
 
+Examples of handler calls can be found in test.txt
+
 Types of variables
 -------------------------------------
 IPAddress: DEST, NEIGHBOR, ERROR_NODE_ADDRESS, RECEIVER_ADDRESS, SRC_ADDRESS, 
