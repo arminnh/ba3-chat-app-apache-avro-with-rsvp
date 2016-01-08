@@ -18,18 +18,6 @@ Install
     *) execute "make"
 
 
-Run
--------------------------------------
-Run the "test.click" file with:
-> click test.click -p 12345
-
-Then execute 
-> telnet localhost 12345
-Then copy the handler calls in "test.txt" into the terminal where telnet is running.
-This will make Click generate RSVP packets which will be printed in the terminal where click is running.
-They can also be found in the "test.dump" file, for reading with wireshark.
-
-
 Handlers
 -------------------------------------
 You can call handlers yourself in telnet, the following ones are available:
