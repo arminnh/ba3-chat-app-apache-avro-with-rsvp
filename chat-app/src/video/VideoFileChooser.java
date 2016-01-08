@@ -19,7 +19,7 @@ public class VideoFileChooser extends JFrame {
 			String extensions[] = {"3gp", "3g2", "aac", "asf", "dvd", "dxa", "ffm", "flac", "flv", "flic", "mpg",
 					"h261", "h263", "h264", "gif", "image2", "image2pipe", "ipod", "m4v", "matroska", "webm",
 					"md5", "mjpeg", "mlp", "mov", "mp4", "m4a", "mj2", "mp2", "mp3", "mpeg", "mpjpeg", "mvi", 
-					"mxf", "wav", "xwma", "mkv"};
+					"mxf", "wav", "xwma", "mkv", "avi"};
 			
 		    public String getDescription() {
 		        return "Video Files";

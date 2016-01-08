@@ -178,7 +178,6 @@ public class AppServer extends TimerTask implements AppServerInterface {
 			}
 		} else {
 			requester.proxy.receiveMessage("\n > " + to.toString() + " has declined your request.");
-			r.setStatus(RequestStatus.DECLINED);
 			this.removeRequest(from.toString(), to.toString());
 			
 			return 0;

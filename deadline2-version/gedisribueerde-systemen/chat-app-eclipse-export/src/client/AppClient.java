@@ -475,7 +475,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		//TODO: send resv message = accept QoS reservation
 		if (this.rsvp != null) {
-			System.out.println("should send resv message now.");
 			this.rsvp.confirmQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
 		}
 	}
@@ -695,8 +694,8 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	 */
 	
 	public static void main(String[] argv) {
-		//String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
-		String clientIP = "143.129.81.13", serverIP = "143.129.81.13";
+		String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
+		//String clientIP = "143.129.81.13", serverIP = "143.129.81.13";
 		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
 		// clientIP = 192.168.10.1 for ipnetwork.click user
 		int serverPort = 6789, clientPort = 2345;

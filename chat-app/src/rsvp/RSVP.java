@@ -8,8 +8,7 @@ import controlsocket.ControlSocket;
 
 public class RSVP {
 	private ControlSocket _controlSocket;
-	String _elementName;
-	ControlSocket.HandlerInfo _sessionHandler;
+	private String _elementName;
 	
 	public RSVP(InetAddress address, int port, String srcIP, int srcPort) throws IOException, ClickException {
 		_controlSocket = new ControlSocket(address, port);

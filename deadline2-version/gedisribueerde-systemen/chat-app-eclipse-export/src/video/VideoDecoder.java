@@ -86,17 +86,19 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
         }
 
         /*
-         * s.imgBuffer.put should wait in case the queue is full, 
+         * s.imgBuffer.put should wait in case the LinkedBlockingQueue is full, 
          * but it doesn't and throws an out of memory exception
          * so we make the thread sleep manually
          */
+        // while there are more than 10 seconds of frames in the buffer
         while (sender.imgBuffer.size() > 10*this.fps) {
         	//TODO: find the right sleep time
-        	/*try {
-				Thread.sleep(5*s.NANOSECONDS_PER_FRAME);
+        	try {
+        		//sleep for the time it should take to empty a quarter of the buffer.
+				Thread.sleep((long) (sender.imgBuffer.size()/4 * 1/this.fps));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
-			}*/
+			}
         }
         
         try {

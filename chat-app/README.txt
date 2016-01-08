@@ -2,6 +2,10 @@
 | Chat application with Apache Avro |
 =====================================
 
+chat-app is a CLI java application which allows users to communicate with each other using a server-clients architecture (with Apache Avro).
+Using the application, users can chat with one another in public or private chat mode. Video streaming is also supported.
+Features which are implemented are listed in features.txt. More information about the implementation can be found in architecture.txt.
+
 
 Requirements
 -------------------------------------
@@ -17,6 +21,7 @@ The following files (which are deliverd with this package) need to be included i
 Install
 -------------------------------------
 You can compile the program yourself or just use eclipse to get the job done.
+Runnable jar files are also delivered with this package: server.jar and client.jar.
     
     With Eclipse
     ---------------------------------

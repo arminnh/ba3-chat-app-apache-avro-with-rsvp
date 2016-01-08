@@ -1,6 +1,7 @@
 ==================================================
 ||   Project Telecom/Gedistribueerde Systemen   ||
 ==================================================
+
 Deze README beschrijft enkel wat geimplementeerd is.
 Meer info over hoe de programma's worden geinstalleerd en gebruikt staat in de READMEs in de subdirectories.
 

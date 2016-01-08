@@ -11,7 +11,7 @@
     {
 		"type": "enum",
 		"name": "RequestStatus",
-		"symbols": ["PENDING", "ACCEPTED", "DECLINED", "DELETED"]
+		"symbols": ["PENDING", "ACCEPTED"]
 	}],
     
     "messages" : {
