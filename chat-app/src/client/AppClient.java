@@ -235,7 +235,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		}
 		
 		if (this.privateChatClient != null && this.privateChatClient.username.equals(username)) {
-			System.err.println("You are already in a private chat session with that user.");
+			System.err.println(" > You are already in a private chat session with that user.");
 			return;
 		}
 		
@@ -461,7 +461,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	}
 
 	private void declineVideoRequest() throws AvroRemoteException {
-		System.out.println("You have declined the video request.");
+		System.out.println(" > You have declined the video request.");
 		this.videoRequestPending = false;
 		this.privateChatClient.proxy.receiveMessage("\n > " + this.username.toString() + " has declined the video request.");
 	}
@@ -582,7 +582,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		try {
 			this.appServer.setClientState(this.username, status);
 		} catch (AvroRemoteException e) {
-			System.err.println("Not connected to server right now.");
+			System.err.println(" > Not connected to server right now.");
 		}
 		this.status = status;
 		return 0;
@@ -594,7 +594,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		
 		// if somebody else already accepted a request from that user, dont allow this accept
 		if (this.appServer.isRequestStatusFrom((CharSequence) username, RequestStatus.ACCEPTED)) {
-			System.err.println("Somebody else already accepted a request from " + username + ", try again later.");
+			System.err.println(" > Somebody else already accepted a request from " + username + ", try again later.");
 			return;
 		}
 
@@ -694,11 +694,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	 */
 	
 	public static void main(String[] argv) {
-		//TODO: remove hardcoded IPs
-		String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
-		//String clientIP = "143.129.81.13", serverIP = "143.129.81.13";
-		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
-		// clientIP = 192.168.10.1 for ipnetwork.click user
+		String clientIP, serverIP;
+		//clientIP = "0.0.0.0"; serverIP = "0.0.0.0";             // values for localhost
+		//clientIP = "143.129.81.13"; serverIP = "143.129.81.13"; // values for computers in lab
+		//clientIP = "192.168.11.1"; serverIP = "192.168.11.1";   // values for host2.click
 		int serverPort = 6789, clientPort = 2345;
 		Scanner in = new Scanner(System.in);
 
@@ -706,13 +705,11 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		if (argv.length == 2) {
 			clientIP = argv[0];
 			serverIP = argv[1];
-			System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP + " from command line argumets");
+			System.out.println(" > Got clientIP=" + clientIP + " and serverIP=" + serverIP + " from command line argumets");
 		} else {
-			/*
-			 * System.out.println("Enter the IP address of the server.");
-			 * serverIP = in.nextLine(); System.out.println("Enter the IP address the server will need to connect to.");
-			 * clientIP = in.nextLine(); System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP);
-			 */
+			 System.out.println("Enter the IP address of the server.");
+			 serverIP = in.nextLine(); System.out.println("Enter the IP address the server will need to connect to.");
+			 clientIP = in.nextLine(); System.out.println("Got clientIP=" + clientIP + " and serverIP=" + serverIP);
 		}
 
 		Server clientResponder = null;
@@ -723,7 +720,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		// connect to the server to create the appServer proxy object.
 		try {
 			transceiver = new SaslSocketTransceiver(new InetSocketAddress( serverIP, serverPort));
-			
 			appServer = (AppServerInterface) SpecificRequestor.getClient( AppServerInterface.class, transceiver);
 
 			// try multiple clientPorts in case the port is already in use
@@ -733,7 +729,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 					clientRequester = new AppClient(appServer, clientIP, clientPort, serverIP, serverPort);
 					clientResponder = new SaslSocketServer( new SpecificResponder(AppClientInterface.class, clientRequester), new InetSocketAddress(clientPort) );
 					clientResponder.start();
-					System.out.println("Listening on ip " + clientIP + " and port " + clientPort);
+					System.out.println(" > Listening on ip " + clientIP + " and port " + clientPort + "\n");
 					break;
 				} catch (java.net.BindException e) {
 					if (clientPort < 65535) {
@@ -754,7 +750,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			timer.schedule(clientRequester, 0, 2000);
 			ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
 			timer.cancel();
-			System.out.println("Quit program.");
+			System.out.println(" > Quit program.");
 
 			appServer.unregisterClient(username);
 			clientResponder.close();
