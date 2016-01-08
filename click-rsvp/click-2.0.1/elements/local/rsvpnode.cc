@@ -776,6 +776,78 @@ void RSVPNode::push(int port, Packet* packet) {
 		// click_chatter("%s: forwarding resvconf message", _name.c_str());
 		packet = packet->push(sizeof(click_ip));
 		output(0).push(packet);
+	} else if (msg_type == RSVP_MSG_PATHERR) {
+		const RSVPErrorSpec* errorSpec = (const RSVPErrorSpec*) RSVPObjectOfType(packet, RSVP_CLASS_ERROR_SPEC);
+	
+		in_addr error_node_addr;
+		uint8_t error_code;
+		uint16_t error_value;
+	
+		readRSVPErrorSpec(errorSpec, &error_node_addr, NULL, NULL, &error_code, &error_value);
+	
+		click_chatter("%s: forwarding path error message for session %s/%d/%d, error node address %s, error code %d, error value %d",
+			_name.c_str(),
+			IPAddress(nodeSession._dst_ip_address).unparse().c_str(),
+			nodeSession._protocol_id, nodeSession._dst_port,
+			IPAddress(error_node_addr).unparse().c_str(),
+			error_code, error_value);
+		
+		forward = packet->uniqueify();
+		
+		addIPHeader(forward, dstIP, srcIP, _tos);
+		
+		output(0).push(packet);
+		
+	} else if (msg_type == RSVP_MSG_RESVERR) {
+	
+		const RSVPErrorSpec* errorSpec = (const RSVPErrorSpec*) RSVPObjectOfType(packet, RSVP_CLASS_ERROR_SPEC);
+		hop = (RSVPHop*) RSVPObjectOfType(packet, RSVP_CLASS_RSVP_HOP);
+		const RSVPFilterSpec* filterSpec = (RSVPFilterSpec*) RSVPObjectOfType(packet, RSVP_CLASS_FILTER_SPEC);
+	
+		in_addr error_node_addr;
+		uint8_t error_code;
+		uint16_t error_value;
+	
+		readRSVPErrorSpec(errorSpec, &error_node_addr, NULL, NULL, &error_code, &error_value);
+	
+		click_chatter("%s: forwarding resv error message for session %s/%d/%d, error node address %s, error code %d, error value %d",
+			_name.c_str(),
+			IPAddress(nodeSession._dst_ip_address).unparse().c_str(),
+			nodeSession._protocol_id, nodeSession._dst_port,
+			IPAddress(error_node_addr).unparse().c_str(),
+			error_code, error_value);
+		
+		const RSVPPathState* pathState = NULL;
+		if (filterSpec) {
+			pathState = this->pathState(nodeSession, *filterSpec);
+		} else {
+			click_chatter("%s: no path filter spec object in resverr filter spec");
+			packet->kill();
+			return;
+		}
+		
+		if (!pathState) {
+			click_chatter("%s: no path state found for resverr filter spec");
+			packet->kill();
+			return;
+		}
+		
+		forward = packet->uniqueify();
+		
+		// set destination IP address to next hop
+		hop = (RSVPHop *) RSVPObjectOfType(forward, RSVP_CLASS_RSVP_HOP);
+		gwPort = _ipLookup->lookup_route(pathState->previous_hop_node, gateway);
+		click_chatter("%s", ipForInterface(gwPort).unparse().c_str());
+		hop->IPv4_next_previous_hop_address = ipForInterface(gwPort);
+		
+		// recalculate checksum
+		RSVPCommonHeader* commonHeader = (RSVPCommonHeader *) forward->data();
+		commonHeader->RSVP_checksum = 0;
+		commonHeader->RSVP_checksum = click_in_cksum((unsigned char *) forward->data(), forward->length());
+		
+		addIPHeader(forward, pathState->previous_hop_node, ipForInterface(gwPort), _tos);
+		
+		output(0).push(forward);
 	} else {
 		packet->kill();
 	}
@@ -973,12 +1045,13 @@ void RSVPNode::removeAllState() {
 }
 
 const RSVPPathState* RSVPNode::pathState(const RSVPNodeSession& session, const RSVPSender& sender) const {
-	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator it1 = _pathStates.find(session);
+
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPPathState> >::const_iterator it1 = find(_pathStates, session);
 	if (it1 == _pathStates.end()) {
 		return NULL;
 	}
 
-	HashTable<RSVPSender, RSVPPathState>::const_iterator it = it1->second.find(sender);
+	HashTable<RSVPSender, RSVPPathState>::const_iterator it = find(it1->second, sender);
 	if (it == it1->second.end()) {
 		return NULL;
 	}
@@ -987,12 +1060,12 @@ const RSVPPathState* RSVPNode::pathState(const RSVPNodeSession& session, const R
 }
 
 const RSVPResvState* RSVPNode::resvState(const RSVPNodeSession& session, const RSVPSender& sender) const {
-	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = _resvStates.find(session);
+	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::const_iterator it1 = find(_resvStates, session);
 	if (it1 == _resvStates.end()) {
 		return NULL;
 	}
 
-	HashTable<RSVPSender, RSVPResvState>::const_iterator it = it1->second.find(sender);
+	HashTable<RSVPSender, RSVPResvState>::const_iterator it = find(it1->second, sender);
 	if (it == it1->second.end()) {
 		return NULL;
 	}

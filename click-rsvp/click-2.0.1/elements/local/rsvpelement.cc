@@ -46,11 +46,14 @@ void RSVPElement::push(int, Packet *packet) {
 		click_chatter("%s: RSVPElement::push: received packet with bad checksum", _name.c_str());
 	}
 	
+	bool patherr = false;
+	
 	RSVPSession* session = (RSVPSession *) RSVPObjectOfType(packet, RSVP_CLASS_SESSION);
 	RSVPNodeSession nodeSession = *session;
 	RSVPFilterSpec* filterSpec;
 	RSVPFlowspec* flowspec;
 	RSVPResvConf* resvConf;
+	const RSVPErrorSpec* errorSpec;
 	
 	RSVPPathState pathState;
 
@@ -108,10 +111,25 @@ void RSVPElement::push(int, Packet *packet) {
 			
 			break;
 		case RSVP_MSG_PATHERR:
-			
-			break;
+			patherr = true;
 		case RSVP_MSG_RESVERR:
-
+			errorSpec = (const RSVPErrorSpec*) RSVPObjectOfType(packet, RSVP_CLASS_ERROR_SPEC);
+			
+			in_addr error_node_addr;
+			uint8_t error_code;
+			uint16_t error_value;
+	
+			readRSVPErrorSpec(errorSpec, &error_node_addr, NULL, NULL, &error_code, &error_value);
+		
+			click_chatter("%s: received %s error message for session %s/%d/%d, error node address %s, error code %d, error value %d",
+				_name.c_str(),
+				String(patherr ? "path" : "resv").c_str(),
+				IPAddress(nodeSession._dst_ip_address).unparse().c_str(),
+				nodeSession._protocol_id, nodeSession._dst_port,
+				IPAddress(error_node_addr).unparse().c_str(),
+				error_code, error_value);
+			
+			packet->kill();
 			break;
 		case RSVP_MSG_PATHTEAR:
 			// restore chopped-off IP header
@@ -703,14 +721,28 @@ int RSVPElement::resvErrHandle(const String &conf, Element *e, void * thunk, Err
 	if (cp_va_kparse(conf, me, errh,
 		"TTL", 0, cpInteger, &me->_TTL, cpEnd) < 0) return -1;
 	
-	const RSVPPathState* pathState = me->pathState(me->_session, me->_filterSpec);
+	RSVPNodeSession session = me->_session;
+	RSVPSender sender = me->_filterSpec;
 	
-	if (!pathState) {
-		errh->error("Trying to send resverr message with no matching path state");
+	me->createSession(session);
+	
+	HashTable<RSVPSender, RSVPPathState>::const_iterator pathit = find(find(me->_pathStates, session)->second, sender);
+	
+	if (pathit == me->_pathStates.find(me->_session)->second.end()) {
+		errh->error("Did not find path state corresponding to the session %s/%d/%d,\n sender %s/%d,\n sender tspec %s",
+			IPAddress(session._dst_ip_address).unparse().c_str(),
+			session._protocol_id,
+			session._dst_port,
+			IPAddress(sender.src_address).unparse().c_str(),
+			sender.src_port,
+			me->specToString(me->_flowspec).c_str());
+		return -1;
 	}
 	
+	RSVPPathState pathState = pathit->second;
+	
 	WritablePacket* message = me->createResvErrMessage();
-	me->addIPHeader(message, pathState->previous_hop_node, me->_myIP, (uint8_t) me->_tos);
+	me->addIPHeader(message, pathState.previous_hop_node, me->_myIP, (uint8_t) me->_tos);
 	me->output(0).push(message);
 	
 	me->clean();
