@@ -310,22 +310,20 @@ void RSVPElement::erasePathState(const RSVPNodeSession& session, const RSVPSende
 
 void RSVPElement::eraseResvState(const RSVPNodeSession& session, const RSVPSender& sender) {
 	RSVPNode::eraseResvState(session, sender);
-	click_chatter("entered eraseresvstate");
+
 	HashTable<RSVPNodeSession, HashTable<RSVPSender, RSVPResvState> >::iterator resvit1 = _reservations.find(session);
 	if (resvit1 == _reservations.end() && _reservations.begin() != _reservations.end() && _reservations.begin()->first == session) {
 		resvit1 = _reservations.begin();
 	} else if (resvit1 == _reservations.end()) {
 		return;
 	}
-	click_chatter("found session");
+
 	HashTable<RSVPSender, RSVPResvState>::iterator resvit = find(resvit1->second, sender);
 	
 	if (resvit == resvit1->second.end() && resvit1->second.begin() != resvit1->second.end() && resvit1->second.begin()->first == sender) {
 		resvit = resvit1->second.begin();
 	} else if (resvit == resvit1->second.end()) {
-		click_chatter("didn't find session, returning");
 		if (resvit1->second.begin() == resvit1->second.end()) {
-			click_chatter("resv state hash table empty");
 		}
 		return;
 	}
