@@ -678,8 +678,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	private static void setShutdownHook(final AppClient app) {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 		    public void run() { 
-		    	System.out.println("aaaaa");
-		    	app.shutdownPrivateChat(true);
+	    		app.shutdownPrivateChat(true);
 		    }
 		 });
 	}

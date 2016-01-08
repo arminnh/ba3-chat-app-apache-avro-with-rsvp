@@ -21,7 +21,6 @@ The following files (which are deliverd with this package) need to be included i
 Install
 -------------------------------------
 You can compile the program yourself or just use eclipse to get the job done.
-Runnable jar files are also delivered with this package: server.jar and client.jar.
     
     With Eclipse
     ---------------------------------

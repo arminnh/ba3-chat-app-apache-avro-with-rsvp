@@ -1,0 +1,79 @@
+{
+    "namespace": "server",
+    "protocol": "AppServerInterface",
+    
+    "types": [
+    {
+		"type": "enum",
+		"name": "ClientStatus",
+		"symbols": ["LOBBY", "PUBLIC", "PRIVATE"]
+	},
+    {
+		"type": "enum",
+		"name": "RequestStatus",
+		"symbols": ["PENDING", "ACCEPTED", "DECLINED", "DELETED"]
+	}],
+    
+    "messages" : {
+    	"echo": {
+    		"request": [{"name": "message", "type" : "int"}],
+    		"response": "int"
+		},
+        "registerClient": {
+	        "request": [{"name": "username", "type": "string"}, {"name": "ipaddress", "type": "string"}, {"name": "port", "type": "int"}],
+	        "response": "int"
+        },
+        "isNameAvailable": {
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": "boolean"
+        },
+        "unregisterClient": {
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": "int"
+        },
+        "getListOfClients": {
+	        "request": [],
+	        "response": {"name": "list", "type": "string"}
+        },
+        "setClientState": {
+	        "request": [{"name": "username", "type": "string"}, {"name": "state", "type": "server.ClientStatus"}],
+	        "response": "int"
+        },
+        "sendMessage": {
+	        "request": [{"name": "username", "type": "string"}, {"name": "message", "type": "string"}],
+	        "response": "int"
+        },
+        "sendRequest": {
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}],
+	        "response": "int"
+        },
+        "cancelRequest": {
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}],
+	        "response": "int"
+        },
+        "removeRequest": {
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}],
+	        "response": "int"
+        },
+        "requestResponse": {
+	        "request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}, {"name": "responseBool", "type": "boolean"}],
+	        "response": "int"
+        },
+        "getMyRequests": {
+	        "request": [{"name": "username", "type": "string"}],
+	        "response": {"name": "list", "type": "string"}
+        },
+        "isRequestStatus": {
+        	"request": [{"name": "username1", "type": "string"}, {"name": "username2", "type": "string"}, {"name": "state", "type": "server.RequestStatus"}],
+        	"response": "boolean"
+    	},
+        "isRequestStatusFrom": {
+        	"request": [{"name": "username", "type": "string"}, {"name": "state", "type": "server.RequestStatus"}],
+        	"response": "boolean"
+    	},
+        "isRequestStatusTo": {
+        	"request": [{"name": "username", "type": "string"}, {"name": "state", "type": "server.RequestStatus"}],
+        	"response": "boolean"
+    	}
+    }
+}
