@@ -23,7 +23,7 @@ Handlers
 You can call handlers yourself in telnet, the following ones are available:
     At the end of this file there is a list of the types of the following variables.
     RSVP:
-        To setup messages:
+    	These handlers are used to set the parameters:
                  write session          DEST               PROTOCOL POLICE            PORT
                  write hop              NEIGHBOR           LIH
                  write errorspec        ERROR_NODE_ADDRESS INPLACE  NOTGUILTY         ERROR_CODE        ERROR_VALUE
@@ -32,9 +32,8 @@ You can call handlers yourself in telnet, the following ones are available:
                  write scope            SRC_ADDRESS
                  write senderdescriptor SRC_ADDRESS        SRC_PORT TOKEN_BUCKET_RATE TOKEN_BUCKET_SIZE PEAK_DATA_RATE MINIMUM_POLICED_UNIT MAXIMUM_PACKET_SIZE
 
-These handlers are used to set the parameters.
 
-        To send messages:
+
                  write path
                  write resv
                  write patherr
@@ -44,8 +43,8 @@ These handlers are used to set the parameters.
                  write resvconf
 
 These handlers are used to confirm the set parameters and to start sending messages. For example, to initiate a sender, call the following handlers: session, senderdescriptor, path.
-To reserve, call session, flowdescriptor, resv.
-
+To reserve, session, flowdescriptor and resv need to be called.
+For 
             
 Types of variables
 -------------------------------------
