@@ -18,18 +18,6 @@ Install
     *) execute "make"
 
 
-Run
--------------------------------------
-Run the "test.click" file with:
-> click test.click -p 12345
-
-Then execute 
-> telnet localhost 12345
-Then copy the handler calls in "test.txt" into the terminal where telnet is running.
-This will make Click generate RSVP packets which will be printed in the terminal where click is running.
-They can also be found in the "test.dump" file, for reading with wireshark.
-
-
 Handlers
 -------------------------------------
 You can call handlers yourself in telnet, the following ones are available:
@@ -43,20 +31,21 @@ You can call handlers yourself in telnet, the following ones are available:
                  write resvconfobj      RECEIVER_ADDRESS
                  write scope            SRC_ADDRESS
                  write senderdescriptor SRC_ADDRESS        SRC_PORT TOKEN_BUCKET_RATE TOKEN_BUCKET_SIZE PEAK_DATA_RATE MINIMUM_POLICED_UNIT MAXIMUM_PACKET_SIZE
-        
+
+These handlers are used to set the parameters.
+
         To send messages:
-                 write path     TTL
-                 write resv     TTL
-                 write patherr  TTL
-                 write resverr  TTL
-                 write pathtear TTL
-                 write resvtear TTL
-                 write resvconf TTL
-        
-    MyIPEncap:
-        To change the tos byte:
-            write tos int
-            
+                 write path
+                 write resv
+                 write patherr
+                 write resverr
+                 write pathtear
+                 write resvtear
+                 write resvconf
+
+These handlers are used to confirm the set parameters and to start sending messages. For example, to initiate a sender, call the following handlers: session, senderdescriptor, path.
+To reserve, call session, flowdescriptor, resv.
+
             
 Types of variables
 -------------------------------------

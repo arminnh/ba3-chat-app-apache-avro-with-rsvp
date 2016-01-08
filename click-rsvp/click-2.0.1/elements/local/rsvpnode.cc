@@ -647,7 +647,6 @@ void RSVPNode::push(int port, Packet* packet) {
 		// click_chatter("%s forwarding resv message with destination %s", _name.c_str(), IPAddress(forward->dst_ip_anno()).unparse().c_str());
 		output(0).push(forward);
 	} else if (msg_type == RSVP_MSG_PATHTEAR) {
-		click_chatter("%s: received path tear message", _name.c_str());
 		const RSVPSenderTemplate* senderTemplate = (const RSVPSenderTemplate *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TEMPLATE);
 		const RSVPSenderTSpec* senderTSpec = (const RSVPSenderTSpec *) RSVPObjectOfType(packet, RSVP_CLASS_SENDER_TSPEC);
 
