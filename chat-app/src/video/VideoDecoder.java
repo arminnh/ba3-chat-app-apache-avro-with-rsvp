@@ -96,14 +96,14 @@ public class VideoDecoder extends MediaListenerAdapter implements Runnable {
         		//sleep for the time it should take to empty a quarter of the buffer.
 				Thread.sleep((long) (sender.imgBuffer.size()/4 * 1/this.fps));
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
         }
         
         try {
 			sender.imgBuffer.put(event.getImage());
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
     }
 }

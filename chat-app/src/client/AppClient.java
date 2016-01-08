@@ -59,7 +59,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, this.clientIP, this.clientPort);
 		} catch (Exception e) {
 			this.rsvp = null;
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 
@@ -134,7 +134,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 			return 0;
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			return 8;
 		}
 	}
@@ -303,7 +303,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			
 			System.out.println("\n > You have left the chatroom.");
 		} catch (Exception e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			this.setStatus(ClientStatus.LOBBY);
 			return 10;
 		}
@@ -553,9 +553,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
                 		}
                 		privateChatClient.proxy.setFrameVisible(true, false);
                 	}
-            	} catch (Exception e) {
-            		
-            	}
+            	} catch (Exception e) { }
             }
         } );
 
@@ -575,9 +573,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
                 		}
                 		privateChatClient.proxy.setFrameVisible(false, false);
                 	}
-            	} catch (Exception e) {
-            		
-            	}
+            	} catch (Exception e) { }
             }
         } );
 	}
@@ -671,7 +667,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		} catch (AvroRemoteException e) {
 			System.out.println("\n > Disconnected from private chat. You can now choose to go to either the lobby or the public chatroom. ");
 			this.shutdownPrivateChat(this.privateChatClient != null);
-
 		}
 	}
 	
@@ -751,6 +746,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			}
 
 			String username = clientRequester.registerUser(in);
+			clientRequester.initJFrames(50, 250, 400, 300);
 			printWelcome();
 			
 			AppClient.setShutdownHook(clientRequester);
@@ -766,9 +762,11 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			transceiver.close();
 
 		} catch (AvroRemoteException e) {
-			System.err.println("Apache Avro error.");
+			System.err.println(" > Apache Avro error:");
+			e.printStackTrace();
 		} catch (IOException e) {
-			System.err.println("Error connecting to server.");
+			System.err.println(" > Error connecting to server:");
+			e.printStackTrace();
 		}
 
 	}

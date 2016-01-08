@@ -9,7 +9,6 @@ import controlsocket.ControlSocket;
 public class RSVP {
 	private ControlSocket _controlSocket;
 	private String _elementName;
-	private ControlSocket.HandlerInfo _sessionHandler;
 	
 	public RSVP(InetAddress address, int port, String srcIP, int srcPort) throws IOException, ClickException {
 		_controlSocket = new ControlSocket(address, port);
@@ -19,7 +18,7 @@ public class RSVP {
 		else if (_controlSocket.checkHandler("host2/rsvp", "session", true))
 			_elementName = "host2/rsvp";
 		
-		System.out.println("_elementName="+_elementName);
+		//System.out.println("_elementName="+_elementName);
 	}
 	
 	public void requestQoS(String srcIP, int srcPort, String dstIP, int dstPort) {
@@ -35,7 +34,7 @@ public class RSVP {
 		} catch (ClickException e) {
 			System.err.println("Requesting QoS reservation unsuccesful.");
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 	
@@ -51,11 +50,9 @@ public class RSVP {
 			_controlSocket.write(_elementName, "resv", "REFRESH true, CONFIRM true");
 		} catch (ClickException e) {
 			System.err.println("Confirming QoS reservation unsuccesful.");
-			e.getCause();
-			System.out.println("stack trace:");
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 	
@@ -66,9 +63,9 @@ public class RSVP {
 			_controlSocket.write(_elementName, "pathtear", "");
 		} catch (ClickException e) {
 			System.err.println("tear path unsuccesful.");
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 	
@@ -79,9 +76,9 @@ public class RSVP {
 			_controlSocket.write(_elementName, "resvtear", "");
 		} catch (ClickException e) {
 			System.err.println("tear resv unsuccesful.");
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 }

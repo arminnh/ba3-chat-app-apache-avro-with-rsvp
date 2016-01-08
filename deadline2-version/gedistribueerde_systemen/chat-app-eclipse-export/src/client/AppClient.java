@@ -59,7 +59,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			this.rsvp = new RSVP(InetAddress.getByName("localhost"), 10000, this.clientIP, this.clientPort);
 		} catch (Exception e) {
 			this.rsvp = null;
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 
@@ -134,7 +134,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 
 			return 0;
 		} catch (IOException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			return 8;
 		}
 	}
@@ -172,7 +172,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.senderFrame.setVisible(false);
 		this.receiverFrame.setVisible(false);
 
-		//TODO: break down RSVP, tear messages ?
 		if (this.rsvp != null && this.privateChatClient != null) {
 			this.rsvp.tearPath(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 			this.rsvp.tearResv(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
@@ -304,7 +303,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			
 			System.out.println("\n > You have left the chatroom.");
 		} catch (Exception e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			this.setStatus(ClientStatus.LOBBY);
 			return 10;
 		}
@@ -414,7 +413,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			if (input.matches("(\\?)(sendvideorequest|videorequest|svr|vr)")) {
 				if (!this.senderFrame.isVisible()) {
 					System.out.println("\n > You have sent a video request.");
-					//TODO: send path message = request for QoS reservation
 					if (this.rsvp != null)
 						this.rsvp.requestQoS(this.clientIP, this.clientPort, this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort);
 					
@@ -473,7 +471,6 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		this.videoRequestPending = false;
 		this.privateChatClient.proxy.videoRequestAccepted();
 		
-		//TODO: send resv message = accept QoS reservation
 		if (this.rsvp != null) {
 			this.rsvp.confirmQoS(this.privateChatClient.clientIP.toString(), this.privateChatClient.clientPort, this.clientIP, this.clientPort);
 		}
@@ -556,9 +553,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
                 		}
                 		privateChatClient.proxy.setFrameVisible(true, false);
                 	}
-            	} catch (Exception e) {
-            		
-            	}
+            	} catch (Exception e) { }
             }
         } );
 
@@ -578,9 +573,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
                 		}
                 		privateChatClient.proxy.setFrameVisible(false, false);
                 	}
-            	} catch (Exception e) {
-            		
-            	}
+            	} catch (Exception e) { }
             }
         } );
 	}
@@ -674,8 +667,15 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		} catch (AvroRemoteException e) {
 			System.out.println("\n > Disconnected from private chat. You can now choose to go to either the lobby or the public chatroom. ");
 			this.shutdownPrivateChat(this.privateChatClient != null);
-
 		}
+	}
+	
+	private static void setShutdownHook(final AppClient app) {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+		    public void run() { 
+	    		app.shutdownPrivateChat(true);
+		    }
+		 });
 	}
 
 	private static void printWelcome() {
@@ -694,6 +694,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 	 */
 	
 	public static void main(String[] argv) {
+		//TODO: remove hardcoded IPs
 		String clientIP = "0.0.0.0", serverIP = "0.0.0.0";
 		//String clientIP = "143.129.81.13", serverIP = "143.129.81.13";
 		//String clientIP = "192.168.11.1", serverIP = "192.168.11.1"; //hardcoded values for host2.click user
@@ -701,7 +702,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		int serverPort = 6789, clientPort = 2345;
 		Scanner in = new Scanner(System.in);
 
-		// if IP's are given as command line arguments
+		// if IPs are given as command line arguments
 		if (argv.length == 2) {
 			clientIP = argv[0];
 			serverIP = argv[1];
@@ -745,16 +746,10 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			}
 
 			String username = clientRequester.registerUser(in);
-
-			//TODO: remove on release
-			// temporary for testing on localhost
-			if (clientPort == 2345) {
-				clientRequester.initJFrames(50, 250, 400, 300);
-			} else {
-				clientRequester.initJFrames(50, 650, 400, 300);
-			}
-
+			clientRequester.initJFrames(50, 250, 400, 300);
 			printWelcome();
+			
+			AppClient.setShutdownHook(clientRequester);
 			Timer timer = new Timer();
 			timer.schedule(clientRequester, 0, 2000);
 			ShellFactory.createConsoleShell("chat-app", "", clientRequester).commandLoop();
@@ -767,9 +762,11 @@ public class AppClient extends TimerTask implements AppClientInterface {
 			transceiver.close();
 
 		} catch (AvroRemoteException e) {
-			System.err.println("Apache Avro error.");
+			System.err.println(" > Apache Avro error:");
+			e.printStackTrace();
 		} catch (IOException e) {
-			System.err.println("Error connecting to server.");
+			System.err.println(" > Error connecting to server:");
+			e.printStackTrace();
 		}
 
 	}

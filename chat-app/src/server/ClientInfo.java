@@ -33,9 +33,9 @@ public class ClientInfo {
 			this.proxy = (AppClientInterface) SpecificRequestor.getClient(AppClientInterface.class, this.transceiver);
 
 		} catch (UnknownHostException e) { // InetAddress.getByName
-			e.printStackTrace();
+			//e.printStackTrace();
 		} catch (IOException e) { // SaslSocketTransceiver and SpecificRequestor
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 	}
 	

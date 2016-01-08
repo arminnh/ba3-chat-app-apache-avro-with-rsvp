@@ -9,19 +9,23 @@ Features which are implemented are listed in features.txt. More information abou
 
 Requirements
 -------------------------------------
-The following files (which are deliverd with this package) need to be included in the build path of the program:
+The following files (which are delivered with this package) need to be included in the build path of the program:
+    asg.cliche-110413.jar
     avro-1.7.7.jar:
     avro-ipc-1.7.7.jar
     jackson-core-asl-1.9.13.jar
     jackson-mapper-asl-1.9.13.jar
+    java-rt-jar-stubs-1.5.0.jar
     slf4j-api-1.7.7.jar
     slf4j-simple-1.7.7.jar
+    xuggle-xuggler-5.4
      
         
 Install
 -------------------------------------
 You can compile the program yourself or just use eclipse to get the job done.
-   
+Runnable jar files are also delivered with this package: server.jar and client.jar.
+    
     With Eclipse
     ---------------------------------
     Go to File->Import.
