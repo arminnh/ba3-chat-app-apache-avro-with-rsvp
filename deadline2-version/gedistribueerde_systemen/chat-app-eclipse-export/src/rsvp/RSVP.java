@@ -62,7 +62,7 @@ public class RSVP {
 			_controlSocket.write(_elementName, "senderdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "pathtear", "");
 		} catch (ClickException e) {
-			System.err.println("tear path unsuccesful.");
+			//System.err.println("tear path unsuccesful.");
 			//e.printStackTrace();
 		} catch (IOException e) {
 			//e.printStackTrace();
@@ -75,7 +75,7 @@ public class RSVP {
 			_controlSocket.write(_elementName, "flowdescriptor", "SRC_ADDRESS " + srcIP + ", SRC_PORT " + srcPort + ", TOKEN_BUCKET_RATE 5.3, TOKEN_BUCKET_SIZE 50.77, PEAK_DATA_RATE 2.6, MINIMUM_POLICED_UNIT 5, MAXIMUM_PACKET_SIZE 5");
 			_controlSocket.write(_elementName, "resvtear", "");
 		} catch (ClickException e) {
-			System.err.println("tear resv unsuccesful.");
+			//System.err.println("tear resv unsuccesful.");
 			//e.printStackTrace();
 		} catch (IOException e) {
 			//e.printStackTrace();

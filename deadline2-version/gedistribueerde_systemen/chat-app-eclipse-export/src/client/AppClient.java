@@ -60,6 +60,7 @@ public class AppClient extends TimerTask implements AppClientInterface {
 		} catch (Exception e) {
 			this.rsvp = null;
 			//e.printStackTrace();
+			System.out.println(" > Could not connect to a Click script, app wil work without Quality of Service reservation.");
 		}
 	}
 
