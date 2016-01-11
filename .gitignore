@@ -4,6 +4,7 @@ bin/
 *~
 
 /telecommunications-systems/click-2.0.1/*
+!/telecommunications-systems/click-2.0.1/click-2.0.1.tar.gz
 !/telecommunications-systems/click-2.0.1/elements
 /telecommunications-systems/click-2.0.1/elements/*
 !/telecommunications-systems/click-2.0.1/elements/local
