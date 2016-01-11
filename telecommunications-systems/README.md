@@ -26,7 +26,7 @@ Then, in another window
 ```  
 telnet localhost 10000  
 ``` 
-Copy the "Local" handler calls from [telecommunications-systems/scripts/custom/test-ipnetwork-local.txt](./scripts/custom/test-ipnetwork.txt) into the telnet window. Copy the blocks one by one, not simultaneously.
+Copy the "Local" handler calls from [telecommunications-systems/scripts/custom/test-ipnetwork.txt](./scripts/custom/test-ipnetwork.txt) into the telnet window. Copy the blocks one by one, not simultaneously.
 
 Confirm that data is being sent with Quality of Service.
 ``` 
