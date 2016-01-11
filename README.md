@@ -14,7 +14,7 @@ More information about the implementation can be found in architecture.txt.
 
 ## Telecommunications systems: RSVP in Click
 
-Implementation of the Resource ReSerVation Protocol (RFCs [2205](telecommunications-systems/rfc2205.pdf) and [2210](telecommunications-systems/rfc2210.pdf)) in userlevel [Click](http://read.cs.ucla.edu/click/click). Admission control was not implemented.  
+Implementation of the Resource ReSerVation Protocol (RFCs [2205](telecommunications-systems/rfc2205.pdf) and [2210](telecommunications-systems/rfc2210.pdf)) in userlevel [Click](http://read.cs.ucla.edu/click/click).  
 ![rsvp](telecommunications-systems/rsvp.png)
 
 
@@ -29,20 +29,24 @@ The application will still work without QoS if these scripts are not running.
 #### Steps to test integration (using 2 PCs)
 We use Click scripts (in telecommunications-systems/scripts) which create a virtual network that is limited to 1Mbps. Videos can be streamed with Quality of Service over this virtual network.
 
-1. Run setup_ds_server.sh on PC 1. Then, run host2.click -p 10000.
-2. Run AppServer on PC 1.
-3. Run AppClient on PC 1.
-  * Server IP = 192.168.11.1, Client IP = 192.168.11.1
-4. Run setup_click.sh on PC 2. Then, run ipnetwork.click -p 10000.
-5. Run AppClient on PC 2. 
-  * Server IP = 192.168.11.1, Client IP = 192.168.10.1
-6. Start a private chat session between the two AppClient instances.
-7. Request a reservation (= send a path message), write "?videoRequest" or "?vr".
-8. Accept a reservation (= send a resv message and construct reservation path), write "?acceptVideo" or "?av".
-9. Select a video to stream.
-10. Generate background traffic from PC 2 to PC 1
+1. On PC 1:
+  * run setup_ds_server.sh
+  * run host2.click -p 10000
+  * run AppServer
+  * run AppClient
+    * Server IP = 192.168.11.1, Client IP = 192.168.11.1
+2. On PC 2:
+  * run setup_click.sh
+  * run ipnetwork.click -p 10000
+  * run AppClient
+    * Server IP = 192.168.11.1, Client IP = 192.168.10.1
+3. Start a private chat session between the two AppClient instances.
+4. Request a reservation (= send a path message), write "?videoRequest" or "?vr".
+5. Accept a reservation (= send a resv message and construct reservation path), write "?acceptVideo" or "?av".
+6. Select a video to stream.
+7. Generate background traffic from PC 2 to PC 1
    * iperf -c 192.168.11.1 -l 9999MB -u -b 500K
-11. Confirm that the video is streamed with Quality of Service by executing read_statistics.sh on PC 2.
+8. Confirm that the video is streamed with Quality of Service by executing read_statistics.sh on PC 2.
    * On PC 2 because read_statistics.sh looks for Click elements in ipnetwork.click
 
 
