@@ -11,14 +11,14 @@ extract click-2.0.1.tar.gz and cd into click-2.0.1
 ``` 
 ./configure --disable-linuxmodule --enable-local --enable-etherswitch
 ``` 
-make sure that custom elements are in click-2.0.1/elements/local/
+make sure that custom elements are in click-2.0.1/elements/local
 ``` 
 make elemlist 
 make
 ```
     
 ## RSVP test
-Run the["telecommunications-systems/scripts/ipnetwork-local.click](./scripts/ipnetwork-local.click) file with:
+Run the [telecommunications-systems/scripts/ipnetwork-local.click](./scripts/ipnetwork-local.click) file with:
 ``` 
 click telecommunications-systems/scripts/custom/ipnetwork-local.click -p 10000
 ``` 
