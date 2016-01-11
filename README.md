@@ -49,6 +49,7 @@ We use Click scripts (in telecommunications-systems/scripts) which create a virt
 8. Confirm that the video is streamed with Quality of Service by executing read_statistics.sh on PC 2.
    * On PC 2 because read_statistics.sh looks for Click elements in ipnetwork.click
 
+The integration was tested on the university's lab PCs, which had a direct ethernet connection.
 
 ### Authors
 * [Josse Coen](https://github.com/jsscn)
