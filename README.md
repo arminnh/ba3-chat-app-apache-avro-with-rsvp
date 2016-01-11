@@ -1,9 +1,9 @@
-# Telecommunications + Distributed Systems Project
+## Telecommunications + Distributed Systems Project
 Integrated project for [Telecommunications systems](https://www.uantwerpen.be/popup/opleidingsonderdeel.aspx?catalognr=1001WETTEL&taal=en&aj=2015) and [Distributed Systems courses](https://www.uantwerpen.be/popup/opleidingsonderdeel.aspx?catalognr=1001WETIGS&taal=en&aj=2015) at the University of Antwerp.   
 For more specific information, see READMEs in subdirectories.
 
 
-# Distributed Systems: Chat app with Apache Avro
+## Distributed Systems: Chat app with Apache Avro
 chat-app is a CLI java application which allows users to communicate with each other using a server-clients architecture (with [Apache Avro](https://avro.apache.org/)).   
 Using the application, clients can chat with one another in public or private chat mode. 
 Video streaming is also supported. Features which are implemented are listed in features.txt. 
@@ -12,13 +12,13 @@ More information about the implementation can be found in architecture.txt.
 ![video-stream-gif](distributed-systems/video-streaming.gif)
 
 
-# Telecommunications systems: RSVP in Click
+## Telecommunications systems: RSVP in Click
 
 Implementation of the Resource ReSerVation Protocol (RFCs [2205](telecommunications-systems/rfc2205.pdf) and [2210](telecommunications-systems/rfc2210.pdf)) in userlevel [Click](http://read.cs.ucla.edu/click/click). Admission control was not implemented.  
 ![rsvp](telecommunications-systems/rsvp.png)
 
 
-# Integration
+## Integration
 
 A video session in the chat-app will, using custom components in Click, set up a path reservation with RSVP. The reservation can also be set up outside of the chat-app.  
 Videos can be streamed with Quality of Service. Video streaming is possible in one or in both ways between two clients.  
@@ -26,7 +26,7 @@ To make the QoS reservation work, certains scripts need to be running before the
 The application will still work without QoS if these scripts are not running.
 
 
-## Steps to test integration (using 2 PCs)
+#### Steps to test integration (using 2 PCs)
 We use Click scripts (in telecommunications-systems/scripts) which create a virtual network that is limited to 1Mbps. Videos can be streamed with Quality of Service over this virtual network.
 
 1. Run setup_ds_server.sh on PC 1. Then, run host2.click -p 10000.
@@ -46,6 +46,6 @@ We use Click scripts (in telecommunications-systems/scripts) which create a virt
    * On PC 2 because read_statistics.sh looks for Click elements in ipnetwork.click
 
 
-# Authors
+### Authors
 * [Josse Coen](https://github.com/jsscn)
 * [Armin Halilovic](https://github.com/arminnh)
