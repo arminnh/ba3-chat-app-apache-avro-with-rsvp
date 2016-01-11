@@ -1,4 +1,4 @@
-# Distributed Systems Lab 1: Build your own middleware
+### Distributed Systems Lab 1: Build your own middleware
 
 In this first lab session you will design and implement your own RMI-platform.  
 As you can expect, this will not be a full-blown RMI implementation – this would lead us too far – but it should provide you with more insight into the basics of such a platform. This lab session contains four major tasks:
