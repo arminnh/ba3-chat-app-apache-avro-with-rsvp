@@ -1,41 +1,42 @@
-=====================================
-|           RSVP in Click           |
-=====================================
+## RSVP in Click
 
+Implementation of the Resource ReSerVation Protocol (RFCs [2205](telecommunications-systems/rfc2205.pdf) and [2210](telecommunications-systems/rfc2210.pdf)) in userlevel [Click](http://read.cs.ucla.edu/click/click). Admission control was not implemented.  
 
-Requirements
--------------------------------------
-    Click version 2.0.1
-    telnet
+## Requirements
+* Click version 2.0.1  
+* Telnet
     
+## Install
+extract click-2.0.1.tar.gz and cd into click-2.0.1
+``` 
+./configure --disable-linuxmodule --enable-local --enable-etherswitch
+``` 
+make sure that custom elements are in click-2.0.1/elements/local/
+``` 
+make elemlist 
+make
+```
     
-Install
--------------------------------------
-    *) extract click-2.0.1.tar.gz and cd into click-2.0.1
-    *) execute ./configure --disable-linuxmodule --enable-local --enable-etherswitch
-    *) make sure that custom elements are in click-2.0.1/elements/local/
-    *) execute "make elemlist"
-    *) execute "make"
-    
-    
-RSVP test
--------------------------------------
-Run the "telecommunications-systems/scripts/ipnetwork-local.click" file with:
-> click telecommunications-systems/scripts/custom/ipnetwork-local.click -p 10000
+## RSVP test
+Run the["telecommunications-systems/scripts/ipnetwork-local.click](./scripts/ipnetwork-local.click) file with:
+``` 
+click telecommunications-systems/scripts/custom/ipnetwork-local.click -p 10000
+``` 
+Then, in another window
+```  
+telnet localhost 10000  
+``` 
+Copy the "Local" handler calls from [telecommunications-systems/scripts/custom/test-ipnetwork-local.txt](./scripts/custom/test-ipnetwork.txt) into the telnet window. Copy the blocks one by one, not simultaneously.
 
-Then, execute 
-> telnet localhost 10000
-Copy the "Local" handler calls from "telecommunications-systems/scripts/custom/test-ipnetwork-local.txt" into the terminal where telnet is running. Copy the blocks one by one, not simultaneously.
-
-Then
-> telecommunications-systems/scripts/read_statistics.sh
 Confirm that data is being sent with Quality of Service.
+``` 
+telecommunications-systems/scripts/read_statistics.sh  
+```  
+![rsvp](./rsvp.png)
 
+## Handlers
+You can call handlers yourself in telnet, the following ones are available:  
 
-Handlers
--------------------------------------
-You can call handlers yourself in telnet, the following ones are available:
-    At the end of this file there is a list of the types of the following variables.
     RSVP:
         To setup messages:
                  write session          DEST               PROTOCOL POLICE            PORT
@@ -59,23 +60,26 @@ You can call handlers yourself in telnet, the following ones are available:
         To change the tos byte:
             write tos int
             
+    
             
-    Types of variables
-    -------------------------------------
+#### Types of variables
+
     IPAddress: DEST, NEIGHBOR, ERROR_NODE_ADDRESS, RECEIVER_ADDRESS, SRC_ADDRESS, 
     Unsigned:  PROTOCOL, PORT, LIH, ERROR_CODE, ERROR_VALUE, REFRESH, SRC_PORT, MINIMUM_POLICED_UNIT, MAXIMUM_PACKET_SIZE
     Bool:      POLICE, INPLACE, NOTGUILTY
     Double:    TOKEN_BUCKET_RATE, TOKEN_BUCKET_SIZE, PEAK_DATA_RATE
 
 
+#### Example
+Run the [test.click](./scripts/custom/test.click) file with:
+``` 
+click telecommunications-systems/scripts/custom/test.click -p 12345
+``` 
 
-    Example
-    -------------------------------------
-    Run the "test.click" file with:
-    > click telecommunications-systems/scripts/custom/test.click -p 12345
-
-    Then, execute 
-    > telnet localhost 12345
-    Then copy the handler calls from "telecommunications-systems/scripts/custom/test.txt" into the terminal where telnet is running.
-    This will make Click generate RSVP packets which will be printed in the terminal where click is running.
-    They can also be found in the "test.dump" file, for reading with wireshark.
+Then 
+``` 
+telnet localhost 12345
+``` 
+Copy the handler calls from [telecommunications-systems/scripts/custom/test.txt](./scripts/custom/test.txt) into the terminal where telnet is running.  
+This will make Click generate RSVP packets which will be printed in the terminal where click is running.  
+They can also be found in the "test.dump" file, for reading with wireshark.
